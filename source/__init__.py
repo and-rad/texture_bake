@@ -46,7 +46,6 @@ from .bake_operation import BakeOperation, TextureBakeConstants
 #Import classes
 from .operators import(
     OBJECT_OT_texture_bake_mapbake,
-    OBJECT_OT_texture_bake_sketchfabupload,
     OBJECT_OT_texture_bake_selectall,
     OBJECT_OT_texture_bake_selectnone,
     OBJECT_OT_texture_bake_default_imgname_string,
@@ -77,7 +76,6 @@ from .ui import (
     OBJECT_PT_texture_bake_panel,
     OBJECT_PT_texture_bake_panel,
     TextureBakePreferences,
-    OBJECT_OT_texture_bake_releasenotes,
     ListItem,
     BAKEOBJECTS_UL_List,
     LIST_OT_NewItem,
@@ -96,11 +94,9 @@ from .ui import (
 #List of all classes that will be registered
 classes = ([
     OBJECT_OT_texture_bake_mapbake,
-    OBJECT_OT_texture_bake_sketchfabupload,
     OBJECT_OT_texture_bake_selectall,
     OBJECT_OT_texture_bake_selectnone,
     OBJECT_PT_texture_bake_panel,
-    OBJECT_OT_texture_bake_releasenotes,
     TextureBakePreferences,
     OBJECT_OT_texture_bake_default_imgname_string,
     OBJECT_OT_texture_bake_default_aliases,
@@ -534,7 +530,7 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
     preserve_materials: BoolProperty(name="Preserve object original materials (BETA)", description=des)
     des = "Normal maps are always exported as 16bit, but this option causes all images to be exported 16bit. This should probably stay enabled unless file sizes are an issue"
     everything16bit: BoolProperty(name="All exports 16bit", default = True, description=des)
-    des="Select the file format for exported bakes. Also applies to Sketchfab upload images"
+    des="Select the file format for exported bakes."
     exportfileformat: EnumProperty(name="Export File Format", update=exportfileformat_update, default="PNG",
     description=des, items=[
         ("PNG", "PNG", ""),

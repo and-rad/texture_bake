@@ -214,48 +214,6 @@ class OBJECT_OT_texture_bake_mapbake(bpy.types.Operator):
         self.report({"INFO"}, "Bake complete")
         return {'FINISHED'}
 
-class OBJECT_OT_texture_bake_sketchfabupload(bpy.types.Operator):
-    """You can only upload (an) object(s) created with the "Copy objects and apply bakes" option. If this button is grayed out, you haven't got the correct objects selected.
-Not available if .blend file not saved or if no Sketchfab API key set in user preferences.
-Get your API key from the account section of Sketchfab.com"""
-    bl_idname = "object.texture_bake_sketchfabupload"
-    bl_label = "Upload to Sketchfab"
-
-    @classmethod
-    def poll(cls, context):
-        for obj in bpy.context.selected_objects:
-            try:
-                obj["SB_createdfrom"]
-            except:
-                return False
-
-        try:
-            bpy.context.active_object["SB_createdfrom"]
-        except:
-            return False
-
-        return True
-
-    def execute(self, context):
-
-        #Sketchfab upload
-
-        #Check for API key
-        preferences = bpy.context.preferences
-        addon_prefs = preferences.addons[__package__].preferences
-        apikey = addon_prefs.apikey
-        if apikey == "":
-            self.report({"ERROR"}, "ERROR: Sketchfab API key needed. Set your API key in Blender user preferences under addons, TextureBake. Get your API key from Sketchfab.com")
-            return {'CANCELLED'}
-
-        result = bakefunctions.sketchfabupload(self)
-
-        if result:
-            self.report({"INFO"}, "Upload operation complete. Your web browser should have opened. Check console for any errors.")
-            return {'FINISHED'}
-        else:
-            return {'CANCELLED'}
-
 
 class OBJECT_OT_texture_bake_selectall(bpy.types.Operator):
     """Select all PBR bake types"""
@@ -300,7 +258,7 @@ class OBJECT_OT_texture_bake_selectnone(bpy.types.Operator):
         return {'FINISHED'}
 
 class OBJECT_OT_texture_bake_default_imgname_string(bpy.types.Operator):
-    """Reset the image name string to default (Sketchfab compatible)"""
+    """Reset the image name string to default"""
     bl_idname = "object.texture_bake_default_imgname_string"
     bl_label = "Restore image string to default"
 
@@ -311,7 +269,7 @@ class OBJECT_OT_texture_bake_default_imgname_string(bpy.types.Operator):
         return {'FINISHED'}
 
 class OBJECT_OT_texture_bake_default_aliases(bpy.types.Operator):
-    """Reset the image name string to default (Sketchfab compatible)"""
+    """Reset the image name string to default"""
     bl_idname = "object.texture_bake_default_aliases"
     bl_label = "Restore all bake type aliases to default"
 

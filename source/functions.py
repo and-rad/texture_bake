@@ -1423,7 +1423,6 @@ def prepObjects(objs, baketype):
 
         uvlayers = new_obj.data.uv_layers
         #If we generated new UVs, it will be called "TextureBake" and we are using that. End of.
-        #Same if we are being called for Sketchfab upload, and last bake used new UVs
         if bpy.context.scene.TextureBake_Props.newUVoption:
             pass
 

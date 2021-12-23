@@ -1018,24 +1018,11 @@ class OBJECT_PT_texture_bake_panel(bpy.types.Panel):
             # monkeyTip(message_lines, box)
 
 
-        if(context.scene.TextureBake_Props.global_mode == "pbr_bake"):
-            row = layout.row()
-            row.scale_y = 1.5
-            row.operator("object.texture_bake_sketchfabupload", text="Sketchfab Upload", icon="EXPORT")
-
-        box = layout.box()
-        row = box.row()
-        #row.operator("object.texture_bake_popnodegroups")
-
-
-
-
 class TextureBakePreferences(bpy.types.AddonPreferences):
     # this must match the add-on name, use '__package__'
     # when defining this in a submodule of a python package.
     bl_idname = __package__
 
-    apikey: bpy.props.StringProperty(name="Sketchfab API Key: ")
     img_name_format: bpy.props.StringProperty(name="Image format string",
         default="%OBJ%_%BATCH%_%BAKEMODE%_%BAKETYPE%")
 
@@ -1100,13 +1087,6 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
 
     def draw(self, context):
         layout = self.layout
-        row = layout.row()
-        row.label(text="Enter your Sketchfab API key below. Don't forget to click \"Save Preferences\" after.")
-        row = layout.row()
-        row.prop(self, "apikey")
-        row = layout.row()
-        row.scale_y = 2
-        row.operator("object.texture_bake_releasenotes", icon="MOD_WAVE")
 
         box = layout.box()
         row = box.row()
@@ -1134,12 +1114,8 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
         #PBR Aliases
         box = layout.box()
 
-
         row = box.row()
         row.label(text="Aliases for PBR bake types")
-
-        row = box.row()
-        row.label(text="WARNING: Sketchfab looks for certain values. Changing these may break SF Upload")
 
         row = box.row()
         col = row.column()
@@ -1212,19 +1188,6 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
         box = layout.box()
         row = box.row()
         row.operator("object.texture_bake_default_aliases")
-
-
-
-class OBJECT_OT_texture_bake_releasenotes(bpy.types.Operator):
-    """View the TextureBake release notes (opens browser)"""
-    bl_idname = "object.texture_bake_releasenotes"
-    bl_label = "View the TextureBake release notes (opens browser)"
-
-    def execute(self, context):
-        import webbrowser
-        webbrowser.open('http://www.toohey.co.uk/TextureBake/releasenotes3.html', new=2)
-        return {'FINISHED'}
-
 
 
 #---------------------Advanced object selection list -----------------------------------
