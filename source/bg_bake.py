@@ -50,14 +50,14 @@ bpy.app.timers.register(remove_dead, persistent=True)
 
 # def check_merged_bake_setting():
 
-    # if bpy.context.scene.SimpleBake_Props.advancedobjectselection:
-        # if len(bpy.context.scene.SimpleBake_Props.bakeobjs_advanced_list) < 2 and bpy.context.scene.SimpleBake_Props.mergedBake == True:
-            # bpy.context.scene.SimpleBake_Props.mergedBake = False
+    # if bpy.context.scene.TextureBake_Props.advancedobjectselection:
+        # if len(bpy.context.scene.TextureBake_Props.bakeobjs_advanced_list) < 2 and bpy.context.scene.TextureBake_Props.mergedBake == True:
+            # bpy.context.scene.TextureBake_Props.mergedBake = False
 
 
     # else:
-        # if len(bpy.context.selected_objects)<2 and bpy.context.scene.SimpleBake_Props.mergedBake == True:
-            # bpy.context.scene.SimpleBake_Props.mergedBake = False
+        # if len(bpy.context.selected_objects)<2 and bpy.context.scene.TextureBake_Props.mergedBake == True:
+            # bpy.context.scene.TextureBake_Props.mergedBake = False
 
     # return 1 #1 second timer
 
@@ -65,8 +65,8 @@ bpy.app.timers.register(remove_dead, persistent=True)
 
 def check_export_col_setting():
 
-    if (bpy.context.scene.cycles.bake_type == "NORMAL" or not bpy.context.scene.SimpleBake_Props.saveExternal) and bpy.context.scene.SimpleBake_Props.exportcyclescolspace:
-        bpy.context.scene.SimpleBake_Props.exportcyclescolspace = False
+    if (bpy.context.scene.cycles.bake_type == "NORMAL" or not bpy.context.scene.TextureBake_Props.saveExternal) and bpy.context.scene.TextureBake_Props.exportcyclescolspace:
+        bpy.context.scene.TextureBake_Props.exportcyclescolspace = False
 
     return 1 #1 second timer
 

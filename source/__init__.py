@@ -18,14 +18,14 @@
 #########################################################################
 
 bl_info = {
-    "name": "SimpleBake",
-    "author": "Lewis <Contact via Blender Market or BLENDERender>",
-    "version": (1, 2, 8),
+    "name": "Texture Bake",
+    "author": "Andreas Raddau <and.rad@posteo.de>",
+    "version": (0, 9, 0),
     "blender": (3, 0, 0),
     "location": "Properties Panel -> Render Settings Tab",
-    "description": "Simple baking of PBR maps",
+    "description": "Streamline texture baking",
     "warning": "",
-    "wiki_url": "",
+    "doc_url": "",
     "tracker_url": "",
     "category": "Object",
 }
@@ -40,45 +40,45 @@ from . import functions
 from . import bg_bake
 from pathlib import Path
 from bpy.types import PropertyGroup
-from .bake_operation import BakeOperation, SimpleBakeConstants
+from .bake_operation import BakeOperation, TextureBakeConstants
 
 
 #Import classes
 from .operators import(
-    OBJECT_OT_simple_bake_mapbake,
-    OBJECT_OT_simple_bake_sketchfabupload,
-    OBJECT_OT_simple_bake_selectall,
-    OBJECT_OT_simple_bake_selectnone,
-    OBJECT_OT_simple_bake_installupdate,
-    OBJECT_OT_simple_bake_default_imgname_string,
-    OBJECT_OT_simple_bake_default_aliases,
-    OBJECT_OT_simple_bake_bgbake_status,
-    OBJECT_OT_simple_bake_bgbake_import,
-    OBJECT_OT_simple_bake_bgbake_delete_individual,
-    OBJECT_OT_simple_bake_bgbake_import_individual,
-    OBJECT_OT_simple_bake_bgbake_clear,
-    OBJECT_OT_simple_bake_protect_clear,
-    OBJECT_OT_simple_bake_import_special_mats,
-    OBJECT_OT_simple_bake_preset_save,
-    OBJECT_OT_simple_bake_preset_load,
-    OBJECT_OT_simple_bake_preset_refresh,
-    OBJECT_OT_simple_bake_preset_delete,
-    OBJECT_OT_simple_bake_show_all,
-    OBJECT_OT_simple_bake_hide_all,
-    OBJECT_OT_simple_bake_increase_texture_res,
-    OBJECT_OT_simple_bake_decrease_texture_res,
-    OBJECT_OT_simple_bake_increase_output_res,
-    OBJECT_OT_simple_bake_decrease_output_res,
-    OBJECT_OT_simple_bake_cptex_add,
-    OBJECT_OT_simple_bake_cptex_delete,
-    OBJECT_OT_simple_bake_cptex_setdefaults,
-    OBJECT_OT_simple_bake_popnodegroups
+    OBJECT_OT_texture_bake_mapbake,
+    OBJECT_OT_texture_bake_sketchfabupload,
+    OBJECT_OT_texture_bake_selectall,
+    OBJECT_OT_texture_bake_selectnone,
+    OBJECT_OT_texture_bake_installupdate,
+    OBJECT_OT_texture_bake_default_imgname_string,
+    OBJECT_OT_texture_bake_default_aliases,
+    OBJECT_OT_texture_bake_bgbake_status,
+    OBJECT_OT_texture_bake_bgbake_import,
+    OBJECT_OT_texture_bake_bgbake_delete_individual,
+    OBJECT_OT_texture_bake_bgbake_import_individual,
+    OBJECT_OT_texture_bake_bgbake_clear,
+    OBJECT_OT_texture_bake_protect_clear,
+    OBJECT_OT_texture_bake_import_special_mats,
+    OBJECT_OT_texture_bake_preset_save,
+    OBJECT_OT_texture_bake_preset_load,
+    OBJECT_OT_texture_bake_preset_refresh,
+    OBJECT_OT_texture_bake_preset_delete,
+    OBJECT_OT_texture_bake_show_all,
+    OBJECT_OT_texture_bake_hide_all,
+    OBJECT_OT_texture_bake_increase_texture_res,
+    OBJECT_OT_texture_bake_decrease_texture_res,
+    OBJECT_OT_texture_bake_increase_output_res,
+    OBJECT_OT_texture_bake_decrease_output_res,
+    OBJECT_OT_texture_bake_cptex_add,
+    OBJECT_OT_texture_bake_cptex_delete,
+    OBJECT_OT_texture_bake_cptex_setdefaults,
+    OBJECT_OT_texture_bake_popnodegroups
     )
 from .ui import (
-    OBJECT_PT_simple_bake_panel,
-    OBJECT_PT_simple_bake_panel,
-    SimpleBakePreferences,
-    OBJECT_OT_simple_bake_releasenotes,
+    OBJECT_PT_texture_bake_panel,
+    OBJECT_PT_texture_bake_panel,
+    TextureBakePreferences,
+    OBJECT_OT_texture_bake_releasenotes,
     ListItem,
     BAKEOBJECTS_UL_List,
     LIST_OT_NewItem,
@@ -96,22 +96,22 @@ from .ui import (
 #Classes list for register
 #List of all classes that will be registered
 classes = ([
-    OBJECT_OT_simple_bake_mapbake,
-    OBJECT_OT_simple_bake_sketchfabupload,
-    OBJECT_OT_simple_bake_selectall,
-    OBJECT_OT_simple_bake_selectnone,
-    OBJECT_OT_simple_bake_installupdate,
-    OBJECT_PT_simple_bake_panel,
-    OBJECT_OT_simple_bake_releasenotes,
-    SimpleBakePreferences,
-    OBJECT_OT_simple_bake_default_imgname_string,
-    OBJECT_OT_simple_bake_default_aliases,
-    OBJECT_OT_simple_bake_bgbake_status,
-    OBJECT_OT_simple_bake_bgbake_import,
-    OBJECT_OT_simple_bake_bgbake_delete_individual,
-    OBJECT_OT_simple_bake_bgbake_import_individual,
-    OBJECT_OT_simple_bake_bgbake_clear,
-    OBJECT_OT_simple_bake_protect_clear,
+    OBJECT_OT_texture_bake_mapbake,
+    OBJECT_OT_texture_bake_sketchfabupload,
+    OBJECT_OT_texture_bake_selectall,
+    OBJECT_OT_texture_bake_selectnone,
+    OBJECT_OT_texture_bake_installupdate,
+    OBJECT_PT_texture_bake_panel,
+    OBJECT_OT_texture_bake_releasenotes,
+    TextureBakePreferences,
+    OBJECT_OT_texture_bake_default_imgname_string,
+    OBJECT_OT_texture_bake_default_aliases,
+    OBJECT_OT_texture_bake_bgbake_status,
+    OBJECT_OT_texture_bake_bgbake_import,
+    OBJECT_OT_texture_bake_bgbake_delete_individual,
+    OBJECT_OT_texture_bake_bgbake_import_individual,
+    OBJECT_OT_texture_bake_bgbake_clear,
+    OBJECT_OT_texture_bake_protect_clear,
     ListItem,
     BAKEOBJECTS_UL_List,
     LIST_OT_NewItem,
@@ -119,25 +119,25 @@ classes = ([
     LIST_OT_MoveItem,
     LIST_OT_ClearAll,
     LIST_OT_Refresh,
-    OBJECT_OT_simple_bake_import_special_mats,
-    OBJECT_OT_simple_bake_preset_save,
-    OBJECT_OT_simple_bake_preset_load,
-    OBJECT_OT_simple_bake_preset_refresh,
+    OBJECT_OT_texture_bake_import_special_mats,
+    OBJECT_OT_texture_bake_preset_save,
+    OBJECT_OT_texture_bake_preset_load,
+    OBJECT_OT_texture_bake_preset_refresh,
     PresetItem,
     CPTexItem,
     PRESETS_UL_List,
-    OBJECT_OT_simple_bake_preset_delete,
-    OBJECT_OT_simple_bake_show_all,
-    OBJECT_OT_simple_bake_hide_all,
-    OBJECT_OT_simple_bake_increase_texture_res,
-    OBJECT_OT_simple_bake_decrease_texture_res,
-    OBJECT_OT_simple_bake_increase_output_res,
-    OBJECT_OT_simple_bake_decrease_output_res,
-    OBJECT_OT_simple_bake_cptex_add,
-    OBJECT_OT_simple_bake_cptex_delete,
+    OBJECT_OT_texture_bake_preset_delete,
+    OBJECT_OT_texture_bake_show_all,
+    OBJECT_OT_texture_bake_hide_all,
+    OBJECT_OT_texture_bake_increase_texture_res,
+    OBJECT_OT_texture_bake_decrease_texture_res,
+    OBJECT_OT_texture_bake_increase_output_res,
+    OBJECT_OT_texture_bake_decrease_output_res,
+    OBJECT_OT_texture_bake_cptex_add,
+    OBJECT_OT_texture_bake_cptex_delete,
     CPTEX_UL_List,
-    OBJECT_OT_simple_bake_cptex_setdefaults,
-    OBJECT_OT_simple_bake_popnodegroups
+    OBJECT_OT_texture_bake_cptex_setdefaults,
+    OBJECT_OT_texture_bake_popnodegroups
     ])
 
 
@@ -154,51 +154,51 @@ def ShowMessageBox(message = "", title = "Message Box", icon = 'INFO'):
 #---------------------UPDATE FUNCTIONS--------------------------------------------
 
 def tex_per_mat_update(self, context):
-    if context.scene.SimpleBake_Props.tex_per_mat == True:
-        context.scene.SimpleBake_Props.prepmesh = False
-        context.scene.SimpleBake_Props.hidesourceobjects = False
-        #context.scene.SimpleBake_Props.mergedBake = False
-        context.scene.SimpleBake_Props.expand_mat_uvs = False
+    if context.scene.TextureBake_Props.tex_per_mat == True:
+        context.scene.TextureBake_Props.prepmesh = False
+        context.scene.TextureBake_Props.hidesourceobjects = False
+        #context.scene.TextureBake_Props.mergedBake = False
+        context.scene.TextureBake_Props.expand_mat_uvs = False
 
 
 def expand_mat_uvs_update(self, context):
-    context.scene.SimpleBake_Props.newUVoption = False
-    context.scene.SimpleBake_Props.prefer_existing_sbmap = False
+    context.scene.TextureBake_Props.newUVoption = False
+    context.scene.TextureBake_Props.prefer_existing_sbmap = False
 
 def prepmesh_update(self, context):
-    if context.scene.SimpleBake_Props.prepmesh == False:
-        context.scene.SimpleBake_Props.hidesourceobjects = False
-        bpy.context.scene.SimpleBake_Props.createglTFnode = False
+    if context.scene.TextureBake_Props.prepmesh == False:
+        context.scene.TextureBake_Props.hidesourceobjects = False
+        bpy.context.scene.TextureBake_Props.createglTFnode = False
     else:
-        context.scene.SimpleBake_Props.hidesourceobjects = True
+        context.scene.TextureBake_Props.hidesourceobjects = True
 
 def exportfileformat_update(self,context):
-    if context.scene.SimpleBake_Props.exportfileformat == "JPEG" or context.scene.SimpleBake_Props.exportfileformat == "TARGA":
-        context.scene.SimpleBake_Props.everything16bit = False
+    if context.scene.TextureBake_Props.exportfileformat == "JPEG" or context.scene.TextureBake_Props.exportfileformat == "TARGA":
+        context.scene.TextureBake_Props.everything16bit = False
 
 def s2a_update(self, context):
-    #bpy.context.scene.SimpleBake_Props.mergedBake = False
+    #bpy.context.scene.TextureBake_Props.mergedBake = False
     pass
 
 def saveExternal_update(self, context):
-    if bpy.context.scene.SimpleBake_Props.saveExternal == False:
-        bpy.context.scene.SimpleBake_Props.everything16bit = False
-        bpy.context.scene.SimpleBake_Props.rundenoise = False
-        bpy.context.scene.SimpleBake_Props.selected_lightmap_denoise = False
-        bpy.context.scene.SimpleBake_Props.exportFolderPerObject = False
+    if bpy.context.scene.TextureBake_Props.saveExternal == False:
+        bpy.context.scene.TextureBake_Props.everything16bit = False
+        bpy.context.scene.TextureBake_Props.rundenoise = False
+        bpy.context.scene.TextureBake_Props.selected_lightmap_denoise = False
+        bpy.context.scene.TextureBake_Props.exportFolderPerObject = False
 
-        bpy.context.scene.SimpleBake_Props.uv_mode = "normal"
+        bpy.context.scene.TextureBake_Props.uv_mode = "normal"
 
     else:
         pass
-        #bpy.context.scene.SimpleBake_Props.everything32bitfloat = False
+        #bpy.context.scene.TextureBake_Props.everything32bitfloat = False
 
 def repackUVs_update(self, context):
     pass
 
 def newUVoption_update(self, context):
-    if bpy.context.scene.SimpleBake_Props.newUVoption == True:
-        bpy.context.scene.SimpleBake_Props.prefer_existing_sbmap = False
+    if bpy.context.scene.TextureBake_Props.newUVoption == True:
+        bpy.context.scene.TextureBake_Props.prefer_existing_sbmap = False
         #bpy.context.scene.repackUVs = False
 
 def prefer_existing_sbmap_update(self, context):
@@ -206,32 +206,32 @@ def prefer_existing_sbmap_update(self, context):
 
 
 def mergedBake_update(self, context):
-    #if bpy.context.scene.SimpleBake_Props.newUVmethod == "SmartUVProject_Individual" and bpy.context.scene.SimpleBake_Props.mergedBake:
+    #if bpy.context.scene.TextureBake_Props.newUVmethod == "SmartUVProject_Individual" and bpy.context.scene.TextureBake_Props.mergedBake:
         #ShowMessageBox("This combination of options probably isn't what you want. You are unwrapping multiple objects individually, and then baking them all to one texture. The bakes will be on top of each other.", "Warning", "MONKEY")
     pass
 
 def newUVmethod_update(self, context):
     pass
-    #if bpy.context.scene.SimpleBake_Props.newUVmethod == "SmartUVProject_Individual" and bpy.context.scene.SimpleBake_Props.mergedBake:
+    #if bpy.context.scene.TextureBake_Props.newUVmethod == "SmartUVProject_Individual" and bpy.context.scene.TextureBake_Props.mergedBake:
         #ShowMessageBox("This combination of options probably isn't what you want. You are unwrapping multiple objects individually, and then baking them all to one texture. The bakes will be on top of each other.", "Warning", "MONKEY")
 
 
 def global_mode_update(self, context):
 
-    if not bpy.context.scene.SimpleBake_Props.global_mode == "cycles_bake":
-        bpy.context.scene.SimpleBake_Props.tex_per_mat = False
-        bpy.context.scene.SimpleBake_Props.expand_mat_uvs = False
-        bpy.context.scene.SimpleBake_Props.cycles_s2a = False
-        bpy.context.scene.SimpleBake_Props.targetobj_cycles = None
+    if not bpy.context.scene.TextureBake_Props.global_mode == "cycles_bake":
+        bpy.context.scene.TextureBake_Props.tex_per_mat = False
+        bpy.context.scene.TextureBake_Props.expand_mat_uvs = False
+        bpy.context.scene.TextureBake_Props.cycles_s2a = False
+        bpy.context.scene.TextureBake_Props.targetobj_cycles = None
 
-    if not bpy.context.scene.SimpleBake_Props.global_mode == "pbr_bake":
-        bpy.context.scene.SimpleBake_Props.selected_s2a = False
-        bpy.context.scene.SimpleBake_Props.selected_lightmap_denoise = False
-        bpy.context.scene.SimpleBake_Props.targetobj = None
+    if not bpy.context.scene.TextureBake_Props.global_mode == "pbr_bake":
+        bpy.context.scene.TextureBake_Props.selected_s2a = False
+        bpy.context.scene.TextureBake_Props.selected_lightmap_denoise = False
+        bpy.context.scene.TextureBake_Props.targetobj = None
 
 def cycles_s2a_update(self, context):
-    if context.scene.SimpleBake_Props.cycles_s2a:
-        #context.scene.SimpleBake_Props.mergedBake = False
+    if context.scene.TextureBake_Props.cycles_s2a:
+        #context.scene.TextureBake_Props.mergedBake = False
         pass
 
 def bgbake_update(self,context):
@@ -239,8 +239,8 @@ def bgbake_update(self,context):
 
 
 def uv_mode_update(self, context):
-    if context.scene.SimpleBake_Props.uv_mode == "udims":
-        context.scene.SimpleBake_Props.newUVoption = False
+    if context.scene.TextureBake_Props.uv_mode == "udims":
+        context.scene.TextureBake_Props.newUVoption = False
 
 
 def exportcyclescolspace_update(self, context):
@@ -249,61 +249,61 @@ def exportcyclescolspace_update(self, context):
 
 def presets_list_update(self,context):
 
-    index = context.scene.SimpleBake_Props.presets_list_index
-    item = context.scene.SimpleBake_Props.presets_list[index]
+    index = context.scene.TextureBake_Props.presets_list_index
+    item = context.scene.TextureBake_Props.presets_list[index]
 
-    context.scene.SimpleBake_Props.preset_name = item.name
+    context.scene.TextureBake_Props.preset_name = item.name
 
 def presets_show_update(self,context):
-    bpy.ops.object.simple_bake_preset_refresh()
+    bpy.ops.object.texture_bake_preset_refresh()
 
 def imgheight_update(self,context):
-    bpy.context.scene.SimpleBake_Props.outputheight = bpy.context.scene.SimpleBake_Props.imgheight
+    bpy.context.scene.TextureBake_Props.outputheight = bpy.context.scene.TextureBake_Props.imgheight
 
 def imgwidth_update(self,context):
-    bpy.context.scene.SimpleBake_Props.outputwidth = bpy.context.scene.SimpleBake_Props.imgwidth
+    bpy.context.scene.TextureBake_Props.outputwidth = bpy.context.scene.TextureBake_Props.imgwidth
 
 
 def textures_show_update(self,context):
 
-    if context.scene.SimpleBake_Props.first_texture_show:
+    if context.scene.TextureBake_Props.first_texture_show:
         functions.auto_set_bake_margin()
-        context.scene.SimpleBake_Props.first_texture_show = False
+        context.scene.TextureBake_Props.first_texture_show = False
 
 def bake_objects_show_update(self,context):
-    if context.scene.SimpleBake_Props.first_texture_show:
+    if context.scene.TextureBake_Props.first_texture_show:
         functions.auto_set_bake_margin()
-        context.scene.SimpleBake_Props.first_texture_show = False
+        context.scene.TextureBake_Props.first_texture_show = False
 
 def cp_list_index_update(self, context):
-    index = bpy.context.scene.SimpleBake_Props.cp_list_index
-    cpt = bpy.context.scene.SimpleBake_Props.cp_list[index]
+    index = bpy.context.scene.TextureBake_Props.cp_list_index
+    cpt = bpy.context.scene.TextureBake_Props.cp_list[index]
 
 
     messages = []
-    bpy.context.scene.SimpleBake_Props.channelpackfileformat = cpt.file_format
+    bpy.context.scene.TextureBake_Props.channelpackfileformat = cpt.file_format
     try:
-        bpy.context.scene.SimpleBake_Props.cptex_R = cpt.R
+        bpy.context.scene.TextureBake_Props.cptex_R = cpt.R
     except:
         messages.append(f"WARNING: {cpt.name} depends on {cpt.R} for the Red channel, but you are not baking it")
         messages.append("You can enable the required bake, or change the bake for that channel")
     try:
-        bpy.context.scene.SimpleBake_Props.cptex_G = cpt.G
+        bpy.context.scene.TextureBake_Props.cptex_G = cpt.G
     except:
         messages.append(f"WARNING: {cpt.name} depends on {cpt.G} for the Green channel, but you are not baking it")
         messages.append("You can enable the required bake, or change the bake for that channel")
     try:
-        bpy.context.scene.SimpleBake_Props.cptex_B = cpt.B
+        bpy.context.scene.TextureBake_Props.cptex_B = cpt.B
     except:
         messages.append(f"WARNING: {cpt.name} depends on {cpt.B} for the Blue channel, but you are not baking it")
         messages.append("You can enable the required bake, or change the bake for that channel")
     try:
-        bpy.context.scene.SimpleBake_Props.cptex_A = cpt.A
+        bpy.context.scene.TextureBake_Props.cptex_A = cpt.A
     except:
         messages.append(f"WARNING: {cpt.name} depends on {cpt.A} for the Alpha channel, but you are not baking it")
         messages.append("You can enable the required bake, or change the bake for that channel")
 
-    bpy.context.scene.SimpleBake_Props.cp_name = cpt.name
+    bpy.context.scene.TextureBake_Props.cp_name = cpt.name
 
     #Show messages
     if len(messages)>0:
@@ -317,52 +317,52 @@ def get_selected_bakes_dropdown(self, context):
 
     items.append(("none", "None",""))
 
-    if bpy.context.scene.SimpleBake_Props.selected_col:
+    if bpy.context.scene.TextureBake_Props.selected_col:
         items.append(("diffuse", "Diffuse",""))
-    if bpy.context.scene.SimpleBake_Props.selected_metal:
+    if bpy.context.scene.TextureBake_Props.selected_metal:
         items.append(("metalness", "Metal",""))
 
-    if bpy.context.scene.SimpleBake_Props.selected_sss:
+    if bpy.context.scene.TextureBake_Props.selected_sss:
         items.append(("sss", "SSS",""))
-    if bpy.context.scene.SimpleBake_Props.selected_ssscol:
+    if bpy.context.scene.TextureBake_Props.selected_ssscol:
         items.append(("ssscol", "SSS Colour",""))
 
-    if bpy.context.scene.SimpleBake_Props.selected_rough:
-        if bpy.context.scene.SimpleBake_Props.rough_glossy_switch == "glossy":
+    if bpy.context.scene.TextureBake_Props.selected_rough:
+        if bpy.context.scene.TextureBake_Props.rough_glossy_switch == "glossy":
             items.append(("glossy", "Glossy",""))
         else:
             items.append(("roughness", "Rouchness",""))
 
 
-    if bpy.context.scene.SimpleBake_Props.selected_normal:
+    if bpy.context.scene.TextureBake_Props.selected_normal:
         items.append(("normal", "Normal",""))
-    if bpy.context.scene.SimpleBake_Props.selected_trans:
+    if bpy.context.scene.TextureBake_Props.selected_trans:
         items.append(("transparency", "Transmission",""))
-    if bpy.context.scene.SimpleBake_Props.selected_transrough:
+    if bpy.context.scene.TextureBake_Props.selected_transrough:
         items.append(("transparencyroughness", "Transmission Rough",""))
-    if bpy.context.scene.SimpleBake_Props.selected_clearcoat:
+    if bpy.context.scene.TextureBake_Props.selected_clearcoat:
         items.append(("clearcoat", "Clearcoat",""))
-    if bpy.context.scene.SimpleBake_Props.selected_clearcoat_rough:
+    if bpy.context.scene.TextureBake_Props.selected_clearcoat_rough:
         items.append(("clearcoatroughness", "ClearcoatRough",""))
-    if bpy.context.scene.SimpleBake_Props.selected_emission:
+    if bpy.context.scene.TextureBake_Props.selected_emission:
         items.append(("emission", "Emission",""))
-    if bpy.context.scene.SimpleBake_Props.selected_specular:
+    if bpy.context.scene.TextureBake_Props.selected_specular:
         items.append(("specular", "Specular",""))
-    if bpy.context.scene.SimpleBake_Props.selected_alpha:
+    if bpy.context.scene.TextureBake_Props.selected_alpha:
         items.append(("alpha", "Alpha",""))
 
-    if bpy.context.scene.SimpleBake_Props.selected_col_mats:
-        items.append((SimpleBakeConstants.COLOURID, SimpleBakeConstants.COLOURID,""))
-    if bpy.context.scene.SimpleBake_Props.selected_col_vertex:
-        items.append((SimpleBakeConstants.VERTEXCOL, SimpleBakeConstants.VERTEXCOL,""))
-    if bpy.context.scene.SimpleBake_Props.selected_ao:
-        items.append((SimpleBakeConstants.AO, SimpleBakeConstants.AO,""))
-    if bpy.context.scene.SimpleBake_Props.selected_thickness:
-        items.append((SimpleBakeConstants.THICKNESS, SimpleBakeConstants.THICKNESS,""))
-    if bpy.context.scene.SimpleBake_Props.selected_curvature:
-        items.append((SimpleBakeConstants.CURVATURE, SimpleBakeConstants.CURVATURE,""))
-    if bpy.context.scene.SimpleBake_Props.selected_lightmap:
-        items.append((SimpleBakeConstants.LIGHTMAP, SimpleBakeConstants.LIGHTMAP,""))
+    if bpy.context.scene.TextureBake_Props.selected_col_mats:
+        items.append((TextureBakeConstants.COLOURID, TextureBakeConstants.COLOURID,""))
+    if bpy.context.scene.TextureBake_Props.selected_col_vertex:
+        items.append((TextureBakeConstants.VERTEXCOL, TextureBakeConstants.VERTEXCOL,""))
+    if bpy.context.scene.TextureBake_Props.selected_ao:
+        items.append((TextureBakeConstants.AO, TextureBakeConstants.AO,""))
+    if bpy.context.scene.TextureBake_Props.selected_thickness:
+        items.append((TextureBakeConstants.THICKNESS, TextureBakeConstants.THICKNESS,""))
+    if bpy.context.scene.TextureBake_Props.selected_curvature:
+        items.append((TextureBakeConstants.CURVATURE, TextureBakeConstants.CURVATURE,""))
+    if bpy.context.scene.TextureBake_Props.selected_lightmap:
+        items.append((TextureBakeConstants.LIGHTMAP, TextureBakeConstants.LIGHTMAP,""))
 
 
     return items
@@ -375,7 +375,7 @@ def get_selected_bakes_dropdown(self, context):
 
 
 
-class SimpleBakePropGroup(bpy.types.PropertyGroup):
+class TextureBakePropGroup(bpy.types.PropertyGroup):
 
     from bpy.props import FloatProperty
     from bpy.props import StringProperty
@@ -474,17 +474,17 @@ class SimpleBakePropGroup(bpy.types.PropertyGroup):
 
     #Specials bake types selection
     des = "ColourID Map based on random colour per material"
-    selected_col_mats: BoolProperty(name=SimpleBakeConstants.COLOURID, description=des)
+    selected_col_mats: BoolProperty(name=TextureBakeConstants.COLOURID, description=des)
     des = "Bake the active vertex colours to a texture"
-    selected_col_vertex: BoolProperty(name=SimpleBakeConstants.VERTEXCOL, description=des)
+    selected_col_vertex: BoolProperty(name=TextureBakeConstants.VERTEXCOL, description=des)
     des = "Ambient Occlusion"
-    selected_ao: BoolProperty(name=SimpleBakeConstants.AO, description=des)
+    selected_ao: BoolProperty(name=TextureBakeConstants.AO, description=des)
     des = "Thickness map"
-    selected_thickness: BoolProperty(name=SimpleBakeConstants.THICKNESS, description=des)
+    selected_thickness: BoolProperty(name=TextureBakeConstants.THICKNESS, description=des)
     des = "Curvature map"
-    selected_curvature: BoolProperty(name=SimpleBakeConstants.CURVATURE, description=des)
+    selected_curvature: BoolProperty(name=TextureBakeConstants.CURVATURE, description=des)
     des = "Lightmap map"
-    selected_lightmap: BoolProperty(name=SimpleBakeConstants.LIGHTMAP, description=des)
+    selected_lightmap: BoolProperty(name=TextureBakeConstants.LIGHTMAP, description=des)
     des = "Apply the colour management settings you have set in the render properties panel to the lightmap. Only available when you are exporting your bakes. Will be ignored if exporting to EXR files as these don't support colour management"
     lightmap_apply_colman: BoolProperty(name="Export with colour management settings", default=False, description=des)
     des = "Run lightmap through the compositor denoise node, only available when you are exporting you bakes"
@@ -493,15 +493,15 @@ class SimpleBakePropGroup(bpy.types.PropertyGroup):
     #UV related
     des = "Use Smart UV Project to create a new UV map for your objects (or target object if baking to a target). See Blender Market FAQs for more details"
     newUVoption: BoolProperty(name="New UV Map(s)", description=des, update=newUVoption_update)
-    des = "If one exists for the object being baked, use any existing UV maps called 'SimpleBake' for baking (rather than the active UV map)"
-    prefer_existing_sbmap: BoolProperty(name="Prefer existing UV maps called SimpleBake", description=des, update=prefer_existing_sbmap_update)
+    des = "If one exists for the object being baked, use any existing UV maps called 'TextureBake' for baking (rather than the active UV map)"
+    prefer_existing_sbmap: BoolProperty(name="Prefer existing UV maps called TextureBake", description=des, update=prefer_existing_sbmap_update)
     des = "New UV Method"
     newUVmethod: EnumProperty(name="New UV Method", default="SmartUVProject_Atlas", description=des, items=[
     ("SmartUVProject_Individual", "Smart UV Project (Individual)", "Each object gets a new UV map using Smart UV Project"),
     ("SmartUVProject_Atlas", "Smart UV Project (Atlas)", "Create a combined UV map (atlas map) using Smart UV Project"),
     ("CombineExisting", "Combine Active UVs (Atlas)", "Create a combined UV map (atlas map) by combining the existing, active UV maps on each object")
     ], update=newUVmethod_update)
-    des = "If you are creating new UVs, or preferring an existing UV map called SimpleBake, the UV map used for baking may not be the one you had displayed in the viewport before baking. This option restores what you had active before baking"
+    des = "If you are creating new UVs, or preferring an existing UV map called TextureBake, the UV map used for baking may not be the one you had displayed in the viewport before baking. This option restores what you had active before baking"
     restoreOrigUVmap: BoolProperty(name="Restore originally active UV map at end", description=des, default=True)
     des = "Margin to use when packing combined UVs into Atlas map"
     uvpackmargin: FloatProperty(name="Pack Margin", default=0.1, description=des)
@@ -546,7 +546,7 @@ class SimpleBakePropGroup(bpy.types.PropertyGroup):
         ("OPEN_EXR", "Open EXR", "")
         ])
     des="Name of the folder to create and save the bakes/mesh into. Created in the folder where you blend file is saved. NOTE: To maintain compatibility, only MS Windows acceptable characters will be used"
-    saveFolder: StringProperty(name="Save folder name", description=des, default="SimpleBake_Bakes", maxlen=20)
+    saveFolder: StringProperty(name="Save folder name", description=des, default="TextureBake_Bakes", maxlen=20)
     des = "Apply colour space settings (exposure, gamma etc.) from current scene when saving the diffuse image externally. Only available if you are exporting baked images. Will be ignored if exporting to EXR files as these don't support colour management"
     selected_applycolmantocol: BoolProperty(name="Export diffuse with col management settings", default = False, description=des)
     des = "Apply colour space settings (exposure, gamma etc.) from current scene when saving the image externally. Only available if you are exporting baked images. Not available if you have Cycles bake mode set to Normal.  Will be ignored if exporting to EXR files as these don't support colour management"
@@ -589,10 +589,10 @@ class SimpleBakePropGroup(bpy.types.PropertyGroup):
     batchName: StringProperty(name="Batch name", description=des, default="Bake1", maxlen=20)
     des="Create the glTF settings node group"
     createglTFnode: BoolProperty(name="Create glTF settings", description=des, default=False)
-    glTFselection: EnumProperty(name="glTF selection", default=SimpleBakeConstants.AO,
+    glTFselection: EnumProperty(name="glTF selection", default=TextureBakeConstants.AO,
     description="Which map should be plugged into the glTF settings node", items=[
-        (SimpleBakeConstants.AO, SimpleBakeConstants.AO, "Use ambient occlusion"),
-        (SimpleBakeConstants.LIGHTMAP, SimpleBakeConstants.LIGHTMAP, "Use lightmap")
+        (TextureBakeConstants.AO, TextureBakeConstants.AO, "Use ambient occlusion"),
+        (TextureBakeConstants.LIGHTMAP, TextureBakeConstants.LIGHTMAP, "Use lightmap")
         ])
 
 
@@ -605,7 +605,7 @@ class SimpleBakePropGroup(bpy.types.PropertyGroup):
 
     #Show/Hide
     showtips: BoolProperty(name="", default=False)
-    des = "Show SimpleBake presets"
+    des = "Show TextureBake presets"
     presets_show: BoolProperty(name="", description=des, default=False, update=presets_show_update)
     des = "Show bake objects"
     bake_objects_show: BoolProperty(name="", description=des, default=False, update=bake_objects_show_update)
@@ -672,16 +672,13 @@ def register():
     version = str(version[0]) + str(version[1]) + str(version[2])
     current = functions.checkAtCurrentVersion(version)
 
-    OBJECT_PT_simple_bake_panel.current = current
-    OBJECT_PT_simple_bake_panel.version = f"{str(version[0])}.{str(version[1])}.{str(version[2])}"
+    OBJECT_PT_texture_bake_panel.current = current
+    OBJECT_PT_texture_bake_panel.version = f"{str(version[0])}.{str(version[1])}.{str(version[2])}"
 
-    bpy.utils.register_class(SimpleBakePropGroup)
-
-    #Load previews
-    #functions.load_previews()
+    bpy.utils.register_class(TextureBakePropGroup)
 
     #Register property group
-    bpy.types.Scene.SimpleBake_Props = bpy.props.PointerProperty(type=SimpleBakePropGroup)
+    bpy.types.Scene.TextureBake_Props = bpy.props.PointerProperty(type=TextureBakePropGroup)
 
 
 
@@ -690,7 +687,7 @@ def unregister():
     from .bg_bake import bgbake_ops
 
     #Clear the files for any finished background bakes
-    bpy.ops.object.simple_bake_bgbake_clear()
+    bpy.ops.object.texture_bake_bgbake_clear()
 
     #Stop any running and clear files
     running = bgbake_ops.bgops_list
@@ -717,7 +714,7 @@ def unregister():
     for cls in classes:
         bpy.utils.unregister_class(cls)
 
-    del bpy.types.Scene.SimpleBake_Props
+    del bpy.types.Scene.TextureBake_Props
 
 
 if __name__ == "__main__":

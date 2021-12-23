@@ -146,8 +146,8 @@ def post_process(internal_img_name, path_dir="", path_filename="", file_format="
             node.mute=True
 
     #Set the output resolution of the scene to the texture size we are using
-    scene.render.resolution_y = bpy.context.scene.SimpleBake_Props.imgheight
-    scene.render.resolution_x = bpy.context.scene.SimpleBake_Props.imgwidth
+    scene.render.resolution_y = bpy.context.scene.TextureBake_Props.imgheight
+    scene.render.resolution_x = bpy.context.scene.TextureBake_Props.imgwidth
 
     #Render to temp file for the internal image
     tmpdir = Path(tempfile.mkdtemp())

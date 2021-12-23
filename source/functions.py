@@ -26,8 +26,8 @@ import base64
 import sys
 import tempfile
 from . import material_setup
-from .bake_operation import BakeOperation, MasterOperation, SimpleBakeConstants
-from .ui import SimpleBake_Previews
+from .bake_operation import BakeOperation, MasterOperation, TextureBakeConstants
+from .ui import TextureBake_Previews
 from .bake_operation import bakestolist
 
 
@@ -75,7 +75,7 @@ def gen_image_name(obj_name, baketype, demo=False):
 
     #The easy ones
     image_name = image_name.replace("%OBJ%", obj_name)
-    image_name = image_name.replace("%BATCH%", bpy.context.scene.SimpleBake_Props.batchName)
+    image_name = image_name.replace("%BATCH%", bpy.context.scene.TextureBake_Props.batchName)
 
     #Bake mode
     if not demo:
@@ -118,19 +118,19 @@ def gen_image_name(obj_name, baketype, demo=False):
     elif baketype == "alpha":
         image_name = image_name.replace("%BAKETYPE%", prefs.alpha_alias)
 
-    elif baketype == SimpleBakeConstants.AO:
+    elif baketype == TextureBakeConstants.AO:
         image_name = image_name.replace("%BAKETYPE%", prefs.ao_alias)
-    elif baketype == SimpleBakeConstants.LIGHTMAP:
+    elif baketype == TextureBakeConstants.LIGHTMAP:
         image_name = image_name.replace("%BAKETYPE%", prefs.lightmap_alias)
-    elif baketype == SimpleBakeConstants.COLOURID:
+    elif baketype == TextureBakeConstants.COLOURID:
         image_name = image_name.replace("%BAKETYPE%", prefs.colid_alias)
-    elif baketype == SimpleBakeConstants.CURVATURE:
+    elif baketype == TextureBakeConstants.CURVATURE:
         image_name = image_name.replace("%BAKETYPE%", prefs.curvature_alias)
 
-    elif baketype == SimpleBakeConstants.THICKNESS:
+    elif baketype == TextureBakeConstants.THICKNESS:
         image_name = image_name.replace("%BAKETYPE%", prefs.thickness_alias)
 
-    elif baketype == SimpleBakeConstants.VERTEXCOL:
+    elif baketype == TextureBakeConstants.VERTEXCOL:
         image_name = image_name.replace("%BAKETYPE%", prefs.vertexcol_alias)
 
     elif baketype == "sss":
@@ -195,8 +195,8 @@ def install_addon_update():
     try:
         #Current ver URL
         current_ver_url = base64.b64decode("aHR0cDovL3d3dy50b29oZXkuY28udWsvU2ltcGxlQmFrZS9TaW1wbGVCYWtlX0N1cnJlbnQzLnppcA==").decode("utf-8")
-        current_ver_zip_name = "SimpleBake_Curent3.zip"
-        addon_dir_name =  "SimpleBake"
+        current_ver_zip_name = "TextureBake_Curent3.zip"
+        addon_dir_name =  "TextureBake"
 
         import zipfile #only needed here
 
@@ -213,10 +213,10 @@ def install_addon_update():
         #Download new SimbleBake_Current.zip to addons folder
         printmsg("Starting download")
         urllib.request.urlretrieve(current_ver_url, current_ver_zip_name)
-        current_ver_zip_name = "SimpleBake_Curent3.zip"
+        current_ver_zip_name = "TextureBake_Curent3.zip"
         printmsg("Download complete")
 
-        #Delete current SimpleBake folder
+        #Delete current TextureBake folder
         addon_dir = addons_path / addon_dir_name
         shutil.rmtree(str(addon_dir))
 
@@ -253,23 +253,23 @@ def create_Images(imgname, thisbake, objname):
     printmsg(f"Creating image {imgname}")
 
     #Get the image height and width from the interface
-    IMGHEIGHT = bpy.context.scene.SimpleBake_Props.imgheight
-    IMGWIDTH = bpy.context.scene.SimpleBake_Props.imgwidth
+    IMGHEIGHT = bpy.context.scene.TextureBake_Props.imgheight
+    IMGWIDTH = bpy.context.scene.TextureBake_Props.imgwidth
 
     #If it already exists, remove it.
     if(imgname in bpy.data.images):
         bpy.data.images.remove(bpy.data.images[imgname])
 
     #Either way, create the new image
-    alpha = bpy.context.scene.SimpleBake_Props.useAlpha
+    alpha = bpy.context.scene.TextureBake_Props.useAlpha
 
-    all32 = bpy.context.scene.SimpleBake_Props.everything32bitfloat
-    export = bpy.context.scene.SimpleBake_Props.saveExternal
-    all16 = bpy.context.scene.SimpleBake_Props.everything16bit
+    all32 = bpy.context.scene.TextureBake_Props.everything32bitfloat
+    export = bpy.context.scene.TextureBake_Props.saveExternal
+    all16 = bpy.context.scene.TextureBake_Props.everything16bit
 
 
     #Create image 32 bit or not 32 bit
-    if thisbake == "normal" or (global_mode == SimpleBakeConstants.CYCLESBAKE and bpy.context.scene.cycles.bake_type == "NORMAL"):
+    if thisbake == "normal" or (global_mode == TextureBakeConstants.CYCLESBAKE and bpy.context.scene.cycles.bake_type == "NORMAL"):
         image = bpy.data.images.new(imgname, IMGWIDTH, IMGHEIGHT, alpha=alpha, float_buffer=True)
     elif all32:
         image = bpy.data.images.new(imgname, IMGWIDTH, IMGHEIGHT, alpha=alpha, float_buffer=True)
@@ -346,14 +346,14 @@ def createdummynodes(nodetree, thisbake):
             if(socketname == "Base Color" or socketname == "Subsurface Color"):
                 rgb = nodetree.nodes.new("ShaderNodeRGB")
                 rgb.outputs[0].default_value = val
-                rgb.label = "SimpleBake"
+                rgb.label = "TextureBake"
                 nodetree.links.new(rgb.outputs[0], psocket)
 
             #If this is anything else, use a value node
             else:
                 vnode = nodetree.nodes.new("ShaderNodeValue")
                 vnode.outputs[0].default_value = val
-                vnode.label = "SimpleBake"
+                vnode.label = "TextureBake"
                 nodetree.links.new(vnode.outputs[0], psocket)
 
 def bakeoperation(thisbake, img):
@@ -389,7 +389,7 @@ def bakeoperation(thisbake, img):
 
 
     #Adjust colour space settings (PBR only at this point)
-    #export = bpy.context.scene.SimpleBake_Props.saveExternal
+    #export = bpy.context.scene.TextureBake_Props.saveExternal
     #if thisbake != "diffuse":
         #img.colorspace_settings.name = "Non-Color"
 
@@ -424,26 +424,26 @@ def startingChecks(objects, bakemode):
     update_advanced_object_list()
 
     #This is hacky. A better way to do this needs to be found
-    advancedobj = bpy.context.scene.SimpleBake_Props.advancedobjectselection
+    advancedobj = bpy.context.scene.TextureBake_Props.advancedobjectselection
     if advancedobj:
         objects = advanced_object_selection_to_list()
 
     #Check no cp textures rely on bakes that are no longer enabled
     #Hacky
-    if bpy.context.scene.SimpleBake_Props.global_mode == "pbr_bake":
+    if bpy.context.scene.TextureBake_Props.global_mode == "pbr_bake":
         pbr_bakes = bakestolist()
-        if bpy.context.scene.SimpleBake_Props.rough_glossy_switch == "glossy":
+        if bpy.context.scene.TextureBake_Props.rough_glossy_switch == "glossy":
             pbr_bakes = ["glossy" if bake == "roughness" else bake for bake in pbr_bakes]
         special_bakes = []
-        special_bakes.append(SimpleBakeConstants.COLOURID) if bpy.context.scene.SimpleBake_Props.selected_col_mats else False
-        special_bakes.append(SimpleBakeConstants.VERTEXCOL) if bpy.context.scene.SimpleBake_Props.selected_col_vertex else False
-        special_bakes.append(SimpleBakeConstants.AO) if bpy.context.scene.SimpleBake_Props.selected_ao else False
-        special_bakes.append(SimpleBakeConstants.THICKNESS) if bpy.context.scene.SimpleBake_Props.selected_thickness else False
-        special_bakes.append(SimpleBakeConstants.CURVATURE) if bpy.context.scene.SimpleBake_Props.selected_curvature else False
-        special_bakes.append(SimpleBakeConstants.LIGHTMAP) if bpy.context.scene.SimpleBake_Props.selected_lightmap else False
+        special_bakes.append(TextureBakeConstants.COLOURID) if bpy.context.scene.TextureBake_Props.selected_col_mats else False
+        special_bakes.append(TextureBakeConstants.VERTEXCOL) if bpy.context.scene.TextureBake_Props.selected_col_vertex else False
+        special_bakes.append(TextureBakeConstants.AO) if bpy.context.scene.TextureBake_Props.selected_ao else False
+        special_bakes.append(TextureBakeConstants.THICKNESS) if bpy.context.scene.TextureBake_Props.selected_thickness else False
+        special_bakes.append(TextureBakeConstants.CURVATURE) if bpy.context.scene.TextureBake_Props.selected_curvature else False
+        special_bakes.append(TextureBakeConstants.LIGHTMAP) if bpy.context.scene.TextureBake_Props.selected_lightmap else False
         bakes = pbr_bakes + special_bakes
         bakes.append("none")
-        for cpt in bpy.context.scene.SimpleBake_Props.cp_list:
+        for cpt in bpy.context.scene.TextureBake_Props.cp_list:
             if cpt.R not in bakes:
                 messages.append(f"ERROR: Channel packed texture \"{cpt.name}\" depends on {cpt.R}, but you are no longer baking it")
             if cpt.G not in bakes:
@@ -460,7 +460,7 @@ def startingChecks(objects, bakemode):
     if len(objects) == 0:
         messages.append("ERROR: Nothing selected for bake")
         if advancedobj:
-            messages.append("NOTE: You have advanced object selection turned on, so you have to add bake objects at the top of the SimpleBake panel")
+            messages.append("NOTE: You have advanced object selection turned on, so you have to add bake objects at the top of the TextureBake panel")
             messages.append("If you want to select objects for baking in the viewport, turn off advanced object selection")
         ShowMessageBox(messages, "Errors occured", "ERROR")
         return False
@@ -469,28 +469,28 @@ def startingChecks(objects, bakemode):
     for obj in objects:
         if obj.type != "MESH":
             messages.append(f"ERROR: Object '{obj.name}' is not mesh")
-    if bpy.context.scene.SimpleBake_Props.selected_s2a and bpy.context.scene.SimpleBake_Props.targetobj != None:
-        if bpy.context.scene.SimpleBake_Props.targetobj.type != "MESH":
-            messages.append(f"ERROR: Object '{bpy.context.scene.SimpleBake_Props.targetobj.name}' (your target object) is not mesh")
-    if bpy.context.scene.SimpleBake_Props.cycles_s2a and bpy.context.scene.SimpleBake_Props.targetobj_cycles != None:
-        if bpy.context.scene.SimpleBake_Props.targetobj_cycles.type != "MESH":
-            messages.append(f"ERROR: Object '{bpy.context.scene.SimpleBake_Props.targetobj_cycles.name}' (your target object) is not mesh")
+    if bpy.context.scene.TextureBake_Props.selected_s2a and bpy.context.scene.TextureBake_Props.targetobj != None:
+        if bpy.context.scene.TextureBake_Props.targetobj.type != "MESH":
+            messages.append(f"ERROR: Object '{bpy.context.scene.TextureBake_Props.targetobj.name}' (your target object) is not mesh")
+    if bpy.context.scene.TextureBake_Props.cycles_s2a and bpy.context.scene.TextureBake_Props.targetobj_cycles != None:
+        if bpy.context.scene.TextureBake_Props.targetobj_cycles.type != "MESH":
+            messages.append(f"ERROR: Object '{bpy.context.scene.TextureBake_Props.targetobj_cycles.name}' (your target object) is not mesh")
     if len(messages) > 1:
         ShowMessageBox(messages, "Errors occured", "ERROR")
         return False
 
     #Output folder cannot be called textures
-    if bpy.context.scene.SimpleBake_Props.saveFolder.lower() == "textures":
+    if bpy.context.scene.TextureBake_Props.saveFolder.lower() == "textures":
         messages.append(f"ERROR: Unfortunately, your save folder cannot be called \"textures\" for technical reasons. Please change the name to proceed.")
         ShowMessageBox(messages, "Errors occured", "ERROR")
         return False
 
     #Check object visibility
     obj_test_list = objects.copy()
-    if bpy.context.scene.SimpleBake_Props.selected_s2a and bpy.context.scene.SimpleBake_Props.targetobj != None:
-        obj_test_list.append(bpy.context.scene.SimpleBake_Props.targetobj)
-    if bpy.context.scene.SimpleBake_Props.cycles_s2a and bpy.context.scene.SimpleBake_Props.targetobj_cycles != None:
-        obj_test_list.append(bpy.context.scene.SimpleBake_Props.targetobj_cycles)
+    if bpy.context.scene.TextureBake_Props.selected_s2a and bpy.context.scene.TextureBake_Props.targetobj != None:
+        obj_test_list.append(bpy.context.scene.TextureBake_Props.targetobj)
+    if bpy.context.scene.TextureBake_Props.cycles_s2a and bpy.context.scene.TextureBake_Props.targetobj_cycles != None:
+        obj_test_list.append(bpy.context.scene.TextureBake_Props.targetobj_cycles)
 
     for obj in obj_test_list:
         if obj.hide_viewport == True:
@@ -510,12 +510,12 @@ def startingChecks(objects, bakemode):
     for obj in objects:
         if len(obj.data.polygons) < 1:
             messages.append(f"ERROR: Object '{obj.name}' has no faces")
-    if bpy.context.scene.SimpleBake_Props.selected_s2a and bpy.context.scene.SimpleBake_Props.targetobj != None:
-        obj = bpy.context.scene.SimpleBake_Props.targetobj
+    if bpy.context.scene.TextureBake_Props.selected_s2a and bpy.context.scene.TextureBake_Props.targetobj != None:
+        obj = bpy.context.scene.TextureBake_Props.targetobj
         if len(obj.data.polygons) < 1:
             messages.append(f"ERROR: Object '{obj.name}' has no faces")
-    if bpy.context.scene.SimpleBake_Props.cycles_s2a and bpy.context.scene.SimpleBake_Props.targetobj_cycles != None:
-        obj = bpy.context.scene.SimpleBake_Props.targetobj_cycles
+    if bpy.context.scene.TextureBake_Props.cycles_s2a and bpy.context.scene.TextureBake_Props.targetobj_cycles != None:
+        obj = bpy.context.scene.TextureBake_Props.targetobj_cycles
         if len(obj.data.polygons) < 1:
             messages.append(f"ERROR: Object '{obj.name}' has no faces")
     if len(messages) > 1:
@@ -532,45 +532,45 @@ def startingChecks(objects, bakemode):
                     ShowMessageBox(messages, "Errors occured", "ERROR")
                     return False
     #glTF
-    if bpy.context.scene.SimpleBake_Props.createglTFnode:
-        if bpy.context.scene.SimpleBake_Props.glTFselection == SimpleBakeConstants.AO and not bpy.context.scene.SimpleBake_Props.selected_ao:
+    if bpy.context.scene.TextureBake_Props.createglTFnode:
+        if bpy.context.scene.TextureBake_Props.glTFselection == TextureBakeConstants.AO and not bpy.context.scene.TextureBake_Props.selected_ao:
             messages.append(f"ERROR: You have selected AO for glTF settings (in the 'Other Settings' section), but you aren't baking AO")
-        if bpy.context.scene.SimpleBake_Props.glTFselection == SimpleBakeConstants.LIGHTMAP and not bpy.context.scene.SimpleBake_Props.selected_lightmap:
+        if bpy.context.scene.TextureBake_Props.glTFselection == TextureBakeConstants.LIGHTMAP and not bpy.context.scene.TextureBake_Props.selected_lightmap:
             messages.append(f"ERROR: You have selected Lightmap for glTF settings (in the 'Other Settings' section), but you aren't baking Lightmap")
     if len(messages)>1:
         ShowMessageBox(messages, "Errors occured", "ERROR")
         return False
 
     for obj in objects:
-        if obj.name != cleanFileName(obj.name) and bpy.context.scene.SimpleBake_Props.saveExternal:
+        if obj.name != cleanFileName(obj.name) and bpy.context.scene.TextureBake_Props.saveExternal:
             prefs = bpy.context.preferences.addons[__package__].preferences
             image_name = prefs.img_name_format
             if "%OBJ%" in image_name:
                 messages.append(f"ERROR: You are trying to save external images, but object with name \"{obj.name}\" contains invalid characters for saving externally.")
 
 
-    if bpy.context.scene.SimpleBake_Props.mergedBake and bpy.context.scene.SimpleBake_Props.mergedBakeName == "":
+    if bpy.context.scene.TextureBake_Props.mergedBake and bpy.context.scene.TextureBake_Props.mergedBakeName == "":
         messages.append(f"ERROR: You are baking multiple objects to one texture set, but the texture name is blank")
 
-    if (bpy.context.scene.SimpleBake_Props.mergedBakeName != cleanFileName(bpy.context.scene.SimpleBake_Props.mergedBakeName)) and bpy.context.scene.SimpleBake_Props.saveExternal:
-        messages.append(f"ERROR: The texture name you inputted for baking multiple objects to one texture set (\"{bpy.context.scene.SimpleBake_Props.mergedBakeName}\") contains invalid characters for saving externally.")
+    if (bpy.context.scene.TextureBake_Props.mergedBakeName != cleanFileName(bpy.context.scene.TextureBake_Props.mergedBakeName)) and bpy.context.scene.TextureBake_Props.saveExternal:
+        messages.append(f"ERROR: The texture name you inputted for baking multiple objects to one texture set (\"{bpy.context.scene.TextureBake_Props.mergedBakeName}\") contains invalid characters for saving externally.")
 
     #Merged bake stuff
-    if bpy.context.scene.SimpleBake_Props.mergedBake:
-        if bpy.context.scene.SimpleBake_Props.selected_s2a: messages.append("You can't use the Bake Multiple Objects to One Texture Set option when baking to target")
-        if bpy.context.scene.SimpleBake_Props.tex_per_mat: messages.append("You can't use the Bake Multiple Objects to One Texture Set option with the Texture Per Material option")
+    if bpy.context.scene.TextureBake_Props.mergedBake:
+        if bpy.context.scene.TextureBake_Props.selected_s2a: messages.append("You can't use the Bake Multiple Objects to One Texture Set option when baking to target")
+        if bpy.context.scene.TextureBake_Props.tex_per_mat: messages.append("You can't use the Bake Multiple Objects to One Texture Set option with the Texture Per Material option")
 
-        if (bpy.context.scene.SimpleBake_Props.advancedobjectselection and len(bpy.context.scene.SimpleBake_Props.bakeobjs_advanced_list)<2) or ((not bpy.context.scene.SimpleBake_Props.advancedobjectselection) and len(bpy.context.selected_objects)<2):
+        if (bpy.context.scene.TextureBake_Props.advancedobjectselection and len(bpy.context.scene.TextureBake_Props.bakeobjs_advanced_list)<2) or ((not bpy.context.scene.TextureBake_Props.advancedobjectselection) and len(bpy.context.selected_objects)<2):
             messages.append("You have selected the Multiple Objeccts to One Texture Set option (under Texture Settings) but you don't have multiple objects selected")
 
 
     #PBR Bake Checks - No S2A
-    if bakemode == SimpleBakeConstants.PBR:
+    if bakemode == TextureBakeConstants.PBR:
 
         for obj in objects:
 
             #Are UVs OK?
-            if bpy.context.scene.SimpleBake_Props.newUVoption == False and len(obj.data.uv_layers) == 0:
+            if bpy.context.scene.TextureBake_Props.newUVoption == False and len(obj.data.uv_layers) == 0:
                 messages.append(f"ERROR: Object {obj.name} has no UVs, and you aren't generating new ones")
                 continue
 
@@ -602,12 +602,12 @@ def startingChecks(objects, bakemode):
                         # #Try and fix if we aren't already
                         # if not op_running:
                             # op_running = True
-                            # bpy.ops.object.simple_bake_popnodegroups()
+                            # bpy.ops.object.texture_bake_popnodegroups()
                             # print("Operator just ran")
                             # time.sleep(3)
 
     #PBR Bake - S2A
-    if bakemode == SimpleBakeConstants.PBRS2A:
+    if bakemode == TextureBakeConstants.PBRS2A:
 
         #These checkes are done on all selected objects (not just the target)-----------
 
@@ -617,7 +617,7 @@ def startingChecks(objects, bakemode):
                 printmsg(f"{obj.name} has invalid material config - fixing")
                 fix_invalid_material_config(obj)
         #Check the taget object too
-        target = bpy.context.scene.SimpleBake_Props.targetobj
+        target = bpy.context.scene.TextureBake_Props.targetobj
         if not checkObjectValidMaterialConfig(target):
             fix_invalid_material_config(target)
 
@@ -638,12 +638,12 @@ def startingChecks(objects, bakemode):
         if len(messages) == 0:
 
             #From this point onward, we only care about the target object
-            obj = bpy.context.scene.SimpleBake_Props.targetobj
+            obj = bpy.context.scene.TextureBake_Props.targetobj
 
 
             #Do we have a target object?
-            if bpy.context.scene.SimpleBake_Props.targetobj == None:
-                messages.append("ERROR: You are trying to bake to a target object with PBR Bake, but you have not selected one in the SimpleBake panel")
+            if bpy.context.scene.TextureBake_Props.targetobj == None:
+                messages.append("ERROR: You are trying to bake to a target object with PBR Bake, but you have not selected one in the TextureBake panel")
                 ShowMessageBox(messages, "Errors occured", "ERROR")
                 return False
 
@@ -655,7 +655,7 @@ def startingChecks(objects, bakemode):
 
 
             #Are UVs OK?
-            if bpy.context.scene.SimpleBake_Props.newUVoption == False and len(obj.data.uv_layers) == 0:
+            if bpy.context.scene.TextureBake_Props.newUVoption == False and len(obj.data.uv_layers) == 0:
                 messages.append(f"ERROR: Object {obj.name} has no UVs, and you aren't generating new ones")
                 ShowMessageBox(messages, "Errors occured", "ERROR")
                 return False
@@ -673,22 +673,22 @@ def startingChecks(objects, bakemode):
 
 
     #Cycles Bake - No S2A
-    if bakemode == SimpleBakeConstants.CYCLESBAKE and not bpy.context.scene.SimpleBake_Props.cycles_s2a:
+    if bakemode == TextureBakeConstants.CYCLESBAKE and not bpy.context.scene.TextureBake_Props.cycles_s2a:
 
         #First lets check for old users using the old method
         if bpy.context.scene.render.bake.use_selected_to_active:
-            messages.append(f"ERROR: It looks like you are trying to bake selected to active. To do this with SimpleBake, use the option on the SimpleBake panel. You don’t need to worry about the setting in the Blender bake panel.")
+            messages.append(f"ERROR: It looks like you are trying to bake selected to active. To do this with TextureBake, use the option on the TextureBake panel. You don’t need to worry about the setting in the Blender bake panel.")
 
         for obj in objects:
 
             #Are UVs OK?
-            if not bpy.context.scene.SimpleBake_Props.tex_per_mat:
-                if bpy.context.scene.SimpleBake_Props.newUVoption == False and len(obj.data.uv_layers) == 0:
+            if not bpy.context.scene.TextureBake_Props.tex_per_mat:
+                if bpy.context.scene.TextureBake_Props.newUVoption == False and len(obj.data.uv_layers) == 0:
                     messages.append(f"ERROR: Object {obj.name} has no UVs, and you aren't generating new ones")
                     ShowMessageBox(messages, "Errors occured", "ERROR")
                     return False
             else:
-                if bpy.context.scene.SimpleBake_Props.expand_mat_uvs == False and len(obj.data.uv_layers) == 0:
+                if bpy.context.scene.TextureBake_Props.expand_mat_uvs == False and len(obj.data.uv_layers) == 0:
                     messages.append(f"ERROR: Object {obj.name} has no UVs, and you aren't generating new ones")
                     ShowMessageBox(messages, "Errors occured", "ERROR")
                     return False
@@ -700,11 +700,11 @@ def startingChecks(objects, bakemode):
 
 
     #Cycles Bake - S2A
-    if bakemode == SimpleBakeConstants.CYCLESBAKE and bpy.context.scene.SimpleBake_Props.cycles_s2a:
+    if bakemode == TextureBakeConstants.CYCLESBAKE and bpy.context.scene.TextureBake_Props.cycles_s2a:
 
 
         #We only care about the target object
-        obj = bpy.context.scene.SimpleBake_Props.targetobj_cycles
+        obj = bpy.context.scene.TextureBake_Props.targetobj_cycles
 
         #Do we actually have an active object?
         if obj == None:
@@ -719,7 +719,7 @@ def startingChecks(objects, bakemode):
             return False
 
         #Are UVs OK?
-        elif bpy.context.scene.SimpleBake_Props.newUVoption == False and len(obj.data.uv_layers) == 0:
+        elif bpy.context.scene.TextureBake_Props.newUVoption == False and len(obj.data.uv_layers) == 0:
             messages.append(f"ERROR: Object {obj.name} has no UVs, and you aren't generating new ones")
             ShowMessageBox(messages, "Errors occured", "ERROR")
             return False
@@ -730,24 +730,24 @@ def startingChecks(objects, bakemode):
 
 
     #Specials Bake
-    if bpy.context.scene.SimpleBake_Props.selected_col_vertex:
+    if bpy.context.scene.TextureBake_Props.selected_col_vertex:
 
-        if bakemode == SimpleBakeConstants.SPECIALS:
+        if bakemode == TextureBakeConstants.SPECIALS:
             for obj in objects:
                 if len(obj.data.vertex_colors) == 0:
                     messages.append(f"You are trying to bake the active vertex colours, but object {obj.name} doesn't have vertex colours")
                     ShowMessageBox(messages, "Errors occured", "ERROR")
                     return False
 
-        if bakemode == SimpleBakeConstants.SPECIALS_CYCLES_TARGET_ONLY:
-            t = bpy.context.scene.SimpleBake_Props.targetobj_cycles
+        if bakemode == TextureBakeConstants.SPECIALS_CYCLES_TARGET_ONLY:
+            t = bpy.context.scene.TextureBake_Props.targetobj_cycles
             if len(t.data.vertex_colors) == 0:
                 messages.append(f"You are trying to bake the active vertex colours, but object {t.name} doesn't have vertex colours")
                 ShowMessageBox(messages, "Errors occured", "ERROR")
                 return False
 
-        if bakemode == SimpleBakeConstants.SPECIALS_PBR_TARGET_ONLY:
-            t = bpy.context.scene.SimpleBake_Props.targetobj
+        if bakemode == TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY:
+            t = bpy.context.scene.TextureBake_Props.targetobj
             if len(t.data.vertex_colors) == 0:
                 messages.append(f"You are trying to bake the active vertex colours, but object {t.name} doesn't have vertex colours")
                 ShowMessageBox(messages, "Errors occured", "ERROR")
@@ -785,17 +785,17 @@ def processUVS():
 
     #------------------NEW UVS ------------------------------------------------------------
 
-    if bpy.context.scene.SimpleBake_Props.expand_mat_uvs:
+    if bpy.context.scene.TextureBake_Props.expand_mat_uvs:
         printmsg("We are expanding the UVs for each material into a new UV map")
         bpy.ops.object.select_all(action="DESELECT")
 
         for obj in current_bake_op.bake_objects:
 
-            if("SimpleBake" in obj.data.uv_layers):
-                obj.data.uv_layers.remove(obj.data.uv_layers["SimpleBake"])
+            if("TextureBake" in obj.data.uv_layers):
+                obj.data.uv_layers.remove(obj.data.uv_layers["TextureBake"])
 
-            obj.data.uv_layers.new(name="SimpleBake")
-            obj.data.uv_layers["SimpleBake"].active = True
+            obj.data.uv_layers.new(name="TextureBake")
+            obj.data.uv_layers["TextureBake"].active = True
             obj.select_set(state=True)
 
             selectOnlyThis(obj)
@@ -810,30 +810,30 @@ def processUVS():
                 obj.active_material_index = i
                 bpy.ops.mesh.select_all(action="DESELECT")
                 bpy.ops.object.material_slot_select()
-                bpy.ops.uv.smart_project(island_margin=bpy.context.scene.SimpleBake_Props.unwrapmargin)
+                bpy.ops.uv.smart_project(island_margin=bpy.context.scene.TextureBake_Props.unwrapmargin)
                 i += 1
 
             bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
-    elif bpy.context.scene.SimpleBake_Props.newUVoption:
+    elif bpy.context.scene.TextureBake_Props.newUVoption:
         printmsg("We are generating new UVs")
         #Slight hack. Single object must always be Smart UV Project (nothing else makes sense)
-        if len(current_bake_op.bake_objects) < 2 or (bpy.context.scene.SimpleBake_Props.selected_s2a or bpy.context.scene.SimpleBake_Props.cycles_s2a):
-            bpy.context.scene.SimpleBake_Props.newUVmethod = "SmartUVProject_Individual"
+        if len(current_bake_op.bake_objects) < 2 or (bpy.context.scene.TextureBake_Props.selected_s2a or bpy.context.scene.TextureBake_Props.cycles_s2a):
+            bpy.context.scene.TextureBake_Props.newUVmethod = "SmartUVProject_Individual"
 
         #If we are using the combine method, the process is the same for merged and non-merged
-        if bpy.context.scene.SimpleBake_Props.newUVmethod == "CombineExisting":
+        if bpy.context.scene.TextureBake_Props.newUVmethod == "CombineExisting":
             printmsg("We are combining all existing UVs into one big atlas map")
             for obj in current_bake_op.bake_objects:
                 #If there is already an old map, remove it
-                if "SimpleBake_Old" in obj.data.uv_layers:
-                    obj.data.uv_layers.remove(obj.data.uv_layers["SimpleBake_Old"])
-                #If we already have a map called SimpleBake, rename it.
-                if("SimpleBake" in obj.data.uv_layers):
-                    obj.data.uv_layers["SimpleBake"].name = "SimpleBake_Old"
-                #Create a new UVMap called SimpleBake based on whatever was active
-                obj.data.uv_layers.new(name="SimpleBake")
-                obj.data.uv_layers["SimpleBake"].active = True
+                if "TextureBake_Old" in obj.data.uv_layers:
+                    obj.data.uv_layers.remove(obj.data.uv_layers["TextureBake_Old"])
+                #If we already have a map called TextureBake, rename it.
+                if("TextureBake" in obj.data.uv_layers):
+                    obj.data.uv_layers["TextureBake"].name = "TextureBake_Old"
+                #Create a new UVMap called TextureBake based on whatever was active
+                obj.data.uv_layers.new(name="TextureBake")
+                obj.data.uv_layers["TextureBake"].active = True
 
             bpy.ops.object.select_all(action="DESELECT")
             for obj in current_bake_op.bake_objects:
@@ -859,26 +859,26 @@ def processUVS():
 
             bpy.ops.mesh.select_all(action="SELECT")
             bpy.ops.uv.select_all(action="SELECT")
-            if bpy.context.scene.SimpleBake_Props.averageUVsize:
+            if bpy.context.scene.TextureBake_Props.averageUVsize:
                 bpy.ops.uv.average_islands_scale()
-            bpy.ops.uv.pack_islands(rotate=True, margin=bpy.context.scene.SimpleBake_Props.uvpackmargin)
+            bpy.ops.uv.pack_islands(rotate=True, margin=bpy.context.scene.TextureBake_Props.uvpackmargin)
             bpy.ops.object.mode_set(mode="OBJECT", toggle=False)
 
-        elif bpy.context.scene.SimpleBake_Props.newUVmethod == "SmartUVProject_Individual":
+        elif bpy.context.scene.TextureBake_Props.newUVmethod == "SmartUVProject_Individual":
             printmsg("We are unwrapping each object individually with Smart UV Project")
             obs = []
-            if bpy.context.scene.SimpleBake_Props.selected_s2a:
+            if bpy.context.scene.TextureBake_Props.selected_s2a:
                 objs = [current_bake_op.sb_target_object]
-            elif bpy.context.scene.SimpleBake_Props.cycles_s2a:
+            elif bpy.context.scene.TextureBake_Props.cycles_s2a:
                 objs = [current_bake_op.sb_target_object_cycles]
             else:
                 objs = current_bake_op.bake_objects
 
             for obj in objs:
-                if("SimpleBake" in obj.data.uv_layers):
-                    obj.data.uv_layers.remove(obj.data.uv_layers["SimpleBake"])
-                obj.data.uv_layers.new(name="SimpleBake")
-                obj.data.uv_layers["SimpleBake"].active = True
+                if("TextureBake" in obj.data.uv_layers):
+                    obj.data.uv_layers.remove(obj.data.uv_layers["TextureBake"])
+                obj.data.uv_layers.new(name="TextureBake")
+                obj.data.uv_layers["TextureBake"].active = True
                 #Will set active object
                 selectOnlyThis(obj)
 
@@ -889,18 +889,18 @@ def processUVS():
                 bpy.ops.mesh.select_all(action="SELECT")
                 bpy.ops.mesh.reveal()
 
-                bpy.ops.uv.smart_project(island_margin=bpy.context.scene.SimpleBake_Props.unwrapmargin)
+                bpy.ops.uv.smart_project(island_margin=bpy.context.scene.TextureBake_Props.unwrapmargin)
 
                 bpy.ops.object.mode_set(mode="OBJECT", toggle=False)
 
-        elif bpy.context.scene.SimpleBake_Props.newUVmethod == "SmartUVProject_Atlas":
+        elif bpy.context.scene.TextureBake_Props.newUVmethod == "SmartUVProject_Atlas":
             printmsg("We are unwrapping all objects into an atlas map with Smart UV Project")
             bpy.ops.object.select_all(action="DESELECT")
             for obj in current_bake_op.bake_objects:
-                if("SimpleBake" in obj.data.uv_layers):
-                    obj.data.uv_layers.remove(obj.data.uv_layers["SimpleBake"])
-                obj.data.uv_layers.new(name="SimpleBake")
-                obj.data.uv_layers["SimpleBake"].active = True
+                if("TextureBake" in obj.data.uv_layers):
+                    obj.data.uv_layers.remove(obj.data.uv_layers["TextureBake"])
+                obj.data.uv_layers.new(name="TextureBake")
+                obj.data.uv_layers["TextureBake"].active = True
                 obj.select_set(state=True)
             #With everything now selected, UV project into one big map
 
@@ -923,7 +923,7 @@ def processUVS():
             bpy.ops.mesh.select_all(action="SELECT")
             o =  bpy.context.scene.tool_settings.use_uv_select_sync
 
-            bpy.ops.uv.smart_project(island_margin=bpy.context.scene.SimpleBake_Props.unwrapmargin)
+            bpy.ops.uv.smart_project(island_margin=bpy.context.scene.TextureBake_Props.unwrapmargin)
 
             #Pack islands one last time as the aspect ratio can throw it off
             bpy.context.scene.tool_settings.use_uv_select_sync = True
@@ -937,11 +937,11 @@ def processUVS():
     else: #i.e. New UV Option was not selected
         printmsg("We are working with the existing UVs")
 
-        if bpy.context.scene.SimpleBake_Props.prefer_existing_sbmap:
-            printmsg("We are preferring existing UV maps called SimpleBake. Setting them to active")
+        if bpy.context.scene.TextureBake_Props.prefer_existing_sbmap:
+            printmsg("We are preferring existing UV maps called TextureBake. Setting them to active")
             for obj in current_bake_op.bake_objects:
-                if("SimpleBake" in obj.data.uv_layers):
-                    obj.data.uv_layers["SimpleBake"].active = True
+                if("TextureBake" in obj.data.uv_layers):
+                    obj.data.uv_layers["TextureBake"].active = True
 
 
     #Before we finish, restore the original selected and active objects
@@ -989,7 +989,7 @@ def setupEmissionRunThrough(nodetree, m_output_node, thisbake, ismix=False):
 
     #Create emission shader
     emissnode = nodes.new("ShaderNodeEmission")
-    emissnode.label = "SimpleBake"
+    emissnode.label = "TextureBake"
 
     #Connect to output
     if(ismix):
@@ -998,7 +998,7 @@ def setupEmissionRunThrough(nodetree, m_output_node, thisbake, ismix=False):
 
         #Add a mix shader node and label it
         mnode = nodes.new("ShaderNodeMixShader")
-        mnode.label = "SimpleBake"
+        mnode.label = "TextureBake"
 
         #Connect new mix node to the output
         fromsocket = mnode.outputs[0]
@@ -1019,7 +1019,7 @@ def setupEmissionRunThrough(nodetree, m_output_node, thisbake, ismix=False):
         else:
             val = existing_m_node.inputs[0].default_value
             vnode = nodes.new("ShaderNodeValue")
-            vnode.label = "SimpleBake"
+            vnode.label = "TextureBake"
             vnode.outputs[0].default_value = val
 
             fromsocket = vnode.outputs[0]
@@ -1114,16 +1114,16 @@ def getSaveFolder(initialise = False, relative = False):
         pathelements = os.path.split(fullpath)
         workingdir = Path(pathelements[0])
 
-        if bpy.context.scene.SimpleBake_Props.folderdatetime:
+        if bpy.context.scene.TextureBake_Props.folderdatetime:
             from datetime import datetime
             now = datetime.now()
             d1 = now.strftime("%d%m%Y-%H%M")
 
-            g_rel_save_folder = cleanFileName(bpy.context.scene.SimpleBake_Props.saveFolder) + f"_{d1}"
+            g_rel_save_folder = cleanFileName(bpy.context.scene.TextureBake_Props.saveFolder) + f"_{d1}"
             savedir = workingdir / g_rel_save_folder
 
         else:
-            g_rel_save_folder = cleanFileName(bpy.context.scene.SimpleBake_Props.saveFolder)
+            g_rel_save_folder = cleanFileName(bpy.context.scene.TextureBake_Props.saveFolder)
             savedir = workingdir / g_rel_save_folder
 
         g_save_folder = savedir
@@ -1154,7 +1154,7 @@ def checkAtCurrentVersion(v):
 
     #Grab the most recent version from my website
     from urllib.request import urlopen
-    link = "http://www.toohey.co.uk/SimpleBake/currentversion3"
+    link = "http://www.toohey.co.uk/TextureBake/currentversion3"
 
     try:
         f = urlopen(link, timeout=2)
@@ -1164,7 +1164,7 @@ def checkAtCurrentVersion(v):
         cver = int(cver)
 
     except:
-        printmsg("Unable to check for latest version of SimpleBake - are you online?")
+        printmsg("Unable to check for latest version of TextureBake - are you online?")
         cver = v
         return "ERROR"
 
@@ -1207,24 +1207,24 @@ def saveExternal(image, baketype, obj):
     current_bake_op = MasterOperation.current_bake_operation
 
     #Firstly, work out if we want denoising or not
-    if current_bake_op.bake_mode == SimpleBakeConstants.CYCLESBAKE and bpy.context.scene.SimpleBake_Props.rundenoise:
+    if current_bake_op.bake_mode == TextureBakeConstants.CYCLESBAKE and bpy.context.scene.TextureBake_Props.rundenoise:
         need_denoise = True
-    elif current_bake_op.bake_mode in [SimpleBakeConstants.SPECIALS, SimpleBakeConstants.SPECIALS_CYCLES_TARGET_ONLY, \
-        SimpleBakeConstants.SPECIALS_PBR_TARGET_ONLY] and \
-        baketype == SimpleBakeConstants.LIGHTMAP and bpy.context.scene.SimpleBake_Props.selected_lightmap_denoise:
+    elif current_bake_op.bake_mode in [TextureBakeConstants.SPECIALS, TextureBakeConstants.SPECIALS_CYCLES_TARGET_ONLY, \
+        TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY] and \
+        baketype == TextureBakeConstants.LIGHTMAP and bpy.context.scene.TextureBake_Props.selected_lightmap_denoise:
         need_denoise = True
     else:
         need_denoise = False
 
     #We want to control the bit depth, so we need a new scene
-    scene = bpy.data.scenes.new('SimpleBakeTempScene')
+    scene = bpy.data.scenes.new('TextureBakeTempScene')
     settings = scene.render.image_settings
 
 
     #Colour management settings
-    dcm_opt = bpy.context.scene.SimpleBake_Props.selected_applycolmantocol
+    dcm_opt = bpy.context.scene.TextureBake_Props.selected_applycolmantocol
 
-    if current_bake_op.bake_mode in [SimpleBakeConstants.PBR, SimpleBakeConstants.PBRS2A] and (baketype == "diffuse" or baketype == "emission") :
+    if current_bake_op.bake_mode in [TextureBakeConstants.PBR, TextureBakeConstants.PBRS2A] and (baketype == "diffuse" or baketype == "emission") :
         if dcm_opt:
             printmsg("Applying colour management settings from current scene for PBR diffuse or emission")
             apply_scene_col_settings(scene)
@@ -1232,18 +1232,18 @@ def saveExternal(image, baketype, obj):
             printmsg("Applying standard colour management for PBR diffuse or emission")
             scene.view_settings.view_transform = "Standard"
 
-    elif current_bake_op.bake_mode in [SimpleBakeConstants.PBR, SimpleBakeConstants.PBRS2A]:
+    elif current_bake_op.bake_mode in [TextureBakeConstants.PBR, TextureBakeConstants.PBRS2A]:
         printmsg("Applying raw colour space for PBR non-diffuse texture")
         scene.view_settings.view_transform = "Raw"
         scene.sequencer_colorspace_settings.name = "Non-Color"
 
-    elif current_bake_op.bake_mode == SimpleBakeConstants.CYCLESBAKE:
+    elif current_bake_op.bake_mode == TextureBakeConstants.CYCLESBAKE:
         if bpy.context.scene.cycles.bake_type == "NORMAL":
             printmsg("Raw colour space for CyclesBake normal map")
             scene.view_settings.view_transform = "Raw"
             scene.sequencer_colorspace_settings.name = "Non-Color"
 
-        elif bpy.context.scene.SimpleBake_Props.exportcyclescolspace:
+        elif bpy.context.scene.TextureBake_Props.exportcyclescolspace:
             printmsg("Applying colour management settings from current scene for CyclesBake")
             apply_scene_col_settings(scene)
         else:
@@ -1251,12 +1251,12 @@ def saveExternal(image, baketype, obj):
             printmsg("Applying standard colour management for CyclesBake")
             scene.view_settings.view_transform = "Standard"
 
-    elif baketype == SimpleBakeConstants.LIGHTMAP and bpy.context.scene.SimpleBake_Props.lightmap_apply_colman:
+    elif baketype == TextureBakeConstants.LIGHTMAP and bpy.context.scene.TextureBake_Props.lightmap_apply_colman:
         printmsg("Applying colour management settings from current scene for Lightmap")
         apply_scene_col_settings(scene)
 
 
-    elif current_bake_op.bake_mode in [SimpleBakeConstants.SPECIALS, SimpleBakeConstants.SPECIALS_PBR_TARGET_ONLY, SimpleBakeConstants.SPECIALS_CYCLES_TARGET_ONLY]:
+    elif current_bake_op.bake_mode in [TextureBakeConstants.SPECIALS, TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY, TextureBakeConstants.SPECIALS_CYCLES_TARGET_ONLY]:
         printmsg("Raw colour space for Specials")
         scene.view_settings.view_transform = "Raw"
         scene.sequencer_colorspace_settings.name = "Non-Color"
@@ -1268,7 +1268,7 @@ def saveExternal(image, baketype, obj):
 
 
     #Set the scene file format. Variable contains valid internal names for Blender file formats, so this is OK
-    settings.file_format = bpy.context.scene.SimpleBake_Props.exportfileformat
+    settings.file_format = bpy.context.scene.TextureBake_Props.exportfileformat
 
     #Now, work out the file extension we need to use
     #Adjust file extension if needed (plus some extra options for EXR)
@@ -1290,7 +1290,7 @@ def saveExternal(image, baketype, obj):
         settings.color_depth = '8'
     elif (baketype == "normal" or baketype == "cyclesbake" and bpy.context.scene.cycles.bake_type == "NORMAL") and file_extension != "exr":
         settings.color_depth = '16'
-    elif bpy.context.scene.SimpleBake_Props.everything16bit and file_extension != "exr":
+    elif bpy.context.scene.TextureBake_Props.everything16bit and file_extension != "exr":
         settings.color_depth = '16'
     elif file_extension == "exr":
         settings.color_depth = '32'
@@ -1301,10 +1301,10 @@ def saveExternal(image, baketype, obj):
 
 
     #Work out path to save to, and remove previous file if there is one
-    if bpy.context.scene.SimpleBake_Props.exportFolderPerObject and bpy.context.scene.SimpleBake_Props.mergedBake and bpy.context.scene.SimpleBake_Props.mergedBakeName != "":
-        savepath = Path(str(getSaveFolder()) + "/" + bpy.context.scene.SimpleBake_Props.mergedBakeName + "/" + (cleanFileName(image.name) + "." + file_extension))
+    if bpy.context.scene.TextureBake_Props.exportFolderPerObject and bpy.context.scene.TextureBake_Props.mergedBake and bpy.context.scene.TextureBake_Props.mergedBakeName != "":
+        savepath = Path(str(getSaveFolder()) + "/" + bpy.context.scene.TextureBake_Props.mergedBakeName + "/" + (cleanFileName(image.name) + "." + file_extension))
 
-    elif bpy.context.scene.SimpleBake_Props.exportFolderPerObject and obj != None:
+    elif bpy.context.scene.TextureBake_Props.exportFolderPerObject and obj != None:
         savepath = Path(str(getSaveFolder()) + "/" + obj.name + "/" + (cleanFileName(image.name) + "." + file_extension))
 
     else:
@@ -1316,7 +1316,7 @@ def saveExternal(image, baketype, obj):
         pass
 
     #Set the image file format. Variable contains valid internal names for Blender file formats, so this is OK
-    image.file_format = bpy.context.scene.SimpleBake_Props.exportfileformat
+    image.file_format = bpy.context.scene.TextureBake_Props.exportfileformat
 
 
     #Time to save
@@ -1339,8 +1339,8 @@ def saveExternal(image, baketype, obj):
     links = scene.node_tree.links
 
     #Set the output resolution of the scene to the texture size we are using
-    scene.render.resolution_y = bpy.context.scene.SimpleBake_Props.outputheight
-    scene.render.resolution_x = bpy.context.scene.SimpleBake_Props.outputwidth
+    scene.render.resolution_y = bpy.context.scene.TextureBake_Props.outputheight
+    scene.render.resolution_x = bpy.context.scene.TextureBake_Props.outputwidth
 
     #No denoising, minimal setup
     if not need_denoise:
@@ -1369,19 +1369,19 @@ def saveExternal(image, baketype, obj):
         pass
     image.source = "FILE"
     #Let's use a relative path. Shouldn't matter in the end.
-    if bpy.context.scene.SimpleBake_Props.exportFolderPerObject and bpy.context.scene.SimpleBake_Props.mergedBake and bpy.context.scene.SimpleBake_Props.mergedBakeName != "":
-        image.filepath = str(getSaveFolder(relative=True)) +"/" + bpy.context.scene.SimpleBake_Props.mergedBakeName + "/" + image.name + "." + file_extension
-    elif bpy.context.scene.SimpleBake_Props.exportFolderPerObject and obj != None:
+    if bpy.context.scene.TextureBake_Props.exportFolderPerObject and bpy.context.scene.TextureBake_Props.mergedBake and bpy.context.scene.TextureBake_Props.mergedBakeName != "":
+        image.filepath = str(getSaveFolder(relative=True)) +"/" + bpy.context.scene.TextureBake_Props.mergedBakeName + "/" + image.name + "." + file_extension
+    elif bpy.context.scene.TextureBake_Props.exportFolderPerObject and obj != None:
         image.filepath = str(getSaveFolder(relative=True)) +"/" + obj.name + "/" + image.name + "." + file_extension
     else:
         image.filepath = str(getSaveFolder(relative=True)) +"/" + image.name + "." + file_extension
 
 
     #UDIMS
-    if bpy.context.scene.SimpleBake_Props.uv_mode == "udims":
+    if bpy.context.scene.TextureBake_Props.uv_mode == "udims":
 
         #Is this the last one?
-        if int(image.name[-3:]) == bpy.context.scene.SimpleBake_Props.udim_tiles:
+        if int(image.name[-3:]) == bpy.context.scene.TextureBake_Props.udim_tiles:
             #This is the last one
 
             #We will need the tags later
@@ -1428,7 +1428,7 @@ def saveExternal(image, baketype, obj):
 
     elif originally_float and\
      (image["SB_thisbake"] == "diffuse" or\
-     current_bake_op.bake_mode == SimpleBakeConstants.CYCLESBAKE and bpy.context.scene.cycles.bake_type in ["COMBINED", "DIFFUSE"]):
+     current_bake_op.bake_mode == TextureBakeConstants.CYCLESBAKE and bpy.context.scene.cycles.bake_type in ["COMBINED", "DIFFUSE"]):
         image.colorspace_settings.name = "sRGB"
 
 
@@ -1455,21 +1455,21 @@ def prepObjects(objs, baketype):
         new_obj["SB_createdfrom"] = obj.name
 
         #Unless we are baking tex per mat OR we want to preserve the materials, clear all materials
-        if bpy.context.scene.SimpleBake_Props.preserve_materials:
+        if bpy.context.scene.TextureBake_Props.preserve_materials:
             pass
 
         else:
-            if not bpy.context.scene.SimpleBake_Props.tex_per_mat:
+            if not bpy.context.scene.TextureBake_Props.tex_per_mat:
                 new_obj.data.materials.clear()
 
 
         #Set the name of our new object
-        new_obj.name = objname + "_SimpleBake"
+        new_obj.name = objname + "_TextureBake"
 
 
         #Create a collection for our baked objects if it doesn't exist
-        if "SimpleBake_Bakes" not in bpy.data.collections:
-            c = bpy.data.collections.new("SimpleBake_Bakes")
+        if "TextureBake_Bakes" not in bpy.data.collections:
+            c = bpy.data.collections.new("TextureBake_Bakes")
             bpy.context.scene.collection.children.link(c)
             try:
                 c.color_tag = "COLOR_05"
@@ -1478,9 +1478,9 @@ def prepObjects(objs, baketype):
 
 
         #Make sure it's visible and enabled for current view laywer or it screws things up
-        bpy.context.view_layer.layer_collection.children["SimpleBake_Bakes"].exclude = False
-        bpy.context.view_layer.layer_collection.children["SimpleBake_Bakes"].hide_viewport = False
-        c = bpy.data.collections["SimpleBake_Bakes"]
+        bpy.context.view_layer.layer_collection.children["TextureBake_Bakes"].exclude = False
+        bpy.context.view_layer.layer_collection.children["TextureBake_Bakes"].hide_viewport = False
+        c = bpy.data.collections["TextureBake_Bakes"]
 
 
         #Link object to our new collection
@@ -1494,36 +1494,36 @@ def prepObjects(objs, baketype):
         #---------------------------------UVS--------------------------------------
 
         uvlayers = new_obj.data.uv_layers
-        #If we generated new UVs, it will be called "SimpleBake" and we are using that. End of.
+        #If we generated new UVs, it will be called "TextureBake" and we are using that. End of.
         #Same if we are being called for Sketchfab upload, and last bake used new UVs
-        if bpy.context.scene.SimpleBake_Props.newUVoption:
+        if bpy.context.scene.TextureBake_Props.newUVoption:
             pass
 
-        #If there is an existing map called SimpleBake, and we are preferring it, use that
-        elif ("SimpleBake" in uvlayers) and bpy.context.scene.SimpleBake_Props.prefer_existing_sbmap:
+        #If there is an existing map called TextureBake, and we are preferring it, use that
+        elif ("TextureBake" in uvlayers) and bpy.context.scene.TextureBake_Props.prefer_existing_sbmap:
             pass
 
-        #Even if we are not preferring it, if there is just one map called SimpleBake, we are using that
-        elif ("SimpleBake" in uvlayers) and len(uvlayers) <2:
+        #Even if we are not preferring it, if there is just one map called TextureBake, we are using that
+        elif ("TextureBake" in uvlayers) and len(uvlayers) <2:
             pass
 
-        #If there is an existing map called SimpleBake, and we are not preferring it, it has to go
-        #Active map becommes SimpleBake
-        elif ("SimpleBake" in uvlayers) and not bpy.context.scene.SimpleBake_Props.prefer_existing_sbmap:
-            uvlayers.remove(uvlayers["SimpleBake"])
+        #If there is an existing map called TextureBake, and we are not preferring it, it has to go
+        #Active map becommes TextureBake
+        elif ("TextureBake" in uvlayers) and not bpy.context.scene.TextureBake_Props.prefer_existing_sbmap:
+            uvlayers.remove(uvlayers["TextureBake"])
             active_layer = uvlayers.active
-            active_layer.name = "SimpleBake"
+            active_layer.name = "TextureBake"
 
         #Finally, if none of the above apply, we are just using the active map
-        #Active map becommes SimpleBake
+        #Active map becommes TextureBake
         else:
             active_layer = uvlayers.active
-            active_layer.name = "SimpleBake"
+            active_layer.name = "TextureBake"
 
-        #In all cases, we can now delete everything other than SimpleBake
+        #In all cases, we can now delete everything other than TextureBake
         deletelist = []
         for uvlayer in uvlayers:
-            if (uvlayer.name != "SimpleBake"):
+            if (uvlayer.name != "TextureBake"):
                 deletelist.append(uvlayer.name)
         for uvname in deletelist:
             uvlayers.remove(uvlayers[uvname])
@@ -1531,9 +1531,9 @@ def prepObjects(objs, baketype):
     #---------------------------------END UVS--------------------------------------
 
         #Tex per mat will preserve existing materials
-        if not bpy.context.scene.SimpleBake_Props.tex_per_mat:
+        if not bpy.context.scene.TextureBake_Props.tex_per_mat:
 
-            if bpy.context.scene.SimpleBake_Props.preserve_materials:
+            if bpy.context.scene.TextureBake_Props.preserve_materials:
                 #Copy existing materials, and rename them
                 for slot in new_obj.material_slots:
                     mat_name = slot.material.name
@@ -1554,15 +1554,15 @@ def prepObjects(objs, baketype):
 
                 #Create a new material
                 #If not mergedbake, call it same as object + batchname + baked
-                if not bpy.context.scene.SimpleBake_Props.mergedBake:
-                    mat = bpy.data.materials.get(objname + "_" + bpy.context.scene.SimpleBake_Props.batchName + "_baked")
+                if not bpy.context.scene.TextureBake_Props.mergedBake:
+                    mat = bpy.data.materials.get(objname + "_" + bpy.context.scene.TextureBake_Props.batchName + "_baked")
                     if mat is None:
-                        mat = bpy.data.materials.new(name=objname + "_" + bpy.context.scene.SimpleBake_Props.batchName +"_baked")
+                        mat = bpy.data.materials.new(name=objname + "_" + bpy.context.scene.TextureBake_Props.batchName +"_baked")
                 #For merged bake, it's the user specified name + batchname.
                 else:
-                    mat = bpy.data.materials.get(bpy.context.scene.SimpleBake_Props.mergedBakeName + "_" + bpy.context.scene.SimpleBake_Props.batchName)
+                    mat = bpy.data.materials.get(bpy.context.scene.TextureBake_Props.mergedBakeName + "_" + bpy.context.scene.TextureBake_Props.batchName)
                     if mat is None:
-                        mat = bpy.data.materials.new(bpy.context.scene.SimpleBake_Props.mergedBakeName + "_" + bpy.context.scene.SimpleBake_Props.batchName)
+                        mat = bpy.data.materials.new(bpy.context.scene.TextureBake_Props.mergedBakeName + "_" + bpy.context.scene.TextureBake_Props.batchName)
 
                 # Assign it to object
                 mat.use_nodes = True
@@ -1570,32 +1570,32 @@ def prepObjects(objs, baketype):
 
 
     #Tex per material should have no material setup (as prepare objects is not an option)
-    if not bpy.context.scene.SimpleBake_Props.tex_per_mat:
+    if not bpy.context.scene.TextureBake_Props.tex_per_mat:
 
         #Set up the materials for each object
         for obj in export_objects:
 
 
-            if bpy.context.scene.SimpleBake_Props.preserve_materials: #Object will have multiple materials
+            if bpy.context.scene.TextureBake_Props.preserve_materials: #Object will have multiple materials
                 for slot in obj.material_slots:
                     mat = slot.material
                     nodetree = mat.node_tree
 
-                    if(baketype in {SimpleBakeConstants.PBR, SimpleBakeConstants.PBRS2A}):
+                    if(baketype in {TextureBakeConstants.PBR, TextureBakeConstants.PBRS2A}):
                         material_setup.create_principled_setup(nodetree, obj)
-                    if baketype == SimpleBakeConstants.CYCLESBAKE:
+                    if baketype == TextureBakeConstants.CYCLESBAKE:
                         material_setup.create_cyclesbake_setup(nodetree, obj)
             else: #Should only have one material
                 mat = obj.material_slots[0].material
                 nodetree = mat.node_tree
 
-                if(baketype in {SimpleBakeConstants.PBR, SimpleBakeConstants.PBRS2A}):
+                if(baketype in {TextureBakeConstants.PBR, TextureBakeConstants.PBRS2A}):
                     material_setup.create_principled_setup(nodetree, obj)
-                if baketype == SimpleBakeConstants.CYCLESBAKE:
+                if baketype == TextureBakeConstants.CYCLESBAKE:
                     material_setup.create_cyclesbake_setup(nodetree, obj)
 
             #Change object name to avoid collisions
-            obj.name = obj.name.replace("_SimpleBake", "_Baked")
+            obj.name = obj.name.replace("_TextureBake", "_Baked")
 
 
     #Deselect all objects
@@ -1603,27 +1603,27 @@ def prepObjects(objs, baketype):
 
 
     #If we are exporting to FBX, do that now
-    if(bpy.context.scene.SimpleBake_Props.saveObj):
-        mod_option = bpy.context.scene.SimpleBake_Props.applymodsonmeshexport
-        applytransform_option = bpy.context.scene.SimpleBake_Props.applytransformation
+    if(bpy.context.scene.TextureBake_Props.saveObj):
+        mod_option = bpy.context.scene.TextureBake_Props.applymodsonmeshexport
+        applytransform_option = bpy.context.scene.TextureBake_Props.applytransformation
 
         #Single FBX
-        if not bpy.context.scene.SimpleBake_Props.exportFolderPerObject:
+        if not bpy.context.scene.TextureBake_Props.exportFolderPerObject:
             for obj in export_objects:
                 obj.select_set(state=True)
 
             #Use the file name that the user defined
-            filepath = getSaveFolder() / (cleanFileName(bpy.context.scene.SimpleBake_Props.fbxName) + ".fbx")
+            filepath = getSaveFolder() / (cleanFileName(bpy.context.scene.TextureBake_Props.fbxName) + ".fbx")
             bpy.ops.export_scene.fbx(filepath=str(filepath), check_existing=False, use_selection=True,
                 use_mesh_modifiers=mod_option, bake_space_transform=applytransform_option, path_mode="STRIP")
 
         #Folder per FBX
         else:
-            if bpy.context.scene.SimpleBake_Props.mergedBake:
+            if bpy.context.scene.TextureBake_Props.mergedBake:
                 bpy.ops.object.select_all(action="DESELECT")
                 for obj in export_objects:
                     obj.select_set(state=True)
-                filepath = getSaveFolder() / (cleanFileName(bpy.context.scene.SimpleBake_Props.mergedBakeName)) / (cleanFileName(bpy.context.scene.SimpleBake_Props.mergedBakeName) + ".fbx")
+                filepath = getSaveFolder() / (cleanFileName(bpy.context.scene.TextureBake_Props.mergedBakeName)) / (cleanFileName(bpy.context.scene.TextureBake_Props.mergedBakeName) + ".fbx")
                 bpy.ops.export_scene.fbx(filepath=str(filepath), check_existing=False, use_selection=True,
                     use_mesh_modifiers=mod_option, path_mode="STRIP", bake_space_transform=applytransform_option)
 
@@ -1636,7 +1636,7 @@ def prepObjects(objs, baketype):
                         use_mesh_modifiers=mod_option, path_mode="STRIP", bake_space_transform=applytransform_option)
 
 
-    if (not bpy.context.scene.SimpleBake_Props.prepmesh) and (not "--background" in sys.argv):
+    if (not bpy.context.scene.TextureBake_Props.prepmesh) and (not "--background" in sys.argv):
         #Deleted duplicated objects
         for obj in export_objects:
             bpy.data.objects.remove(obj)
@@ -1663,7 +1663,7 @@ def setup_pure_p_material(nodetree, thisbake):
 
     #Create an emission shader
     emissnode = nodes.new("ShaderNodeEmission")
-    emissnode.label = "SimpleBake"
+    emissnode.label = "TextureBake"
     emissnode.location = loc
     emissnode.location.y = emissnode.location.y + 200
 
@@ -1684,7 +1684,7 @@ def setup_pure_e_material(nodetree, thisbake):
         for node in nodes:
             if node.type == "EMISSION":
                 node.mute = True
-                node.label = "SimpleBakeMuted"
+                node.label = "TextureBakeMuted"
 
 def setup_mix_material(nodetree, thisbake):
     #No need to mute emission nodes. They are automuted by setting the RGBMix to black
@@ -1700,7 +1700,7 @@ def setup_mix_material(nodetree, thisbake):
         if node.type == "MIX_SHADER":
             loc = node.location
             rgbmix = nodetree.nodes.new("ShaderNodeMixRGB")
-            rgbmix.label = "SimpleBake"
+            rgbmix.label = "TextureBake"
             rgbmix.location = loc
             rgbmix.location.y = rgbmix.location.y + 200
 
@@ -1714,7 +1714,7 @@ def setup_mix_material(nodetree, thisbake):
             else:
                 val = node.inputs[0].default_value
                 vnode = nodes.new("ShaderNodeValue")
-                vnode.label = "SimpleBake"
+                vnode.label = "TextureBake"
                 vnode.outputs[0].default_value = val
 
                 fromsocket = vnode.outputs[0]
@@ -1779,7 +1779,7 @@ def setup_mix_material(nodetree, thisbake):
 
     #Create an emission shader
     emissnode = nodes.new("ShaderNodeEmission")
-    emissnode.label = "SimpleBake"
+    emissnode.label = "TextureBake"
     emissnode.location = loc
     emissnode.location.y = emissnode.location.y + 200
 
@@ -1814,41 +1814,41 @@ def is_image_single_colour(img):
 def import_needed_specials_materials(justcount = False):
     ordered_specials = []
     path = os.path.dirname(__file__) + "/materials/materials.blend\\Material\\"
-    if(bpy.context.scene.SimpleBake_Props.selected_thickness):
-        if "SimpleBake_"+SimpleBakeConstants.THICKNESS not in bpy.data.materials:
-            material_name = "SimpleBake_"+SimpleBakeConstants.THICKNESS
+    if(bpy.context.scene.TextureBake_Props.selected_thickness):
+        if "TextureBake_"+TextureBakeConstants.THICKNESS not in bpy.data.materials:
+            material_name = "TextureBake_"+TextureBakeConstants.THICKNESS
             if not justcount:
                 bpy.ops.wm.append(filename=material_name, directory=path)
-            ordered_specials.append(SimpleBakeConstants.THICKNESS)
+            ordered_specials.append(TextureBakeConstants.THICKNESS)
         else:
-            ordered_specials.append(SimpleBakeConstants.THICKNESS)
+            ordered_specials.append(TextureBakeConstants.THICKNESS)
 
-    if(bpy.context.scene.SimpleBake_Props.selected_ao):
-        if "SimpleBake_"+SimpleBakeConstants.AO not in bpy.data.materials:
-            material_name = "SimpleBake_"+SimpleBakeConstants.AO
+    if(bpy.context.scene.TextureBake_Props.selected_ao):
+        if "TextureBake_"+TextureBakeConstants.AO not in bpy.data.materials:
+            material_name = "TextureBake_"+TextureBakeConstants.AO
             if not justcount:
                 bpy.ops.wm.append(filename=material_name, directory=path)
-            ordered_specials.append(SimpleBakeConstants.AO)
+            ordered_specials.append(TextureBakeConstants.AO)
         else:
-            ordered_specials.append(SimpleBakeConstants.AO)
+            ordered_specials.append(TextureBakeConstants.AO)
 
-    if(bpy.context.scene.SimpleBake_Props.selected_curvature):
-        if "SimpleBake"+SimpleBakeConstants.CURVATURE not in bpy.data.materials:
-            material_name = "SimpleBake_"+SimpleBakeConstants.CURVATURE
+    if(bpy.context.scene.TextureBake_Props.selected_curvature):
+        if "TextureBake"+TextureBakeConstants.CURVATURE not in bpy.data.materials:
+            material_name = "TextureBake_"+TextureBakeConstants.CURVATURE
             if not justcount:
                 bpy.ops.wm.append(filename=material_name, directory=path)
-            ordered_specials.append(SimpleBakeConstants.CURVATURE)
+            ordered_specials.append(TextureBakeConstants.CURVATURE)
         else:
-            ordered_specials.append(SimpleBakeConstants.CURVATURE)
+            ordered_specials.append(TextureBakeConstants.CURVATURE)
 
-    if(bpy.context.scene.SimpleBake_Props.selected_lightmap):
-        if "SimpleBake_"+SimpleBakeConstants.LIGHTMAP not in bpy.data.materials:
-            material_name = "SimpleBake_"+SimpleBakeConstants.LIGHTMAP
+    if(bpy.context.scene.TextureBake_Props.selected_lightmap):
+        if "TextureBake_"+TextureBakeConstants.LIGHTMAP not in bpy.data.materials:
+            material_name = "TextureBake_"+TextureBakeConstants.LIGHTMAP
             if not justcount:
                 bpy.ops.wm.append(filename=material_name, directory=path)
-            ordered_specials.append(SimpleBakeConstants.LIGHTMAP)
+            ordered_specials.append(TextureBakeConstants.LIGHTMAP)
         else:
-            ordered_specials.append(SimpleBakeConstants.LIGHTMAP)
+            ordered_specials.append(TextureBakeConstants.LIGHTMAP)
 
 
     #return the list of specials
@@ -1911,7 +1911,7 @@ def write_bake_progress(current_operation, total_operations):
 
 
     t = Path(tempfile.gettempdir())
-    t = t / f"SimpleBake_Bgbake_{os.getpid()}"
+    t = t / f"TextureBake_Bgbake_{os.getpid()}"
 
     with open(str(t), "w") as progfile:
         progfile.write(str(progress))
@@ -2054,14 +2054,14 @@ def checkMatsValidforPBR(mat):
 
 def advanced_object_selection_to_list():
     objs = []
-    for li in bpy.context.scene.SimpleBake_Props.bakeobjs_advanced_list:
+    for li in bpy.context.scene.TextureBake_Props.bakeobjs_advanced_list:
         objs.append(li.obj_point)
 
     return objs
 
 def update_advanced_object_list():
 
-    my_list = bpy.context.scene.SimpleBake_Props.bakeobjs_advanced_list
+    my_list = bpy.context.scene.TextureBake_Props.bakeobjs_advanced_list
 
     gone = []
     for li in my_list:
@@ -2093,11 +2093,11 @@ def deselect_all_not_mesh():
 
 def fix_invalid_material_config(obj):
 
-    if "SimpleBake_Placeholder" in bpy.data.materials:
-        mat = bpy.data.materials["SimpleBake_Placeholder"]
+    if "TextureBake_Placeholder" in bpy.data.materials:
+        mat = bpy.data.materials["TextureBake_Placeholder"]
     else:
-        mat = bpy.data.materials.new("SimpleBake_Placeholder")
-        bpy.data.materials["SimpleBake_Placeholder"].use_nodes = True
+        mat = bpy.data.materials.new("TextureBake_Placeholder")
+        bpy.data.materials["TextureBake_Placeholder"].use_nodes = True
 
     # Assign it to object
     if len(obj.material_slots) > 0:
@@ -2163,15 +2163,15 @@ def sacle_image_if_needed(img):
     width = img.size[0]
     height = img.size[1]
 
-    proposed_width = bpy.context.scene.SimpleBake_Props.outputwidth
-    proposed_height = bpy.context.scene.SimpleBake_Props.outputheight
+    proposed_width = bpy.context.scene.TextureBake_Props.outputwidth
+    proposed_height = bpy.context.scene.TextureBake_Props.outputheight
 
     if width != proposed_width or height != proposed_height:
         img.scale(proposed_width, proposed_height)
 
 def set_image_internal_col_space(image, thisbake):
 
-    if thisbake == SimpleBakeConstants.CYCLESBAKE:
+    if thisbake == TextureBakeConstants.CYCLESBAKE:
         if bpy.context.scene.cycles.bake_type not in ["COMBINED", "DIFFUSE"]:
             image.colorspace_settings.name = "Non-Color"
 
@@ -2182,7 +2182,7 @@ def set_image_internal_col_space(image, thisbake):
 def check_for_render_inactive_modifiers():
 
     #This is hacky. A better way to do this needs to be found
-    advancedobj = bpy.context.scene.SimpleBake_Props.advancedobjectselection
+    advancedobj = bpy.context.scene.TextureBake_Props.advancedobjectselection
     if advancedobj:
         objects = advanced_object_selection_to_list()
     else:
@@ -2192,13 +2192,13 @@ def check_for_render_inactive_modifiers():
         for mod in obj.modifiers:
             if mod.show_render and not mod.show_viewport:
                 return True
-    if bpy.context.scene.SimpleBake_Props.selected_s2a and bpy.context.scene.SimpleBake_Props.targetobj != None:
-        for mod in bpy.context.scene.SimpleBake_Props.targetobj.modifiers:
+    if bpy.context.scene.TextureBake_Props.selected_s2a and bpy.context.scene.TextureBake_Props.targetobj != None:
+        for mod in bpy.context.scene.TextureBake_Props.targetobj.modifiers:
             if mod.show_render and not mod.show_viewport:
                 return True
 
-    if bpy.context.scene.SimpleBake_Props.cycles_s2a and bpy.context.scene.SimpleBake_Props.targetobj_cycles != None:
-        for mod in bpy.context.scene.SimpleBake_Props.targetobj_cycles.modifiers:
+    if bpy.context.scene.TextureBake_Props.cycles_s2a and bpy.context.scene.TextureBake_Props.targetobj_cycles != None:
+        for mod in bpy.context.scene.TextureBake_Props.targetobj_cycles.modifiers:
             if mod.show_render and not mod.show_viewport:
                 return True
 
@@ -2207,7 +2207,7 @@ def check_for_render_inactive_modifiers():
 def check_for_viewport_inactive_modifiers():
 
     #This is hacky. A better way to do this needs to be found
-    advancedobj = bpy.context.scene.SimpleBake_Props.advancedobjectselection
+    advancedobj = bpy.context.scene.TextureBake_Props.advancedobjectselection
     if advancedobj:
         objects = advanced_object_selection_to_list()
     else:
@@ -2217,13 +2217,13 @@ def check_for_viewport_inactive_modifiers():
         for mod in obj.modifiers:
             if mod.show_viewport and not mod.show_render:
                 return True
-    if bpy.context.scene.SimpleBake_Props.selected_s2a and bpy.context.scene.SimpleBake_Props.targetobj != None:
-        for mod in bpy.context.scene.SimpleBake_Props.targetobj.modifiers:
+    if bpy.context.scene.TextureBake_Props.selected_s2a and bpy.context.scene.TextureBake_Props.targetobj != None:
+        for mod in bpy.context.scene.TextureBake_Props.targetobj.modifiers:
             if mod.show_viewport and not mod.show_render:
                 return True
 
-    if bpy.context.scene.SimpleBake_Props.cycles_s2a and bpy.context.scene.SimpleBake_Props.targetobj_cycles != None:
-        for mod in bpy.context.scene.SimpleBake_Props.targetobj_cycles.modifiers:
+    if bpy.context.scene.TextureBake_Props.cycles_s2a and bpy.context.scene.TextureBake_Props.targetobj_cycles != None:
+        for mod in bpy.context.scene.TextureBake_Props.targetobj_cycles.modifiers:
             if mod.show_viewport and not mod.show_render:
                 return True
 
@@ -2232,23 +2232,15 @@ def check_for_viewport_inactive_modifiers():
 
 def any_specials():
 
-    if bpy.context.scene.SimpleBake_Props.selected_col_mats: return True
-    if bpy.context.scene.SimpleBake_Props.selected_col_vertex: return True
-    if bpy.context.scene.SimpleBake_Props.selected_ao: return True
-    if bpy.context.scene.SimpleBake_Props.selected_thickness: return True
-    if bpy.context.scene.SimpleBake_Props.selected_curvature: return True
-    if bpy.context.scene.SimpleBake_Props.selected_lightmap: return True
+    if bpy.context.scene.TextureBake_Props.selected_col_mats: return True
+    if bpy.context.scene.TextureBake_Props.selected_col_vertex: return True
+    if bpy.context.scene.TextureBake_Props.selected_ao: return True
+    if bpy.context.scene.TextureBake_Props.selected_thickness: return True
+    if bpy.context.scene.TextureBake_Props.selected_curvature: return True
+    if bpy.context.scene.TextureBake_Props.selected_lightmap: return True
 
     return False
 
-
-def load_previews():
-    pcoll = bpy.utils.previews.new()
-    my_icons_dir = Path(os.path.dirname(__file__)) / "icons"
-    pcoll.load("SimpleBake_Logo", str(my_icons_dir / "logo.png"), 'IMAGE')
-
-
-    SimpleBake_Previews.pcoll = pcoll
 
 def auto_set_bake_margin():
 
@@ -2256,7 +2248,7 @@ def auto_set_bake_margin():
 
     multiplier = 4
 
-    current_width = context.scene.SimpleBake_Props.imgwidth
+    current_width = context.scene.TextureBake_Props.imgwidth
     margin = (current_width / 1024) * multiplier
     margin = round(margin, 0)
 

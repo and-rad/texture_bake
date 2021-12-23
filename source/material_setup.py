@@ -67,7 +67,7 @@ def get_image_from_tag(thisbake, objname):
 
     objname = functions.untrunc_if_needed(objname)
 
-    batch_name = bpy.context.scene.SimpleBake_Props.batchName
+    batch_name = bpy.context.scene.TextureBake_Props.batchName
 
     result = []
     if current_bake_op.uv_mode == "udims":
@@ -103,7 +103,7 @@ def create_cyclesbake_setup(nodetree, obj):
     if MasterOperation.merged_bake:
         name = MasterOperation.merged_bake_name
     else:
-        name = obj.name.replace("_SimpleBake", "")
+        name = obj.name.replace("_TextureBake", "")
     nodes = nodetree.nodes
 
     #First we wipe out any existing nodes
@@ -129,7 +129,7 @@ def create_cyclesbake_setup(nodetree, obj):
     wipe_labels(nodes)
 
         #Create node group if we want it
-    if bpy.context.scene.SimpleBake_Props.createglTFnode:
+    if bpy.context.scene.TextureBake_Props.createglTFnode:
 
         if "glTF Settings" not in bpy.data.node_groups:
             g = bpy.data.node_groups.new("glTF Settings", "ShaderNodeTree")
@@ -151,10 +151,10 @@ def create_cyclesbake_setup(nodetree, obj):
 
 # def create_colmap_setup(nodetree, obj):
 
-    # if(bpy.context.scene.SimpleBake_Props.mergedBake):
+    # if(bpy.context.scene.TextureBake_Props.mergedBake):
         # obj_name = "MergedBake"
     # else:
-        # obj_name = obj.name.replace("_SimpleBake", "")
+        # obj_name = obj.name.replace("_TextureBake", "")
     # nodes = nodetree.nodes
 
     # #First we wipe out any existing nodes
@@ -186,14 +186,14 @@ def create_principled_setup(nodetree, obj):
     functions.printmsg("Creating principled material")
 
     #Take note of whether or not the images were saved externally
-    save_external = bpy.context.scene.SimpleBake_Props.saveExternal
+    save_external = bpy.context.scene.TextureBake_Props.saveExternal
 
     nodes = nodetree.nodes
 
-    if(bpy.context.scene.SimpleBake_Props.mergedBake):
-        obj_name = bpy.context.scene.SimpleBake_Props.mergedBakeName
+    if(bpy.context.scene.TextureBake_Props.mergedBake):
+        obj_name = bpy.context.scene.TextureBake_Props.mergedBakeName
     else:
-        obj_name = obj.name.replace("_SimpleBake", "")
+        obj_name = obj.name.replace("_TextureBake", "")
 
 
     #First we wipe out any existing nodes
@@ -212,7 +212,7 @@ def create_principled_setup(nodetree, obj):
     node.location = (659.590027, 192.059998)
     node.label = "monode"
 
-    if(bpy.context.scene.SimpleBake_Props.selected_emission):
+    if(bpy.context.scene.TextureBake_Props.selected_emission):
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-566.83667, -87.645897)
@@ -221,7 +221,7 @@ def create_principled_setup(nodetree, obj):
         node.image = image
 
     #OpenGL Normal Map
-    if(bpy.context.scene.SimpleBake_Props.selected_normal and bpy.context.scene.SimpleBake_Props.normal_format_switch == "opengl"):
+    if(bpy.context.scene.TextureBake_Props.selected_normal and bpy.context.scene.TextureBake_Props.normal_format_switch == "opengl"):
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-566.83667, -374.788513)
@@ -230,7 +230,7 @@ def create_principled_setup(nodetree, obj):
         node.image = image
 
     #DirectX Normal Map
-    if(bpy.context.scene.SimpleBake_Props.selected_normal and bpy.context.scene.SimpleBake_Props.normal_format_switch == "directx"):
+    if(bpy.context.scene.TextureBake_Props.selected_normal and bpy.context.scene.TextureBake_Props.normal_format_switch == "directx"):
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-1087.9599609375, -374.78851318359375)
@@ -253,7 +253,7 @@ def create_principled_setup(nodetree, obj):
         node.hide = True
         node.label = "normal_Yinvert"
 
-    if(bpy.context.scene.SimpleBake_Props.selected_alpha):
+    if(bpy.context.scene.TextureBake_Props.selected_alpha):
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-566.83667, -190.841217)
@@ -261,7 +261,7 @@ def create_principled_setup(nodetree, obj):
         image = get_image_from_tag("alpha", obj_name)
         node.image = image
 
-    if(bpy.context.scene.SimpleBake_Props.selected_transrough):
+    if(bpy.context.scene.TextureBake_Props.selected_transrough):
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-566.83667, 45.946487)
@@ -269,7 +269,7 @@ def create_principled_setup(nodetree, obj):
         image = get_image_from_tag("transparencyroughness", obj_name)
         node.image = image
 
-    if(bpy.context.scene.SimpleBake_Props.selected_trans):
+    if(bpy.context.scene.TextureBake_Props.selected_trans):
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-566.83667, 101.945831)
@@ -277,7 +277,7 @@ def create_principled_setup(nodetree, obj):
         image = get_image_from_tag("transparency", obj_name)
         node.image = image
 
-    if(bpy.context.scene.SimpleBake_Props.selected_col):
+    if(bpy.context.scene.TextureBake_Props.selected_col):
         image = get_image_from_tag("diffuse", obj_name)
         #if functions.is_image_single_colour(image):
             #functions.printmsg("Single col detected")
@@ -291,7 +291,7 @@ def create_principled_setup(nodetree, obj):
 
 
     #Roughness
-    if(bpy.context.scene.SimpleBake_Props.selected_rough and bpy.context.scene.SimpleBake_Props.rough_glossy_switch == "rough"):
+    if(bpy.context.scene.TextureBake_Props.selected_rough and bpy.context.scene.TextureBake_Props.rough_glossy_switch == "rough"):
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-566.83667, 411.958191)
@@ -300,7 +300,7 @@ def create_principled_setup(nodetree, obj):
         node.image = image
 
     #Glossy
-    if(bpy.context.scene.SimpleBake_Props.selected_rough and bpy.context.scene.SimpleBake_Props.rough_glossy_switch == "glossy"):
+    if(bpy.context.scene.TextureBake_Props.selected_rough and bpy.context.scene.TextureBake_Props.rough_glossy_switch == "glossy"):
         #We need an invert node
         node = nodes.new("ShaderNodeInvert")
         node.hide = True
@@ -316,7 +316,7 @@ def create_principled_setup(nodetree, obj):
         node.image = image
 
 
-    if(bpy.context.scene.SimpleBake_Props.selected_metal):
+    if(bpy.context.scene.TextureBake_Props.selected_metal):
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-566.83667, 521.816956)
@@ -324,7 +324,7 @@ def create_principled_setup(nodetree, obj):
         image = get_image_from_tag("metalness", obj_name)
         node.image = image
 
-    if(bpy.context.scene.SimpleBake_Props.selected_clearcoat):
+    if(bpy.context.scene.TextureBake_Props.selected_clearcoat):
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-566.83667, 281.322052)
@@ -332,7 +332,7 @@ def create_principled_setup(nodetree, obj):
         image = get_image_from_tag("clearcoat", obj_name)
         node.image = image
 
-    if(bpy.context.scene.SimpleBake_Props.selected_clearcoat_rough):
+    if(bpy.context.scene.TextureBake_Props.selected_clearcoat_rough):
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-566.83667, 224.522537)
@@ -341,7 +341,7 @@ def create_principled_setup(nodetree, obj):
         node.image = image
 
 
-    if(bpy.context.scene.SimpleBake_Props.selected_specular):
+    if(bpy.context.scene.TextureBake_Props.selected_specular):
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-566.83667, 472.24707)
@@ -349,7 +349,7 @@ def create_principled_setup(nodetree, obj):
         image = get_image_from_tag("specular", obj_name)
         node.image = image
 
-    if(bpy.context.scene.SimpleBake_Props.selected_sss):
+    if(bpy.context.scene.TextureBake_Props.selected_sss):
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-862.2991943359375, 375.0651550292969)
@@ -357,7 +357,7 @@ def create_principled_setup(nodetree, obj):
         image = get_image_from_tag("sss", obj_name)
         node.image = image
 
-    if(bpy.context.scene.SimpleBake_Props.selected_ssscol):
+    if(bpy.context.scene.TextureBake_Props.selected_ssscol):
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-862.2991943359375, 327.94659423828125)
@@ -368,7 +368,7 @@ def create_principled_setup(nodetree, obj):
 
 #-----------------------------------------------------------------
 
-    if(bpy.context.scene.SimpleBake_Props.selected_normal):
+    if(bpy.context.scene.TextureBake_Props.selected_normal):
 
         node = nodes.new("ShaderNodeNormalMap")
         node.location = (-118.290894, -295.719452)
@@ -380,7 +380,7 @@ def create_principled_setup(nodetree, obj):
     make_link("col_tex", "Color", "pnode", "Base Color", nodetree)
     make_link("metal_tex", "Color", "pnode", "Metallic", nodetree)
 
-    if(bpy.context.scene.SimpleBake_Props.selected_rough and bpy.context.scene.SimpleBake_Props.rough_glossy_switch == "glossy"):
+    if(bpy.context.scene.TextureBake_Props.selected_rough and bpy.context.scene.TextureBake_Props.rough_glossy_switch == "glossy"):
         #Need the invert for glossy
         make_link("roughness_tex", "Color", "roughness_invert", "Color", nodetree)
         make_link("roughness_invert", "Color", "pnode", "Roughness", nodetree)
@@ -392,12 +392,12 @@ def create_principled_setup(nodetree, obj):
     make_link("transmissionrough_tex", "Color", "pnode", "Transmission Roughness", nodetree)
 
     #OpenGL Normal Map
-    if(bpy.context.scene.SimpleBake_Props.selected_normal and bpy.context.scene.SimpleBake_Props.normal_format_switch == "opengl"):
+    if(bpy.context.scene.TextureBake_Props.selected_normal and bpy.context.scene.TextureBake_Props.normal_format_switch == "opengl"):
         make_link("normal_tex", "Color", "normalmap", "Color", nodetree)
         make_link("normalmap", "Normal", "pnode", "Normal", nodetree)
 
     #DirectX Normal Map
-    if(bpy.context.scene.SimpleBake_Props.selected_normal and bpy.context.scene.SimpleBake_Props.normal_format_switch == "directx"):
+    if(bpy.context.scene.TextureBake_Props.selected_normal and bpy.context.scene.TextureBake_Props.normal_format_switch == "directx"):
         make_link("normal_tex", "Color", "normal_RGBsep", "Image", nodetree)
         make_link("normal_RGBsep", "R", "normal_RGBcombine", "R", nodetree)
         make_link("normal_RGBsep", "B", "normal_RGBcombine", "B", nodetree)
@@ -422,7 +422,7 @@ def create_principled_setup(nodetree, obj):
     #glTF Settings Node
 
     #Create node group if we want it
-    if bpy.context.scene.SimpleBake_Props.createglTFnode:
+    if bpy.context.scene.TextureBake_Props.createglTFnode:
 
         if "glTF Settings" not in bpy.data.node_groups:
             g = bpy.data.node_groups.new("glTF Settings", "ShaderNodeTree")

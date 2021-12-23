@@ -76,7 +76,7 @@ def upload(model_file, uploadname, apikey):
 
     # Optional parameters
     name = uploadname
-    description = 'Uploaded with SimpleBake for Blender 2.8'
+    description = 'Uploaded with TextureBake for Blender 2.8'
     #password = 'my-password'  # requires a pro account
     #private = 1  # requires a pro account
     #tags = ['bob', 'character', 'video-games']  # Array of tags
