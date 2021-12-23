@@ -23,23 +23,42 @@ def bakestolist(justcount = False):
     else:
         return selectedbakes
 
-class BakeOperation:
+class SimpleBakeConstants:
     
     #Constants
-    PBR = "pbr"
-    PBRS2A = "pbrs2a"
-    CYCLESBAKE = "cyclesbake"
-    SPECIALS = "specials"
+    PBR = "PBR"
+    PBRS2A = "PBR StoA"
+    CYCLESBAKE = "CyclesBake"
+    SPECIALS = "Specials"
     SPECIALS_PBR_TARGET_ONLY = "specials_pbr_targetonly"
     SPECIALS_CYCLES_TARGET_ONLY = "specials_cycles_targetonly"
     
+    #PBR names - NOT YET USED
+    PBR_DIFFUSE = "Diffuse"
+    PBR_METAL = "Metalness"
+    PBR_SSS = "SSS"
+    PBR_SSSCOL = "SSS Colour"
+    PBR_ROUGHNESS = "Roughness"
+    PBR_GLOSSY = "Glossiness"
+    PBR_NORMAL = "Normal"
+    PBR_TRANSMISSION = "Transmission"
+    PBR_TRANSMISSION_ROUGH = "Transmission Roughness"
+    PBR_CLEARCOAT = "Clearcoat"
+    PBR_CLEARCOAT_ROUGH = "Clearcoat Roughness"
+    PBR_EMISSION = "Emission"
+    PBR_SPECULAR = "Specular"
+    PBR_ALPHA = "Alpha"
+    
     #Specials names
-    THICKNESS = "thickness"
-    AO = "ambientocclusion"
-    CURVATURE = "curvature"
-    COLOURID = "colid"
-    VERTEXCOL = "vertexcol"
-    LIGHTMAP = "lightmap"
+    THICKNESS = "Thickness"
+    AO = "Ambient Occlusion"
+    CURVATURE = "Curvature"
+    COLOURID = "Colour ID"
+    VERTEXCOL = "Vertex Colour"
+    LIGHTMAP = "Lightmap"
+
+
+class BakeOperation:
     
     
     def __init__(self):
@@ -47,7 +66,7 @@ class BakeOperation:
         
         
         #Mapping of object name to active UVs
-        self.bake_mode = BakeOperation.PBR #So the example in the user prefs will work
+        self.bake_mode = SimpleBakeConstants.PBR #So the example in the user prefs will work
         self.bake_objects = []
         self.active_object = None
         self.sb_target_object = None
@@ -93,6 +112,8 @@ class MasterOperation:
     orig_tile_size = 0
     
     orig_textures_folder = False
+    
+    
     
     
     def clear():

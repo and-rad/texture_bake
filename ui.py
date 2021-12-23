@@ -4,6 +4,7 @@ import tempfile
 from . import functions
 from . import bakefunctions
 from .bg_bake import bgbake_ops
+from .bake_operation import SimpleBakeConstants
 
 
 from bpy.props import StringProperty, IntProperty, CollectionProperty, PointerProperty
@@ -129,7 +130,6 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
         #--------------Supported version message------------------------
         n = bpy.app.version_string
         mvn = n.split(".")[0]
-        print(mvn)
         if int(mvn) < 3:
             box = layout.box()
             row = box.row()
@@ -356,7 +356,6 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
     
                 elif cscene.bake_type == 'COMBINED':
     
-                    #col = layout.column(heading="Lighting", align=True)
                     col.prop(cbk, "use_pass_direct")
                     col.prop(cbk, "use_pass_indirect")
         
@@ -425,9 +424,9 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                 row.alignment = "RIGHT"
                 row.prop(context.scene.cycles, "samples")
                 
-                row = box.row()
-                row.alignment = "RIGHT"
-                row.prop(context.scene.cycles, "use_square_samples")
+                # row = box.row()
+                # row.alignment = "RIGHT"
+                # row.prop(context.scene.cycles, "use_square_samples")
             
             if bpy.context.scene.SimpleBake_Props.selected_lightmap:
             
@@ -900,49 +899,80 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
             
             if bpy.context.scene.SimpleBake_Props.channelpacking_show:
             
-                
-                row = box.row()
-                #row.prop(context.scene.SimpleBake_Props, "pack_master_switch", text="Do channel packing")
-                #if not context.scene.SimpleBake_Props.saveExternal:
-                    #row.enabled=False
-                                
+                if not functions.isBlendSaved():
             
+                    row=box.row()
+                    row.label(text="Unavailable - Blend file not saved")
+            
+                elif not bpy.context.scene.SimpleBake_Props.saveExternal:
+        
+                    row=box.row()
+                    row.label(text="Unavailable - You must be exporting your bakes")
+        
+                else:
                 
-                row = box.row()
-                #row.alignment = "RIGHT"
-                row.prop(context.scene.SimpleBake_Props, "unity_lit_shader")
-                if not (context.scene.SimpleBake_Props.selected_metal and context.scene.SimpleBake_Props.selected_ao and context.scene.SimpleBake_Props.selected_rough\
-                    and context.scene.SimpleBake_Props.rough_glossy_switch == "glossy"):
-                    row.enabled=False
-                if not context.scene.SimpleBake_Props.saveExternal:
-                    row.enabled=False
-                
-                row = box.row()
-                row.prop(context.scene.SimpleBake_Props, "unity_legacy_diffuse_shader")
-                if not context.scene.SimpleBake_Props.selected_alpha or not context.scene.SimpleBake_Props.selected_col:
-                    row.enabled=False
-                if not context.scene.SimpleBake_Props.saveExternal:
-                    row.enabled=False
+                    row=box.row()
+                    col = row.column()
+            
+                    col.template_list("CPTEX_UL_List", "CP Textures List", context.scene.SimpleBake_Props,
+                                          "cp_list", context.scene.SimpleBake_Props, "cp_list_index")
+                    col = row.column()
+                    col.operator("object.simple_bake_cptex_delete", text="", icon="CANCEL")
+                    col.operator("object.simple_bake_cptex_setdefaults", text="", icon="MONKEY")
                     
-                
-                row=box.row()    
-                row.prop(context.scene.SimpleBake_Props, "orm_texture")
-                if not (context.scene.SimpleBake_Props.selected_metal and context.scene.SimpleBake_Props.selected_ao and context.scene.SimpleBake_Props.selected_rough\
-                    and context.scene.SimpleBake_Props.rough_glossy_switch == "rough"):
-                    row.enabled=False
-                if not context.scene.SimpleBake_Props.saveExternal:
-                    row.enabled=False
-                
-                row=box.row()
-                row.prop(context.scene.SimpleBake_Props, "diffuse_plus_spec_in_alpha")
-                if not (context.scene.SimpleBake_Props.selected_col and context.scene.SimpleBake_Props.selected_specular):
-                    row.enabled=False
-                if not context.scene.SimpleBake_Props.saveExternal:
-                    row.enabled=False
+                    row=box.row()
+                    row.prop(context.scene.SimpleBake_Props, "cp_name")
+                    row=box.row()
+                    row.prop(context.scene.SimpleBake_Props, "channelpackfileformat", text="Format")
+                    row=box.row()
+                    row.scale_y=0.7
+                    row.prop(context.scene.SimpleBake_Props, "cptex_R", text="R")
+                    row=box.row()
+                    row.scale_y=0.7
+                    row.prop(context.scene.SimpleBake_Props, "cptex_G", text="G")
+                    row=box.row()
+                    row.scale_y=0.7
+                    row.prop(context.scene.SimpleBake_Props, "cptex_B", text="B")
+                    row=box.row()
+                    row.scale_y=0.7
+                    row.prop(context.scene.SimpleBake_Props, "cptex_A", text="A")
                     
                     
-                row = box.row()
-                row.prop(context.scene.SimpleBake_Props, "channelpackfileformat", text="Format")
+                    cp_list = bpy.context.scene.SimpleBake_Props.cp_list
+                    current_name = bpy.context.scene.SimpleBake_Props.cp_name 
+                    if current_name in cp_list: #Editing a cpt that is already there
+                        index = cp_list.find(current_name)
+                        cpt = cp_list[index]
+                        
+                        if cpt.R != bpy.context.scene.SimpleBake_Props.cptex_R or\
+                            cpt.G != bpy.context.scene.SimpleBake_Props.cptex_G or\
+                            cpt.B != bpy.context.scene.SimpleBake_Props.cptex_B or\
+                            cpt.A != bpy.context.scene.SimpleBake_Props.cptex_A or\
+                            cpt.file_format != bpy.context.scene.SimpleBake_Props.channelpackfileformat:
+                                
+                                row = box.row()
+                                row.alert=True
+                                text = f"Update {current_name} (!!not saved!!)"
+                                row.operator("object.simple_bake_cptex_add", text=text, icon="ADD")
+                        else: #No changes, no button
+                            text = f"Editing {current_name}"
+                            row = box.row()
+                            row.label(text=text)
+                            row.alignment = 'CENTER'
+                            
+                    else: #New item
+                        row = box.row()
+                        text = "Add new (!!not saved!!)"
+                        row.alert = True
+                        row.operator("object.simple_bake_cptex_add", text=text, icon="ADD")
+                        
+                    
+                    
+                    if bpy.context.scene.SimpleBake_Props.cptex_R == "" or\
+                        bpy.context.scene.SimpleBake_Props.cptex_G == "" or\
+                        bpy.context.scene.SimpleBake_Props.cptex_B == "" or\
+                        bpy.context.scene.SimpleBake_Props.cptex_A == "":
+                            row.enabled = False
                 
                 if context.scene.SimpleBake_Props.channelpackfileformat != "OPEN_EXR":
                     lines = [\
@@ -1085,7 +1115,12 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
             row = layout.row()
             row.scale_y = 1.5
             row.operator("object.simple_bake_sketchfabupload", text="Sketchfab Upload", icon="EXPORT") 
-
+            
+        box = layout.box()
+        row = box.row()
+        #row.operator("object.simple_bake_popnodegroups")
+            
+            
         
 
 class SimpleBakePreferences(bpy.types.AddonPreferences):
@@ -1114,12 +1149,13 @@ class SimpleBakePreferences(bpy.types.AddonPreferences):
     alpha_alias: bpy.props.StringProperty(name="Alpha", default="alpha")    
     sss_alias: bpy.props.StringProperty(name="SSS", default="sss")
     ssscol_alias: bpy.props.StringProperty(name="SSS Colour", default="ssscol")
-    ao_alias: bpy.props.StringProperty(name="AO", default="ao")
-    curvature_alias: bpy.props.StringProperty(name="Curvature", default="curvature")
-    thickness_alias: bpy.props.StringProperty(name="Thickness", default="thickness")
-    vertexcol_alias: bpy.props.StringProperty(name="vertex Col", default="vertexcol")
-    colid_alias: bpy.props.StringProperty(name="Col ID", default="colid")
-    lightmap_alias: bpy.props.StringProperty(name="Lightmap", default="lightmap")
+    
+    ao_alias: bpy.props.StringProperty(name=SimpleBakeConstants.AO, default="ao")
+    curvature_alias: bpy.props.StringProperty(name=SimpleBakeConstants.CURVATURE, default="curvature")
+    thickness_alias: bpy.props.StringProperty(name=SimpleBakeConstants.THICKNESS, default="thickness")
+    vertexcol_alias: bpy.props.StringProperty(name=SimpleBakeConstants.VERTEXCOL, default="vertexcol")
+    colid_alias: bpy.props.StringProperty(name=SimpleBakeConstants.COLOURID, default="colid")
+    lightmap_alias: bpy.props.StringProperty(name=SimpleBakeConstants.LIGHTMAP, default="lightmap")
     
     @classmethod
     def reset_img_string(self):
@@ -1294,7 +1330,7 @@ class OBJECT_OT_simple_bake_releasenotes(bpy.types.Operator):
     
     def execute(self, context):
         import webbrowser
-        webbrowser.open('http://www.toohey.co.uk/SimpleBake/releasenotes.html', new=2)
+        webbrowser.open('http://www.toohey.co.uk/SimpleBake/releasenotes3.html', new=2)
         return {'FINISHED'} 
 
         
@@ -1499,3 +1535,46 @@ class PresetItem(PropertyGroup):
            name="Name",
            description="A name for this item",
            default= "Untitled")
+           
+#-----------------------Channel packing
+class CPTEX_UL_List(UIList):
+    """UIList."""
+
+    def draw_item(self, context, layout, data, item, icon, active_data,
+                  active_propname, index):
+
+        # We could write some code to decide which icon to use here...
+        custom_icon = 'NODE_COMPOSITING'
+
+        # Make sure your code supports all 3 layout types
+        if self.layout_type in {'DEFAULT', 'COMPACT'}:
+            layout.label(text=item.name, icon = custom_icon)
+
+        elif self.layout_type in {'GRID'}:
+            layout.alignment = 'CENTER'
+            layout.label(text="", icon = custom_icon)
+
+
+
+class CPTexItem(PropertyGroup):
+    """Group of properties representing a SimpleBake CP Texture."""
+
+    name: bpy.props.StringProperty(
+           name="Name",
+           description="A name for this item",
+           default= "Untitled")
+    R: bpy.props.StringProperty(
+           name="R",
+           description="Bake type for R channel")
+    G: bpy.props.StringProperty(
+           name="G",
+           description="Bake type for G channel")
+    B: bpy.props.StringProperty(
+           name="B",
+           description="Bake type for B channel")
+    A: bpy.props.StringProperty(
+           name="A",
+           description="Bake type for A channel")
+    file_format: bpy.props.StringProperty(
+           name="File Format",
+           description="File format for CP texture")

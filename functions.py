@@ -7,8 +7,9 @@ import base64
 import sys
 import tempfile
 from . import material_setup
-from .bake_operation import BakeOperation, MasterOperation
+from .bake_operation import BakeOperation, MasterOperation, SimpleBakeConstants
 from .ui import SimpleBake_Previews
+from .bake_operation import bakestolist
 
 
 #Global variables
@@ -41,6 +42,7 @@ def does_object_have_bakes(obj):
                     
 
 def gen_image_name(obj_name, baketype, demo=False):
+    print(baketype)
     
     if not demo:
         current_bake_op = MasterOperation.current_bake_operation
@@ -97,17 +99,19 @@ def gen_image_name(obj_name, baketype, demo=False):
     elif baketype == "alpha":
         image_name = image_name.replace("%BAKETYPE%", prefs.alpha_alias)      
     
-    elif baketype == "ambientocclusion":
+    elif baketype == SimpleBakeConstants.AO:
         image_name = image_name.replace("%BAKETYPE%", prefs.ao_alias)      
-    elif baketype == "lightmap":
+    elif baketype == SimpleBakeConstants.LIGHTMAP:
         image_name = image_name.replace("%BAKETYPE%", prefs.lightmap_alias)      
-    elif baketype == "ColID":
+    elif baketype == SimpleBakeConstants.COLOURID:
         image_name = image_name.replace("%BAKETYPE%", prefs.colid_alias)      
-    elif baketype == "curvature":
+    elif baketype == SimpleBakeConstants.CURVATURE:
         image_name = image_name.replace("%BAKETYPE%", prefs.curvature_alias)      
-    elif baketype == "thickness":
+    
+    elif baketype == SimpleBakeConstants.THICKNESS:
         image_name = image_name.replace("%BAKETYPE%", prefs.thickness_alias)      
-    elif baketype == "VertexCols":
+    
+    elif baketype == SimpleBakeConstants.VERTEXCOL:
         image_name = image_name.replace("%BAKETYPE%", prefs.vertexcol_alias)      
         
     elif baketype == "sss":
@@ -143,36 +147,27 @@ def removeDisconnectedNodes(nodetree):
     if repeat:
         removeDisconnectedNodes(nodetree)
             
-def backupMaterial(mat):
-    dup = mat.copy()
-    dup.name = mat.name + "_SimpleBake"
 
 def restoreAllMaterials():
-    #Not efficient but, if we are going to do things this way, we need to loop over every object in the scene 
-    dellist = []
-    for obj in bpy.data.objects:
-        for slot in obj.material_slots:
-            origname = slot.name
-            #Try to set to the corresponding material that was the backup
-            try:
-                slot.material = bpy.data.materials[origname + "_SimpleBake"]
-                
-                #If not already on our list, log the original material (that we messed with) for mass deletion
-                if origname not in dellist:
-                    dellist.append(origname)
-                
-            except KeyError:
-                #Not been backed up yet. Must not have processed an object with that material yet
-                pass
-                
-    #Delete the unused materials
-    for matname in dellist:
-        bpy.data.materials.remove(bpy.data.materials[matname])
     
-    #Rename all materials to the original name, leaving us where we started
-    for mat in bpy.data.materials:
-        if "_SimpleBake" in mat.name:
-            mat.name = mat.name.replace("_SimpleBake", "")
+    for obj in bpy.data.objects:
+        if (obj.material_slots != None) and (len(obj.material_slots) > 0):#Stop the error where Nonetype not iterable
+            #Get all slots that are using a dup mat
+            dup_mats_slots_list = [slot for slot in obj.material_slots if slot.material != None and "SB_dupmat" in slot.material]
+            
+            #Swap those slos back to the original version of their material
+            for dup_mat_slot in dup_mats_slots_list:
+    
+                dup_mat = dup_mat_slot.material
+                orig_mat_name = dup_mat["SB_dupmat"]
+    
+                orig_mat = [mat for mat in bpy.data.materials if "SB_originalmat" in mat and mat["SB_originalmat"] == orig_mat_name][0] #Should only be one
+                dup_mat_slot.material = orig_mat
+            
+    #Delete all duplicates (should no longet be any in use)
+    del_list = [mat for mat in bpy.data.materials if "SB_dupmat" in mat]
+    for mat in del_list:
+        bpy.data.materials.remove(mat)
         
         
 
@@ -255,7 +250,7 @@ def create_Images(imgname, thisbake, objname):
     
     
     #Create image 32 bit or not 32 bit
-    if thisbake == "normal" or (global_mode == BakeOperation.CYCLESBAKE and bpy.context.scene.cycles.bake_type == "NORMAL"):
+    if thisbake == "normal" or (global_mode == SimpleBakeConstants.CYCLESBAKE and bpy.context.scene.cycles.bake_type == "NORMAL"):
         image = bpy.data.images.new(imgname, IMGWIDTH, IMGHEIGHT, alpha=alpha, float_buffer=True)
     elif all32:
         image = bpy.data.images.new(imgname, IMGWIDTH, IMGHEIGHT, alpha=alpha, float_buffer=True)
@@ -414,7 +409,34 @@ def startingChecks(objects, bakemode):
     if advancedobj:
         objects = advanced_object_selection_to_list()
     
-    
+    #Check no cp textures rely on bakes that are no longer enabled
+    #Hacky
+    if bpy.context.scene.SimpleBake_Props.global_mode == "pbr_bake":
+        pbr_bakes = bakestolist()
+        if bpy.context.scene.SimpleBake_Props.rough_glossy_switch == "glossy":
+            pbr_bakes = ["glossy" if bake == "roughness" else bake for bake in pbr_bakes]
+        special_bakes = []
+        special_bakes.append(SimpleBakeConstants.COLOURID) if bpy.context.scene.SimpleBake_Props.selected_col_mats else False
+        special_bakes.append(SimpleBakeConstants.VERTEXCOL) if bpy.context.scene.SimpleBake_Props.selected_col_vertex else False
+        special_bakes.append(SimpleBakeConstants.AO) if bpy.context.scene.SimpleBake_Props.selected_ao else False
+        special_bakes.append(SimpleBakeConstants.THICKNESS) if bpy.context.scene.SimpleBake_Props.selected_thickness else False
+        special_bakes.append(SimpleBakeConstants.CURVATURE) if bpy.context.scene.SimpleBake_Props.selected_curvature else False
+        special_bakes.append(SimpleBakeConstants.LIGHTMAP) if bpy.context.scene.SimpleBake_Props.selected_lightmap else False
+        bakes = pbr_bakes + special_bakes
+        bakes.append("none")
+        for cpt in bpy.context.scene.SimpleBake_Props.cp_list:
+            if cpt.R not in bakes:
+                messages.append(f"ERROR: Channel packed texture \"{cpt.name}\" depends on {cpt.R}, but you are no longer baking it")
+            if cpt.G not in bakes:
+                messages.append(f"ERROR: Channel packed texture \"{cpt.name}\" depends on {cpt.G}, but you are no longer baking it")
+            if cpt.B not in bakes:
+                messages.append(f"ERROR: Channel packed texture \"{cpt.name}\" depends on {cpt.B}, but you are no longer baking it")
+            if cpt.A not in bakes:
+                messages.append(f"ERROR: Channel packed texture \"{cpt.name}\" depends on {cpt.A}, but you are no longer baking it")
+        if len(messages) >0:
+            ShowMessageBox(messages, "Errors occured", "ERROR")
+            return False
+        
     #Is anything seleccted at all for bake?
     if len(objects) == 0:
         messages.append("ERROR: Nothing selected for bake")
@@ -438,6 +460,12 @@ def startingChecks(objects, bakemode):
         ShowMessageBox(messages, "Errors occured", "ERROR")
         return False
     
+    #Output folder cannot be called textures
+    if bpy.context.scene.SimpleBake_Props.saveFolder.lower() == "textures":
+        messages.append(f"ERROR: Unfortunately, your save folder cannot be called \"textures\" for technical reasons. Please change the name to proceed.")
+        ShowMessageBox(messages, "Errors occured", "ERROR")
+        return False
+        
     #Check object visibility
     obj_test_list = objects.copy()
     if bpy.context.scene.SimpleBake_Props.selected_s2a and bpy.context.scene.SimpleBake_Props.targetobj != None:
@@ -486,9 +514,9 @@ def startingChecks(objects, bakemode):
                     return False
     #glTF
     if bpy.context.scene.SimpleBake_Props.createglTFnode:
-        if bpy.context.scene.SimpleBake_Props.glTFselection == "ao" and not bpy.context.scene.SimpleBake_Props.selected_ao:
+        if bpy.context.scene.SimpleBake_Props.glTFselection == SimpleBakeConstants.AO and not bpy.context.scene.SimpleBake_Props.selected_ao:
             messages.append(f"ERROR: You have selected AO for glTF settings (in the 'Other Settings' section), but you aren't baking AO")
-        if bpy.context.scene.SimpleBake_Props.glTFselection == "lightmap" and not bpy.context.scene.SimpleBake_Props.selected_lightmap:
+        if bpy.context.scene.SimpleBake_Props.glTFselection == SimpleBakeConstants.LIGHTMAP and not bpy.context.scene.SimpleBake_Props.selected_lightmap:
             messages.append(f"ERROR: You have selected Lightmap for glTF settings (in the 'Other Settings' section), but you aren't baking Lightmap")
     if len(messages)>1:
         ShowMessageBox(messages, "Errors occured", "ERROR")
@@ -518,7 +546,7 @@ def startingChecks(objects, bakemode):
         
     
     #PBR Bake Checks - No S2A
-    if bakemode == BakeOperation.PBR:
+    if bakemode == SimpleBakeConstants.PBR:
         
         for obj in objects:
             
@@ -538,9 +566,29 @@ def startingChecks(objects, bakemode):
                 if len(result) > 0:
                     for node_name in result:
                         messages.append(f"ERROR: Node '{node_name}' in material '{mat.name}' on object '{obj.name}' is not valid for PBR bake. Principled BSDFs and/or Emission only!")
+            
+            # #TEMP###
+            # import time
+            # node_groups_present = True #Need to run at least once
+            # op_running = False
+            # while node_groups_present:
+                # print("loop")
+                # node_groups_present = False #Assume no node groups
+                # for slot in obj.material_slots:
+                    # mat = slot.material
+                    # result = checkMatsValidforPBR(mat)
+                    # if len(result) > 0:
+                        # print("Found some node groups")
+                        # node_groups_present = True
+                        # #Try and fix if we aren't already
+                        # if not op_running:
+                            # op_running = True
+                            # bpy.ops.object.simple_bake_popnodegroups()
+                            # print("Operator just ran")
+                            # time.sleep(3)
                     
     #PBR Bake - S2A
-    if bakemode == BakeOperation.PBRS2A:
+    if bakemode == SimpleBakeConstants.PBRS2A:
     
         #These checkes are done on all selected objects (not just the target)-----------
         
@@ -606,7 +654,7 @@ def startingChecks(objects, bakemode):
             
     
     #Cycles Bake - No S2A
-    if bakemode == BakeOperation.CYCLESBAKE and not bpy.context.scene.SimpleBake_Props.cycles_s2a:
+    if bakemode == SimpleBakeConstants.CYCLESBAKE and not bpy.context.scene.SimpleBake_Props.cycles_s2a:
         
         #First lets check for old users using the old method
         if bpy.context.scene.render.bake.use_selected_to_active:
@@ -633,7 +681,7 @@ def startingChecks(objects, bakemode):
     
     
     #Cycles Bake - S2A
-    if bakemode == BakeOperation.CYCLESBAKE and bpy.context.scene.SimpleBake_Props.cycles_s2a:
+    if bakemode == SimpleBakeConstants.CYCLESBAKE and bpy.context.scene.SimpleBake_Props.cycles_s2a:
         
                 
         #We only care about the target object
@@ -665,21 +713,21 @@ def startingChecks(objects, bakemode):
     #Specials Bake
     if bpy.context.scene.SimpleBake_Props.selected_col_vertex:
         
-        if bakemode == BakeOperation.SPECIALS:
+        if bakemode == SimpleBakeConstants.SPECIALS:
             for obj in objects:
                 if len(obj.data.vertex_colors) == 0:
                     messages.append(f"You are trying to bake the active vertex colours, but object {obj.name} doesn't have vertex colours")
                     ShowMessageBox(messages, "Errors occured", "ERROR")
                     return False
         
-        if bakemode == BakeOperation.SPECIALS_CYCLES_TARGET_ONLY:
+        if bakemode == SimpleBakeConstants.SPECIALS_CYCLES_TARGET_ONLY:
             t = bpy.context.scene.SimpleBake_Props.targetobj_cycles
             if len(t.data.vertex_colors) == 0:
                 messages.append(f"You are trying to bake the active vertex colours, but object {t.name} doesn't have vertex colours")
                 ShowMessageBox(messages, "Errors occured", "ERROR")
                 return False
                 
-        if bakemode == BakeOperation.SPECIALS_PBR_TARGET_ONLY:
+        if bakemode == SimpleBakeConstants.SPECIALS_PBR_TARGET_ONLY:
             t = bpy.context.scene.SimpleBake_Props.targetobj
             if len(t.data.vertex_colors) == 0:
                 messages.append(f"You are trying to bake the active vertex colours, but object {t.name} doesn't have vertex colours")
@@ -1123,7 +1171,6 @@ def cleanFileName(filename):
     return "".join(c for c in filename if c.isalnum() or c in keepcharacters).rstrip()
 
 
-#baketype can be "normal", "cyclesbake", "colidbake", "regular" or any of the bake types
 def saveExternal(image, baketype, obj):
     
     originally_float = image.is_float
@@ -1141,11 +1188,11 @@ def saveExternal(image, baketype, obj):
     current_bake_op = MasterOperation.current_bake_operation
     
     #Firstly, work out if we want denoising or not
-    if current_bake_op.bake_mode == BakeOperation.CYCLESBAKE and bpy.context.scene.SimpleBake_Props.rundenoise:
+    if current_bake_op.bake_mode == SimpleBakeConstants.CYCLESBAKE and bpy.context.scene.SimpleBake_Props.rundenoise:
         need_denoise = True
-    elif current_bake_op.bake_mode in [BakeOperation.SPECIALS, BakeOperation.SPECIALS_CYCLES_TARGET_ONLY, \
-        BakeOperation.SPECIALS_PBR_TARGET_ONLY] and \
-        baketype == "lightmap" and bpy.context.scene.SimpleBake_Props.selected_lightmap_denoise:
+    elif current_bake_op.bake_mode in [SimpleBakeConstants.SPECIALS, SimpleBakeConstants.SPECIALS_CYCLES_TARGET_ONLY, \
+        SimpleBakeConstants.SPECIALS_PBR_TARGET_ONLY] and \
+        baketype == SimpleBakeConstants.LIGHTMAP and bpy.context.scene.SimpleBake_Props.selected_lightmap_denoise:
         need_denoise = True
     else:
         need_denoise = False
@@ -1158,7 +1205,7 @@ def saveExternal(image, baketype, obj):
     #Colour management settings
     dcm_opt = bpy.context.scene.SimpleBake_Props.selected_applycolmantocol 
     
-    if current_bake_op.bake_mode in [BakeOperation.PBR, BakeOperation.PBRS2A] and (baketype == "diffuse" or baketype == "emission") :
+    if current_bake_op.bake_mode in [SimpleBakeConstants.PBR, SimpleBakeConstants.PBRS2A] and (baketype == "diffuse" or baketype == "emission") :
         if dcm_opt:
             printmsg("Applying colour management settings from current scene for PBR diffuse or emission")
             apply_scene_col_settings(scene)
@@ -1166,12 +1213,12 @@ def saveExternal(image, baketype, obj):
             printmsg("Applying standard colour management for PBR diffuse or emission")
             scene.view_settings.view_transform = "Standard"
         
-    elif current_bake_op.bake_mode in [BakeOperation.PBR, BakeOperation.PBRS2A]:
+    elif current_bake_op.bake_mode in [SimpleBakeConstants.PBR, SimpleBakeConstants.PBRS2A]:
         printmsg("Applying raw colour space for PBR non-diffuse texture")
         scene.view_settings.view_transform = "Raw"
         scene.sequencer_colorspace_settings.name = "Non-Color"
 
-    elif current_bake_op.bake_mode == BakeOperation.CYCLESBAKE:
+    elif current_bake_op.bake_mode == SimpleBakeConstants.CYCLESBAKE:
         if bpy.context.scene.cycles.bake_type == "NORMAL":
             printmsg("Raw colour space for CyclesBake normal map")
             scene.view_settings.view_transform = "Raw"
@@ -1185,12 +1232,12 @@ def saveExternal(image, baketype, obj):
             printmsg("Applying standard colour management for CyclesBake")
             scene.view_settings.view_transform = "Standard"
     
-    elif baketype == "lightmap" and bpy.context.scene.SimpleBake_Props.lightmap_apply_colman:
+    elif baketype == SimpleBakeConstants.LIGHTMAP and bpy.context.scene.SimpleBake_Props.lightmap_apply_colman:
         printmsg("Applying colour management settings from current scene for Lightmap")
         apply_scene_col_settings(scene)
     
     
-    elif current_bake_op.bake_mode in [BakeOperation.SPECIALS, BakeOperation.SPECIALS_PBR_TARGET_ONLY, BakeOperation.SPECIALS_CYCLES_TARGET_ONLY]:
+    elif current_bake_op.bake_mode in [SimpleBakeConstants.SPECIALS, SimpleBakeConstants.SPECIALS_PBR_TARGET_ONLY, SimpleBakeConstants.SPECIALS_CYCLES_TARGET_ONLY]:
         printmsg("Raw colour space for Specials")
         scene.view_settings.view_transform = "Raw"
         scene.sequencer_colorspace_settings.name = "Non-Color"
@@ -1362,7 +1409,7 @@ def saveExternal(image, baketype, obj):
         
     elif originally_float and\
      (image["SB_thisbake"] == "diffuse" or\
-     current_bake_op.bake_mode == BakeOperation.CYCLESBAKE and bpy.context.scene.cycles.bake_type in ["COMBINED", "DIFFUSE"]):
+     current_bake_op.bake_mode == SimpleBakeConstants.CYCLESBAKE and bpy.context.scene.cycles.bake_type in ["COMBINED", "DIFFUSE"]):
         image.colorspace_settings.name = "sRGB"
     
     
@@ -1515,17 +1562,17 @@ def prepObjects(objs, baketype):
                     mat = slot.material
                     nodetree = mat.node_tree
                     
-                    if(baketype in {BakeOperation.PBR, BakeOperation.PBRS2A}):
+                    if(baketype in {SimpleBakeConstants.PBR, SimpleBakeConstants.PBRS2A}):
                         material_setup.create_principled_setup(nodetree, obj)
-                    if baketype == BakeOperation.CYCLESBAKE:
+                    if baketype == SimpleBakeConstants.CYCLESBAKE:
                         material_setup.create_cyclesbake_setup(nodetree, obj)
             else: #Should only have one material
                 mat = obj.material_slots[0].material
                 nodetree = mat.node_tree
             
-                if(baketype in {BakeOperation.PBR, BakeOperation.PBRS2A}):
+                if(baketype in {SimpleBakeConstants.PBR, SimpleBakeConstants.PBRS2A}):
                     material_setup.create_principled_setup(nodetree, obj)
-                if baketype == BakeOperation.CYCLESBAKE:
+                if baketype == SimpleBakeConstants.CYCLESBAKE:
                     material_setup.create_cyclesbake_setup(nodetree, obj)
             
             #Change object name to avoid collisions
@@ -1749,39 +1796,40 @@ def import_needed_specials_materials(justcount = False):
     ordered_specials = []
     path = os.path.dirname(__file__) + "/materials/materials.blend\\Material\\"
     if(bpy.context.scene.SimpleBake_Props.selected_thickness):
-        if "SimpleBake_Thickness" not in bpy.data.materials:
-            material_name = "SimpleBake_thickness"
+        if "SimpleBake_"+SimpleBakeConstants.THICKNESS not in bpy.data.materials:
+            material_name = "SimpleBake_"+SimpleBakeConstants.THICKNESS
             if not justcount:
                 bpy.ops.wm.append(filename=material_name, directory=path)
-            ordered_specials.append(BakeOperation.THICKNESS)
+            ordered_specials.append(SimpleBakeConstants.THICKNESS)
         else:
-            ordered_specials.append("thickness")
+            ordered_specials.append(SimpleBakeConstants.THICKNESS)
+            
     if(bpy.context.scene.SimpleBake_Props.selected_ao):
-        if "SimpleBake_AO" not in bpy.data.materials:
-            material_name = "SimpleBake_ambientocclusion"
+        if "SimpleBake_"+SimpleBakeConstants.AO not in bpy.data.materials:
+            material_name = "SimpleBake_"+SimpleBakeConstants.AO
             if not justcount:
                 bpy.ops.wm.append(filename=material_name, directory=path)
-            ordered_specials.append(BakeOperation.AO)
+            ordered_specials.append(SimpleBakeConstants.AO)
         else:
-            ordered_specials.append(BakeOperation.AO)
+            ordered_specials.append(SimpleBakeConstants.AO)
             
     if(bpy.context.scene.SimpleBake_Props.selected_curvature):
-        if "SimpleBake_curvature" not in bpy.data.materials:
-            material_name = "SimpleBake_curvature"
+        if "SimpleBake"+SimpleBakeConstants.CURVATURE not in bpy.data.materials:
+            material_name = "SimpleBake_"+SimpleBakeConstants.CURVATURE
             if not justcount:
                 bpy.ops.wm.append(filename=material_name, directory=path)
-            ordered_specials.append(BakeOperation.CURVATURE)
+            ordered_specials.append(SimpleBakeConstants.CURVATURE)
         else:
-            ordered_specials.append(BakeOperation.CURVATURE)
+            ordered_specials.append(SimpleBakeConstants.CURVATURE)
             
     if(bpy.context.scene.SimpleBake_Props.selected_lightmap):
-        if "SimpleBake_lightmap" not in bpy.data.materials:
-            material_name = "SimpleBake_lightmap"
+        if "SimpleBake_"+SimpleBakeConstants.LIGHTMAP not in bpy.data.materials:
+            material_name = "SimpleBake_"+SimpleBakeConstants.LIGHTMAP
             if not justcount:
                 bpy.ops.wm.append(filename=material_name, directory=path)
-            ordered_specials.append(BakeOperation.LIGHTMAP)
+            ordered_specials.append(SimpleBakeConstants.LIGHTMAP)
         else:
-            ordered_specials.append(BakeOperation.LIGHTMAP)
+            ordered_specials.append(SimpleBakeConstants.LIGHTMAP)
 
 
     #return the list of specials
@@ -1950,6 +1998,8 @@ def spot_new_items(initialise=True, item_type="images"):
 
 def check_for_connected_viewer_node(mat):
     
+    mat.use_nodes = True
+    
     node_tree = mat.node_tree
     nodes = node_tree.nodes
     onode = find_onode(node_tree)
@@ -2102,7 +2152,7 @@ def sacle_image_if_needed(img):
         
 def set_image_internal_col_space(image, thisbake):
     
-    if thisbake == BakeOperation.CYCLESBAKE:
+    if thisbake == SimpleBakeConstants.CYCLESBAKE:
         if bpy.context.scene.cycles.bake_type not in ["COMBINED", "DIFFUSE"]:
             image.colorspace_settings.name = "Non-Color"
         
@@ -2172,15 +2222,6 @@ def any_specials():
     
     return False
     
-def any_channel_packing():
-    
-    if bpy.context.scene.SimpleBake_Props.unity_lit_shader: return True
-    if bpy.context.scene.SimpleBake_Props.unity_legacy_diffuse_shader: return True
-    if bpy.context.scene.SimpleBake_Props.orm_texture: return True
-    if bpy.context.scene.SimpleBake_Props.diffuse_plus_spec_in_alpha: return True
-    
-    
-    return False
     
 def load_previews():
     pcoll = bpy.utils.previews.new()

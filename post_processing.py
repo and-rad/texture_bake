@@ -5,15 +5,14 @@ import shutil
 import os
 
 
-def post_process(internal_img_name, path_dir="", path_filename="", file_format="OPEN_EXR", save=False, mode="3to1", **args):
-    
-    
-    
+def post_process(internal_img_name, path_dir="", path_filename="", file_format="OPEN_EXR", save=False, mode="3to1", remove_internal=False, **args):
     
     #Import the compositing scene that we need
     path = os.path.dirname(__file__) + "/compositing/compositing.blend\\Scene\\"
     
     if mode == "1to1":
+        if "SBCompositing_1to1" in bpy.data.scenes:
+            bpy.data.scenes.remove(bpy.data.scenes["SBCompositing_1to1"])
         bpy.ops.wm.append(filename="SBCompositing_1to1", directory=path)
         
         scene = bpy.data.scenes["SBCompositing_1to1"]
@@ -32,6 +31,8 @@ def post_process(internal_img_name, path_dir="", path_filename="", file_format="
         
     
     if mode == "3to1":
+        if "SBCompositing_3to1" in bpy.data.scenes:
+            bpy.data.scenes.remove(bpy.data.scenes["SBCompositing_3to1"])
         bpy.ops.wm.append(filename="SBCompositing_3to1", directory=path)
         
         scene = bpy.data.scenes["SBCompositing_3to1"]
@@ -39,32 +40,32 @@ def post_process(internal_img_name, path_dir="", path_filename="", file_format="
         nodes = node_tree.nodes
         
         #Set the inputs
-        if "input_r" in args:
+        if ("input_r" in args) and args["input_r"]!=None:
             nodes["input_r"].image = args["input_r"]
             input_r_orig_colspace = args["input_r"].colorspace_settings.name
             if file_format == "PNG":
                 args["input_r"].colorspace_settings.name = "sRGB"
             
-        if "input_g" in args:
+        if ("input_g" in args) and args["input_g"]!=None:
             nodes["input_g"].image = args["input_g"]
             input_g_orig_colspace = args["input_g"].colorspace_settings.name
             if file_format == "PNG":
                 args["input_g"].colorspace_settings.name = "sRGB"
             
-        if "input_b" in args:
+        if ("input_b" in args) and args["input_b"]!=None:
             nodes["input_b"].image = args["input_b"]
             input_b_orig_colspace = args["input_b"].colorspace_settings.name
             if file_format == "PNG":
                 args["input_b"].colorspace_settings.name = "sRGB"
         
-        if "input_a" in args:
+        if ("input_a" in args) and args["input_a"]!=None:
             nodes["input_a"].image = args["input_a"]
             input_a_orig_colspace = args["input_a"].colorspace_settings.name
             if file_format == "PNG":
                 args["input_a"].colorspace_settings.name = "sRGB"
         
         #Clear the alpha connection unless we have an alpha texture
-        if not "input_a" in args: node_tree.links.remove(nodes["Combine RGBA"].inputs[3].links[0])
+        if (not "input_a" in args) or args["input_a"]==None: node_tree.links.remove(nodes["Combine RGBA"].inputs[3].links[0])
         
         #Alpha Premul
         if "alpha_convert" in args and args["alpha_convert"] == "straight":
@@ -125,18 +126,9 @@ def post_process(internal_img_name, path_dir="", path_filename="", file_format="
         for node in bw_nodes:
             node.mute=True
         
-        
-    
-    #TMP
-    #node_tree.links.new(nodes["Invert.006"].outputs[0],nodes["Composite"].inputs[1])
-    #node_tree.links.remove(nodes["Combine RGBA.001"].inputs[3].links[0])
-    
-    
-    
     #Set the output resolution of the scene to the texture size we are using
     scene.render.resolution_y = bpy.context.scene.SimpleBake_Props.imgheight
     scene.render.resolution_x = bpy.context.scene.SimpleBake_Props.imgwidth
-        
     
     #Render to temp file for the internal image
     tmpdir = Path(tempfile.mkdtemp())
@@ -185,13 +177,17 @@ def post_process(internal_img_name, path_dir="", path_filename="", file_format="
 
     if mode == "3to1":
         #Restore original image colour spaces
-        if "input_r" in args: args["input_r"].colorspace_settings.name = input_r_orig_colspace
-        if "input_g" in args: args["input_g"].colorspace_settings.name = input_r_orig_colspace
-        if "input_b" in args: args["input_b"].colorspace_settings.name = input_r_orig_colspace
-        if "input_a" in args: args["input_a"].colorspace_settings.name = input_r_orig_colspace
-    
+        if "input_r" in args and args["input_r"] != None: args["input_r"].colorspace_settings.name = input_r_orig_colspace
+        if "input_g" in args and args["input_g"] != None: args["input_g"].colorspace_settings.name = input_g_orig_colspace
+        if "input_b" in args and args["input_b"] != None: args["input_b"].colorspace_settings.name = input_b_orig_colspace
+        if "input_a" in args and args["input_a"] != None: args["input_a"].colorspace_settings.name = input_a_orig_colspace
+        
     #Delete the new scene
     bpy.data.scenes.remove(scene)
+    
+    if remove_internal:
+    #Remove the internal image
+        bpy.data.images.remove(img)
     
     
     return True

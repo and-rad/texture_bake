@@ -2,7 +2,7 @@ import bpy
 import sys
 import subprocess
 import os
-from .bake_operation import BakeOperation, MasterOperation, BakeStatus, bakestolist
+from .bake_operation import BakeOperation, MasterOperation, BakeStatus, bakestolist, SimpleBakeConstants
 from . import functions
 from . import bakefunctions
 from .bg_bake import bgbake_ops
@@ -11,6 +11,8 @@ import tempfile
 import json
 
 from .ui import SimpleBakePreferences
+from datetime import datetime
+from math import floor
 
 
 class OBJECT_OT_simple_bake_mapbake(bpy.types.Operator):
@@ -33,19 +35,19 @@ class OBJECT_OT_simple_bake_mapbake(bpy.types.Operator):
             
             total_maps = 0
             for need in needed_bake_modes:
-                if need == BakeOperation.PBR:
+                if need == SimpleBakeConstants.PBR:
                     total_maps+=(bakestolist(justcount=True) * num_of_objects)
-                if need == BakeOperation.PBRS2A:
+                if need == SimpleBakeConstants.PBRS2A:
                     total_maps+=1*bakestolist(justcount=True)
-                if need == BakeOperation.CYCLESBAKE and not bpy.context.scene.SimpleBake_Props.cycles_s2a:
+                if need == SimpleBakeConstants.CYCLESBAKE and not bpy.context.scene.SimpleBake_Props.cycles_s2a:
                     total_maps+=1* num_of_objects
-                if need == BakeOperation.CYCLESBAKE and bpy.context.scene.SimpleBake_Props.cycles_s2a:
+                if need == SimpleBakeConstants.CYCLESBAKE and bpy.context.scene.SimpleBake_Props.cycles_s2a:
                     total_maps+=1
-                if need == BakeOperation.SPECIALS:
+                if need == SimpleBakeConstants.SPECIALS:
                     total_maps+=(functions.import_needed_specials_materials(justcount = True) * num_of_objects)
                     if bpy.context.scene.SimpleBake_Props.selected_col_mats: total_maps+=1*num_of_objects
                     if bpy.context.scene.SimpleBake_Props.selected_col_vertex: total_maps+=1*num_of_objects
-                if need in [BakeOperation.SPECIALS_CYCLES_TARGET_ONLY, BakeOperation.SPECIALS_PBR_TARGET_ONLY]:
+                if need in [SimpleBakeConstants.SPECIALS_CYCLES_TARGET_ONLY, SimpleBakeConstants.SPECIALS_PBR_TARGET_ONLY]:
                     total_maps+=(functions.import_needed_specials_materials(justcount = True))
                     if bpy.context.scene.SimpleBake_Props.selected_col_mats: total_maps+=1
                     if bpy.context.scene.SimpleBake_Props.selected_col_vertex: total_maps+=1
@@ -82,38 +84,51 @@ class OBJECT_OT_simple_bake_mapbake(bpy.types.Operator):
             for bop in bops:
                 MasterOperation.this_bake_operation_num+=1
                 MasterOperation.current_bake_operation = bop
-                if bop.bake_mode == BakeOperation.PBR:
+                if bop.bake_mode == SimpleBakeConstants.PBR:
                     functions.printmsg("Running PBR bake")
                     bakefunctions.doBake()
-                elif bop.bake_mode == BakeOperation.PBRS2A:
+                elif bop.bake_mode == SimpleBakeConstants.PBRS2A:
                     functions.printmsg("Running PBR S2A bake")
                     bakefunctions.doBakeS2A()
-                elif bop.bake_mode == BakeOperation.CYCLESBAKE:
+                elif bop.bake_mode == SimpleBakeConstants.CYCLESBAKE:
                     functions.printmsg("Running Cycles bake")
                     bakefunctions.cyclesBake()
-                elif bop.bake_mode in [BakeOperation.SPECIALS, BakeOperation.SPECIALS_CYCLES_TARGET_ONLY, BakeOperation.SPECIALS_PBR_TARGET_ONLY]:
+                elif bop.bake_mode in [SimpleBakeConstants.SPECIALS, SimpleBakeConstants.SPECIALS_CYCLES_TARGET_ONLY, SimpleBakeConstants.SPECIALS_PBR_TARGET_ONLY]:
                     functions.printmsg("Running Specials bake")
                     bakefunctions.specialsBake()
             
+            #Call channel packing
+            #Only possilbe if we baked some kind of PBR. At the moment, can't have non-S2A and S2A
+            if len([bop for bop in bops if bop.bake_mode == SimpleBakeConstants.PBR]) > 0:
+                #Should still be active from last bake op
+                objects = MasterOperation.current_bake_operation.bake_objects
+                bakefunctions.channel_packing(objects)
+            if len([bop for bop in bops if bop.bake_mode == SimpleBakeConstants.PBRS2A]) > 0:
+                #Should still be active from last bake op
+                objects = [MasterOperation.current_bake_operation.sb_target_object]
+                bakefunctions.channel_packing(objects)
+                
             return True        
         
         
         
-        ######################TEMP###############################################
+        #Entry Point ----------------------------------------------------
+    
+        
         needed_bake_modes = []
         if bpy.context.scene.SimpleBake_Props.global_mode == "pbr_bake" and not bpy.context.scene.SimpleBake_Props.selected_s2a:
-            needed_bake_modes.append(BakeOperation.PBR)
+            needed_bake_modes.append(SimpleBakeConstants.PBR)
         if bpy.context.scene.SimpleBake_Props.global_mode == "pbr_bake" and bpy.context.scene.SimpleBake_Props.selected_s2a:
-            needed_bake_modes.append(BakeOperation.PBRS2A)
+            needed_bake_modes.append(SimpleBakeConstants.PBRS2A)
         if bpy.context.scene.SimpleBake_Props.global_mode == "cycles_bake":
-            needed_bake_modes.append(BakeOperation.CYCLESBAKE)
+            needed_bake_modes.append(SimpleBakeConstants.CYCLESBAKE)
         
-        if functions.any_specials() and BakeOperation.PBRS2A in needed_bake_modes:
-            needed_bake_modes.append(BakeOperation.SPECIALS_PBR_TARGET_ONLY)
-        elif functions.any_specials() and BakeOperation.CYCLESBAKE in needed_bake_modes and bpy.context.scene.SimpleBake_Props.cycles_s2a:
-            needed_bake_modes.append(BakeOperation.SPECIALS_CYCLES_TARGET_ONLY)
+        if functions.any_specials() and SimpleBakeConstants.PBRS2A in needed_bake_modes:
+            needed_bake_modes.append(SimpleBakeConstants.SPECIALS_PBR_TARGET_ONLY)
+        elif functions.any_specials() and SimpleBakeConstants.CYCLESBAKE in needed_bake_modes and bpy.context.scene.SimpleBake_Props.cycles_s2a:
+            needed_bake_modes.append(SimpleBakeConstants.SPECIALS_CYCLES_TARGET_ONLY)
         elif functions.any_specials():
-            needed_bake_modes.append(BakeOperation.SPECIALS)
+            needed_bake_modes.append(SimpleBakeConstants.SPECIALS)
             
         
         #Clear the progress stuff
@@ -128,7 +143,11 @@ class OBJECT_OT_simple_bake_mapbake(bpy.types.Operator):
                 bpy.data.collections.remove(bpy.data.collections["SimpleBake_Bakes"])
             
             #Bake
+            ts = datetime.now()
             commence_bake(needed_bake_modes)
+            tf = datetime.now()
+            s = (tf-ts).seconds
+            functions.printmsg(f"Time taken - {s} seconds ({floor(s/60)} minutes, {s%60} seconds)")
             
             self.report({"INFO"}, "Bake complete")
             return {'FINISHED'}
@@ -167,7 +186,11 @@ class OBJECT_OT_simple_bake_mapbake(bpy.types.Operator):
         #If we are doing this here and now, get on with it
             
         #Create a bake operation
+        ts = datetime.now()
         commence_bake(needed_bake_modes)
+        tf = datetime.now()
+        s = (tf-ts).seconds
+        functions.printmsg(f"Time taken - {s} seconds ({floor(s/60)} minutes, {s%60} seconds)")
         
         self.report({"INFO"}, "Bake complete")
         return {'FINISHED'}
@@ -679,10 +702,6 @@ class OBJECT_OT_simple_bake_preset_save(bpy.types.Operator):
         d["uv_mode"] = bpy.context.scene.SimpleBake_Props.uv_mode
         d["udim_tiles"] = bpy.context.scene.SimpleBake_Props.udim_tiles
         d["unwrapmargin"] = bpy.context.scene.SimpleBake_Props.unwrapmargin
-        d["unity_lit_shader"] = bpy.context.scene.SimpleBake_Props.unity_lit_shader
-        d["unity_legacy_diffuse_shader"] = bpy.context.scene.SimpleBake_Props.unity_legacy_diffuse_shader
-        d["orm_texture"] = bpy.context.scene.SimpleBake_Props.orm_texture
-        d["diffuse_plus_spec_in_alpha"] = bpy.context.scene.SimpleBake_Props.diffuse_plus_spec_in_alpha
         d["channelpackfileformat"] = bpy.context.scene.SimpleBake_Props.channelpackfileformat
         d["saveExternal"] = bpy.context.scene.SimpleBake_Props.saveExternal
         d["exportFolderPerObject"] = bpy.context.scene.SimpleBake_Props.exportFolderPerObject
@@ -753,6 +772,21 @@ class OBJECT_OT_simple_bake_preset_save(bpy.types.Operator):
             d["cage_object"] = bpy.context.scene.render.bake.cage_object.name
         else:
             d["cage_object"] = None
+        
+        #Channel packed images
+        cp_images_dict = {}
+        for cpi in bpy.context.scene.SimpleBake_Props.cp_list:
+            thiscpi_dict = {}
+            thiscpi_dict["R"] = cpi.R
+            thiscpi_dict["G"] = cpi.G
+            thiscpi_dict["B"] = cpi.B
+            thiscpi_dict["A"] = cpi.A
+            
+            thiscpi_dict["file_format"] = cpi.file_format
+            
+            cp_images_dict[cpi.name] = thiscpi_dict
+        if len(cp_images_dict)>0:
+            d["channel_packed_images"] = cp_images_dict
         
         #Find where we want to save
         p = Path(bpy.utils.script_path_user())
@@ -872,10 +906,6 @@ class OBJECT_OT_simple_bake_preset_load(bpy.types.Operator):
         bpy.context.scene.SimpleBake_Props.uv_mode = d["uv_mode"]
         bpy.context.scene.SimpleBake_Props.udim_tiles = d["udim_tiles"]
         bpy.context.scene.SimpleBake_Props.unwrapmargin = d["unwrapmargin"]
-        bpy.context.scene.SimpleBake_Props.unity_lit_shader = d["unity_lit_shader"]
-        bpy.context.scene.SimpleBake_Props.unity_legacy_diffuse_shader = d["unity_legacy_diffuse_shader"]
-        bpy.context.scene.SimpleBake_Props.orm_texture = d["orm_texture"]
-        bpy.context.scene.SimpleBake_Props.diffuse_plus_spec_in_alpha = d["diffuse_plus_spec_in_alpha"]
         bpy.context.scene.SimpleBake_Props.channelpackfileformat = d["channelpackfileformat"]
         bpy.context.scene.SimpleBake_Props.saveExternal = d["saveExternal"] 
         bpy.context.scene.SimpleBake_Props.exportFolderPerObject = d["exportFolderPerObject"]
@@ -930,7 +960,28 @@ class OBJECT_OT_simple_bake_preset_load(bpy.types.Operator):
         bpy.context.scene.SimpleBake_Props.other_show = d["other_show"]
         bpy.context.scene.SimpleBake_Props.channelpacking_show = d["channelpacking_show"]
         
+        #Channel packing images
+        if "channel_packed_images" in d:
+            channel_packed_images = d["channel_packed_images"]
         
+            if len(channel_packed_images) > 0:
+                bpy.context.scene.SimpleBake_Props.cp_list.clear()
+        
+            for imgname in channel_packed_images:
+            
+                thiscpi_dict = channel_packed_images[imgname]
+            
+                #Create the list item
+                li = bpy.context.scene.SimpleBake_Props.cp_list.add()
+                li.name = imgname
+                
+                #Set the list item properies
+                li.R = thiscpi_dict["R"]
+                li.G = thiscpi_dict["G"]
+                li.B = thiscpi_dict["B"]
+                li.A = thiscpi_dict["A"]
+                
+                li.file_format = thiscpi_dict["file_format"]
         
         #And now the objects, if they are here
         for obj_name in d["object_list"]:
@@ -1195,4 +1246,175 @@ class OBJECT_OT_simple_bake_decrease_output_res(bpy.types.Operator):
         
         return {'FINISHED'} 
 
+
+#-------------------------------------Channel packing
+class OBJECT_OT_simple_bake_cptex_add(bpy.types.Operator):
+    """Add a SimpleBake CP Texture item"""
+    bl_idname = "object.simple_bake_cptex_add"
+    bl_label = "Add"
+    
+    @classmethod
+    def poll(cls,context):
+        return bpy.context.scene.SimpleBake_Props.cp_name != ""
+    
+    def execute(self, context):
+        cp_list = bpy.context.scene.SimpleBake_Props.cp_list
+        name = functions.cleanFileName(bpy.context.scene.SimpleBake_Props.cp_name)
+        
+        if name in cp_list:
+            #Delete it
+            index = bpy.context.scene.SimpleBake_Props.cp_list.find(name)
+            bpy.context.scene.SimpleBake_Props.cp_list.remove(index)
+            
+        li = cp_list.add()
+        li.name = name
+        
+        li.R = bpy.context.scene.SimpleBake_Props.cptex_R
+        li.G = bpy.context.scene.SimpleBake_Props.cptex_G
+        li.B = bpy.context.scene.SimpleBake_Props.cptex_B
+        li.A = bpy.context.scene.SimpleBake_Props.cptex_A
+        li.file_format = bpy.context.scene.SimpleBake_Props.channelpackfileformat
+        
+        bpy.context.scene.SimpleBake_Props.cp_list_index = bpy.context.scene.SimpleBake_Props.cp_list.find(name)
+        
+        self.report({"INFO"}, "CP texture saved")
+        return {'FINISHED'} 
+
+class OBJECT_OT_simple_bake_cptex_delete(bpy.types.Operator):
+    """Delete the selected channel pack texture"""
+    bl_idname = "object.simple_bake_cptex_delete"
+    bl_label = "Delete"
+    
+    @classmethod
+    def poll(cls,context):
+        try:
+            bpy.context.scene.SimpleBake_Props.cp_list[bpy.context.scene.SimpleBake_Props.cp_list_index].name
+            return True
+        except:
+            return False
+    
+    def execute(self, context):
+        bpy.context.scene.SimpleBake_Props.cp_list.remove(bpy.context.scene.SimpleBake_Props.cp_list_index)
+        
+        self.report({"INFO"}, "CP texture deleted")
+        return {'FINISHED'} 
+
+class OBJECT_OT_simple_bake_cptex_setdefaults(bpy.types.Operator):
+    """Add some example channel pack textures"""
+    bl_idname = "object.simple_bake_cptex_setdefaults"
+    bl_label = "Add examples"
+    
+    @classmethod
+    def poll(cls,context):
+        return True
+        
+    def execute(self, context):
+        
+        cp_list = bpy.context.scene.SimpleBake_Props.cp_list
+        
+        # bpy.context.scene.SimpleBake_Props.selected_col = True
+        # bpy.context.scene.SimpleBake_Props.selected_metal = True
+        # bpy.context.scene.SimpleBake_Props.selected_rough = True
+        # bpy.context.scene.SimpleBake_Props.selected_ao = True
+        # bpy.context.scene.SimpleBake_Props.selected_alpha = True
+        # bpy.context.scene.SimpleBake_Props.selected_specular = True
+        
+        #Unity Lit shader. R=metalness, G=AO, B=N/A, A=Glossy.
+        li = cp_list.add()
+        li.name = "Unity Lit Shader"
+        li.file_format = "OPEN_EXR"
+        li.R = "metalness"
+        li.G = SimpleBakeConstants.AO
+        li.B = "none"
+        li.A = "glossy"
+        
+        #Unity Legacy Standard Diffuse. RGB=diffuse, A=alpha.
+        li = cp_list.add()
+        li.name = "Unity Legacy Shader"
+        li.file_format = "OPEN_EXR"
+        li.R = "diffuse"
+        li.G = "diffuse"
+        li.B = "diffuse"
+        li.A = "alpha"
+        
+        #ORM format. R=AO, G=Roughness, B=Metalness, A=N/A.
+        li = cp_list.add()
+        li.name = "ORM"
+        li.file_format = "OPEN_EXR"
+        li.R = SimpleBakeConstants.AO
+        li.G = "roughness"
+        li.B = "metalness"
+        li.A = "none"
+        
+        #diffuse plus specular in the alpha channel.
+        li = cp_list.add()
+        li.name = "Diffuse and Spec in alpha"
+        li.file_format = "OPEN_EXR"
+        li.R = "diffuse"
+        li.G = "diffuse"
+        li.B = "diffuse"
+        li.A = "specular"
+        
+        
+        self.report({"INFO"}, "Default textures added")
+        return {'FINISHED'} 
+
+class OBJECT_OT_simple_bake_popnodegroups(bpy.types.Operator):
+    """Move an object with the mouse, example"""
+    bl_idname = "object.simple_bake_popnodegroups"
+    bl_label = "Pop all node groups"
+    
+    index = 0
+    _timer = None
+    original_uitype = None
+    
+    
+    def modal(self, context, event):
+        
+        if event.type == 'TIMER': #Only respond to timer events
+        
+            obj = bpy.data.objects["Cube"]#Need to figure out how we will get this in here
+            
+            l = len(obj.material_slots)
+            
+            if OBJECT_OT_simple_bake_popnodegroups.index == l:
+                #We are done
+                wm = context.window_manager
+                wm.event_timer_remove(self._timer)
+                OBJECT_OT_simple_bake_popnodegroups.index = 0
+                
+                bpy.context.area.ui_type = OBJECT_OT_simple_bake_popnodegroups.original_uitype
+                
+                return {'FINISHED'}
+            
+            elif obj.active_material_index == OBJECT_OT_simple_bake_popnodegroups.index:
+                #Do it
+                
+                mat = obj.material_slots[OBJECT_OT_simple_bake_popnodegroups.index].material
+                nodes = mat.node_tree.nodes
+                
+                for node in nodes:
+                    if node.bl_idname == "ShaderNodeGroup":
+                        #Here's one
+                        node.select = True
+                        nodes.active = node
+                        bpy.ops.node.group_ungroup('INVOKE_DEFAULT')
+                
+                OBJECT_OT_simple_bake_popnodegroups.index += 1
+            
+            else:
+                #Change active slot and do it next time
+                obj.active_material_index = OBJECT_OT_simple_bake_popnodegroups.index
+                
+        return {'PASS_THROUGH'}
+     
+    def execute(self, context  ):
+        OBJECT_OT_simple_bake_popnodegroups.original_uitype = bpy.context.area.ui_type
+        bpy.context.area.ui_type = "ShaderNodeTree"
+        
+        wm = context.window_manager
+        self._timer = wm.event_timer_add(0.1, window=context.window)
+        wm.modal_handler_add(self)
+        
+        return {'RUNNING_MODAL'}
 
