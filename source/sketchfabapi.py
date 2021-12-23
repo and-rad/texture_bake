@@ -1,3 +1,21 @@
+#########################################################################
+#
+# Copyright (C) 2021-2022 Andreas Raddau
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+#########################################################################
 
 import json
 import os
@@ -51,9 +69,9 @@ def upload(model_file, uploadname, apikey):
     This endpoint only accepts formData as we upload a file.
     """
     #model_endpoint = os.path.join(SKETCHFAB_API_URL, 'models')
-    
+
     model_endpoint = SKETCHFAB_API_URL + '/models'
-    
+
     functions.printmsg(f"Sketchfab URL is going to be: {model_endpoint}")
 
     # Optional parameters
@@ -93,16 +111,16 @@ def upload(model_file, uploadname, apikey):
         return False
     finally:
         f.close()
-    
+
     functions.printmsg(f"Status code from Sketchfab was {r.status_code}");
-    
+
     if r.status_code != requests.codes.created:
         functions.printmsg('Upload failed with error: {}'.format(r.json()))
         return False
 
     # Should be https://api.sketchfab.com/v3/models/XXXX
     model_url = r.headers['Location']
-    
+
     #For some reason this is wrong. Correct it here.
     return model_url.replace("https://api.sketchfab.com/v3/models/", "https://sketchfab.com/3d-models/")
 

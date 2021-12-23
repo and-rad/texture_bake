@@ -1,3 +1,22 @@
+#########################################################################
+#
+# Copyright (C) 2021-2022 Andreas Raddau
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+#########################################################################
+
 import bpy
 from pathlib import Path
 import tempfile
@@ -13,27 +32,27 @@ from bpy.types import PropertyGroup, UIList, Operator, Panel
 
 
 class SimpleBake_Previews:
-    
+
     pcoll = None
 
 
 
-def monkeyTip(message_lines, box):    
+def monkeyTip(message_lines, box):
     row = box.row()
     row.alert=True
     row.prop(bpy.context.scene.SimpleBake_Props, "showtips", icon="TRIA_DOWN" if bpy.context.scene.SimpleBake_Props.showtips else "TRIA_RIGHT", icon_only=True, emboss=False)
     row.label(text=f'{"Tip" if bpy.context.scene.SimpleBake_Props.showtips else "Tip available"}', icon="MONKEY")
     row.alignment = 'CENTER'
-    
+
     if bpy.context.scene.SimpleBake_Props.showtips:
         for line in message_lines:
             row = box.row()
             row.alignment = 'CENTER'
             row.scale_y = 0.5
             row.label(text=line)
-        
-    
-    
+
+
+
 
 class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
     #bl_idname = "object.simple_bake_panel"
@@ -41,7 +60,7 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "render"
-    
+
     current = True
     version = "0.0.0"
 
@@ -52,35 +71,35 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
     """
 
     def draw(self, context):
-        
+
         layout = self.layout
-        
+
         # box= layout.box()
         # box.scale_y = 3
         # box.alignment = 'CENTER'
-        
+
         # sb_logo = SimpleBake_Previews.pcoll["SimpleBake_Logo"]
         # box.label(text="", icon_value=sb_logo.icon_id)
-        
+
         if self.current == True:
             row = layout.row()
             row.alignment = 'CENTER'
             row.scale_y = 0.6
             row.label(text="", icon="CHECKMARK")
-            
+
             row = layout.row()
             row.alignment = 'CENTER'
             row.scale_y = 0.6
             row.label(text="SimpleBake is up-to-date")
 
-        
+
         if self.current == False:
             row = layout.row()
             row.alignment = 'CENTER'
             row.scale_y = 0.6
             row.alert=True
-            row.label(text="", icon="MOD_WAVE") 
-            
+            row.label(text="", icon="MOD_WAVE")
+
             row = layout.row()
             row.alignment = 'CENTER'
             row.scale_y = 0.6
@@ -91,14 +110,14 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
             row.scale_y = 0.6
             row.alert=True
             row.label(text="Update automatically in addon preferences")
-            
-        
+
+
         if self.current == "ERROR":
             row = layout.row()
             row.alignment = 'CENTER'
             row.scale_y = 0.6
             row.label(text="", icon="ERROR")
-            
+
             row = layout.row()
             row.alignment = 'CENTER'
             row.scale_y = 0.6
@@ -107,26 +126,26 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
             row.alignment = 'CENTER'
             row.scale_y = 0.6
             row.label(text="for updates. Are you online?")
-            
+
             row = layout.row()
             row.operator("object.simple_bake_protect_clear", icon='URL', text="Yes I *AM* online!!")
             row.scale_y = 1.5
-        
-        
+
+
         #Version
         row = layout.row()
         row.alignment = 'CENTER'
         row.scale_y = 0.6
         row.label(text=f"Installed version {self.version}")
-        
-        
+
+
         #if(bpy.context.scene.render.engine != "CYCLES"):
             #return
-        
+
         #layout.use_property_split = True
         #layout.use_property_decorate = False
-        
-        
+
+
         #--------------Supported version message------------------------
         n = bpy.app.version_string
         mvn = n.split(".")[0]
@@ -144,65 +163,65 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
             row.alignment = 'CENTER'
             row.label(text="Blender 3.0 or higher")
             return None
-        
-        
-        
+
+
+
         #-----------Global Mode Select------------------------
         box = layout.box()
         row = box.row()
-        row.scale_y = 1.5 
-        
+        row.scale_y = 1.5
+
         if context.scene.SimpleBake_Props.global_mode == "pbr_bake":
             modetxt = "Bake mode (PBR)"
         if context.scene.SimpleBake_Props.global_mode == "cycles_bake":
             modetxt = "Bake mode (Cycles)"
-        
+
         row.prop(context.scene.SimpleBake_Props, "global_mode", icon="SETTINGS", text=modetxt, expand=True)
-        
+
         row = box.row()
         row.operator("object.simple_bake_hide_all", icon='PROP_OFF', text="Hide all")
         row.operator("object.simple_bake_show_all", icon='PROP_ON', text="Show all")
-        
+
         #-----------------------------------------------------------------------------------------------------
-        
+
         #------------Presets--------------------------------------
         box = layout.box()
         row = box.row()
         #row.prop(bpy.context.scene.SimpleBake_Props, "presets_show", icon="TRIA_DOWN" if bpy.context.scene.SimpleBake_Props.presets_show else "TRIA_RIGHT", icon_only=True, emboss=False)
         #row.label(text="Presets", icon="PROP_ON")
         row.prop(bpy.context.scene.SimpleBake_Props, "presets_show", text="Settings presets", icon="PROP_ON" if bpy.context.scene.SimpleBake_Props.presets_show else "PROP_OFF", icon_only=False, emboss=False)
-        
+
         if bpy.context.scene.SimpleBake_Props.presets_show:
-                
+
             row = box.row()
             col = row.column()
             col.template_list("PRESETS_UL_List", "Presets List", context.scene.SimpleBake_Props,
                               "presets_list", context.scene.SimpleBake_Props, "presets_list_index")
-            
+
             col = row.column()
             col.operator("object.simple_bake_preset_refresh", text="", icon="FILE_REFRESH")
             col.operator("object.simple_bake_preset_load", text="", icon="CHECKMARK")
             col.operator("object.simple_bake_preset_delete", text="", icon="CANCEL")
-            
-            
+
+
             row = box.row()
             row.prop(context.scene.SimpleBake_Props, "preset_name")
             row.operator("object.simple_bake_preset_save", text="", icon="FUND")
-        
+
         #--------Object selection -------------------
         box = layout.box()
         row = box.row()
         #row.prop(bpy.context.scene.SimpleBake_Props, "bake_objects_show", icon="TRIA_DOWN" if bpy.context.scene.SimpleBake_Props.bake_objects_show else "TRIA_RIGHT", icon_only=True, emboss=False)
         #row.label(text="Bake objects", icon="PROP_ON")
         row.prop(bpy.context.scene.SimpleBake_Props, "bake_objects_show", text="Bake objects", icon="PROP_ON" if bpy.context.scene.SimpleBake_Props.bake_objects_show else "PROP_OFF", icon_only=False, emboss=False)
-        
+
         if bpy.context.scene.SimpleBake_Props.bake_objects_show:
-        
+
             row = box.row()
             row.prop(context.scene.SimpleBake_Props, "advancedobjectselection")
-            
+
             if context.scene.SimpleBake_Props.advancedobjectselection:
-                
+
                 row = box.row()
                 row.template_list("BAKEOBJECTS_UL_List", "Bake Objects List", context.scene.SimpleBake_Props,
                               "bakeobjs_advanced_list", context.scene.SimpleBake_Props, "bakeobjs_advanced_list_index")
@@ -214,14 +233,14 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                 row.operator('bakeobjs_advanced_list.move_item', text='Up', icon="TRIA_UP").direction="UP"
                 row.operator('bakeobjs_advanced_list.move_item', text='Down', icon="TRIA_DOWN").direction="DOWN"
                 row.operator('bakeobjs_advanced_list.refresh', text='Refresh', icon="FILE_REFRESH")
-                
-                
-                
+
+
+
             if context.scene.SimpleBake_Props.global_mode == "pbr_bake":
                 row = box.row()
                 row.prop(context.scene.SimpleBake_Props, "selected_s2a")
-                    
-                if(bpy.context.scene.SimpleBake_Props.selected_s2a): 
+
+                if(bpy.context.scene.SimpleBake_Props.selected_s2a):
                     row = box.row()
                     row.alignment = "RIGHT"
                     row.prop(context.scene.SimpleBake_Props, "targetobj")
@@ -234,9 +253,9 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                     #row = box.row()
                     row.alignment = "RIGHT"
                     row.prop(context.scene.SimpleBake_Props, "cage_extrusion")
-                        
-                    
-            
+
+
+
             if context.scene.SimpleBake_Props.global_mode == "cycles_bake":
                 row = box.row()
                 row.prop(context.scene.SimpleBake_Props, "cycles_s2a", text="Bake to target object (selected to active)")
@@ -251,9 +270,9 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                     row.alignment = "RIGHT"
                     row.prop(context.scene.SimpleBake_Props, "ray_distance")
                     row.prop(context.scene.SimpleBake_Props, "cage_extrusion")
-            
+
             if functions.check_for_render_inactive_modifiers():
-                
+
                 message_lines = [
                 "One or more selected objects",
                 "has a modifier enabled for",
@@ -261,9 +280,9 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                 "viewport. May cause unexpected results"
                 ]
                 monkeyTip(message_lines, box)
-                
+
             if functions.check_for_viewport_inactive_modifiers():
-                
+
                 message_lines = [
                 "One or more selected objects",
                 "has a modifier enabled in the",
@@ -272,25 +291,25 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                 "May cause unexpected results"
                 ]
                 monkeyTip(message_lines, box)
-        
+
         #--------PBR Bake Settings-------------------
-        
+
         if(context.scene.SimpleBake_Props.global_mode == "pbr_bake"):
-            
+
             box = layout.box()
             row = box.row()
             row.prop(bpy.context.scene.SimpleBake_Props, "pbr_settings_show", text="PBR Bakes", icon="PROP_ON" if bpy.context.scene.SimpleBake_Props.pbr_settings_show else "PROP_OFF", icon_only=True, emboss=False)
-            
+
             if bpy.context.scene.SimpleBake_Props.pbr_settings_show:
-                
+
                 row = box.row()
                 row.prop(context.scene.SimpleBake_Props, "selected_col")
                 row.prop(context.scene.SimpleBake_Props, "selected_metal")
-                
+
                 row = box.row()
                 row.prop(context.scene.SimpleBake_Props, "selected_sss")
                 row.prop(context.scene.SimpleBake_Props, "selected_ssscol")
-                
+
                 row = box.row()
                 row.prop(context.scene.SimpleBake_Props, "selected_rough")
                 row.prop(context.scene.SimpleBake_Props, "selected_normal")
@@ -303,7 +322,7 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                         col.prop(context.scene.SimpleBake_Props, "normal_format_switch")
                     elif context.scene.SimpleBake_Props.selected_rough:
                         col = row.column()
-                        col.prop(context.scene.SimpleBake_Props, "rough_glossy_switch")                    
+                        col.prop(context.scene.SimpleBake_Props, "rough_glossy_switch")
                         col = row.column()
                         col.label(text="")
                     elif context.scene.SimpleBake_Props.selected_normal:
@@ -311,7 +330,7 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                         col.label(text="")
                         col = row.column()
                         col.prop(context.scene.SimpleBake_Props, "normal_format_switch")
-                
+
                 row = box.row()
                 row.prop(context.scene.SimpleBake_Props, "selected_trans")
                 row.prop(context.scene.SimpleBake_Props, "selected_transrough")
@@ -326,54 +345,54 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                 row = box.row()
                 row.operator("object.simple_bake_selectall", icon='ADD')
                 row.operator("object.simple_bake_selectnone", icon='REMOVE')
-            
-                
+
+
         #--------Cycles Bake Settings-------------------
-        
+
         if(context.scene.SimpleBake_Props.global_mode == "cycles_bake"):
             box = layout.box()
             row = box.row()
             #row.prop(bpy.context.scene.SimpleBake_Props, "cyclesbake_settings_show", icon="TRIA_DOWN" if bpy.context.scene.SimpleBake_Props.cyclesbake_settings_show else "TRIA_RIGHT", icon_only=True, emboss=False)
             #row.label(text="CyclesBake", icon="PROP_ON")
             row.prop(bpy.context.scene.SimpleBake_Props, "cyclesbake_settings_show", text="CyclesBake", icon="PROP_ON" if bpy.context.scene.SimpleBake_Props.cyclesbake_settings_show else "PROP_OFF", icon_only=False, emboss=False)
-            
+
             if bpy.context.scene.SimpleBake_Props.cyclesbake_settings_show:
-                
+
                 cscene = bpy.context.scene.cycles
                 cbk = bpy.context.scene.render.bake
                 row=box.row()
                 row.prop(cscene, "bake_type")
-                
-                
+
+
                 col = box.column()
                 if cscene.bake_type == 'NORMAL':
                     col.prop(cbk, "normal_space", text="Space")
-        
+
                     sub = col.column()
                     sub.prop(cbk, "normal_r", text="Swizzle R")
                     sub.prop(cbk, "normal_g", text="G")
                     sub.prop(cbk, "normal_b", text="B")
-    
+
                 elif cscene.bake_type == 'COMBINED':
-    
+
                     col.prop(cbk, "use_pass_direct")
                     col.prop(cbk, "use_pass_indirect")
-        
+
                     col = box.column()
                     col.active = cbk.use_pass_direct or cbk.use_pass_indirect
                     col.prop(cbk, "use_pass_diffuse")
                     col.prop(cbk, "use_pass_glossy")
                     col.prop(cbk, "use_pass_transmission")
                     col.prop(cbk, "use_pass_emit")
-    
+
                 elif cscene.bake_type in {'DIFFUSE', 'GLOSSY', 'TRANSMISSION'}:
                     col = box.column()
                     col.prop(cbk, "use_pass_direct")
                     col.prop(cbk, "use_pass_indirect")
                     col.prop(cbk, "use_pass_color")
-                
-                
-                
+
+
+
                 #Tip alert
                 #message_lines = [
                 #"Remember to also set bake settings",
@@ -381,33 +400,33 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                 #"*SimpleBake settings always take precedence*"
                 #]
                 #monkeyTip(message_lines, box)
-                
-                
+
+
                 row = box.row()
                 col = row.column()
                 col.prop(context.scene.cycles, "samples")
                 #row = box.row()
-                
+
                 row = box.row()
                 col = row.column()
                 col.prop(context.scene.SimpleBake_Props, "rundenoise", text="Denoise CyclesBake")
                 if not bpy.context.scene.SimpleBake_Props.saveExternal:
                     col.enabled = False
-                
-            
-                    
+
+
+
         #----------Specials Settings--------------------
         box = layout.box()
         row = box.row()
         #row.prop(bpy.context.scene.SimpleBake_Props, "specials_show", icon="TRIA_DOWN" if bpy.context.scene.SimpleBake_Props.specials_show else "TRIA_RIGHT", icon_only=True, emboss=False)
         #row.label(text="Special bakes", icon="PROP_ON")
         row.prop(bpy.context.scene.SimpleBake_Props, "specials_show", text="Special bakes", icon="PROP_ON" if bpy.context.scene.SimpleBake_Props.specials_show else "PROP_OFF", icon_only=False, emboss=False)
-        
+
         if bpy.context.scene.SimpleBake_Props.specials_show:
             #row = box.row()
             #row.prop(context.scene.SimpleBake_Props, "dospecials")
-            
-        
+
+
             row = box.row()
             row.prop(context.scene.SimpleBake_Props, "selected_col_mats")
             row.prop(context.scene.SimpleBake_Props, "selected_col_vertex")
@@ -417,61 +436,61 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
             row = box.row()
             row.prop(context.scene.SimpleBake_Props, "selected_curvature")
             row.prop(context.scene.SimpleBake_Props, "selected_lightmap")
-            
+
             if bpy.context.scene.SimpleBake_Props.selected_lightmap and bpy.context.scene.SimpleBake_Props.global_mode == "pbr_bake":
-                
+
                 row = box.row()
                 row.alignment = "RIGHT"
                 row.prop(context.scene.cycles, "samples")
-                
+
                 # row = box.row()
                 # row.alignment = "RIGHT"
                 # row.prop(context.scene.cycles, "use_square_samples")
-            
+
             if bpy.context.scene.SimpleBake_Props.selected_lightmap:
-            
+
                 row = box.row()
                 row.alignment = "RIGHT"
                 row.prop(context.scene.SimpleBake_Props, "selected_lightmap_denoise")
                 if not bpy.context.scene.SimpleBake_Props.saveExternal: row.enabled = False
-                
+
                 row=box.row()
                 row.alignment = "RIGHT"
                 row.prop(context.scene.SimpleBake_Props, "lightmap_apply_colman")
                 if not bpy.context.scene.SimpleBake_Props.saveExternal: row.enabled = False
-                
-                
+
+
                 # row = box.row()
                 # row.alignment = "RIGHT"
                 # if bpy.context.scene.cycles.use_square_samples:
                     # count = bpy.context.scene.cycles.samples * bpy.context.scene.cycles.samples
                 # else:
                     # count = bpy.context.scene.cycles.samples
-                
+
                 # count = "{:,}".format(count)
                 # row.label(text=f"Total samples: {count}")
-            
+
             if bpy.context.scene.SimpleBake_Props.selected_lightmap and bpy.context.scene.SimpleBake_Props.global_mode == "pbr_bake":
-                
+
                 message_lines = [
                 "PBR bake doesn't normally need a sample",
                 "count, but a lightmap does"
                 ]
                 monkeyTip(message_lines, box)
-            
+
             if bpy.context.scene.SimpleBake_Props.selected_lightmap and bpy.context.scene.SimpleBake_Props.global_mode == "cycles_bake":
                 message_lines = [
                 "Lightmap will have sample count",
                 "settings that you have set for CyclesBake"
                 ]
                 monkeyTip(message_lines, box)
-            
-            
+
+
             row = box.row()
             #row.alignment = "RIGHT"
             row.operator("object.simple_bake_import_special_mats", icon='ADD')
-            
-        
+
+
         if context.scene.SimpleBake_Props.selected_s2a or context.scene.SimpleBake_Props.cycles_s2a:
             message_lines = [
             "Note: You are baking to taget object,",
@@ -479,69 +498,69 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
             "that target object only"
             ]
             monkeyTip(message_lines, box)
-        
-        
+
+
         #--------Texture Settings-------------------
-        
+
         box = layout.box()
         row=box.row()
         #row.prop(bpy.context.scene.SimpleBake_Props, "textures_show", icon="TRIA_DOWN" if bpy.context.scene.SimpleBake_Props.textures_show else "TRIA_RIGHT", icon_only=True, emboss=False)
         #row.label(text="Texture settings", icon="PROP_ON")
         row.prop(bpy.context.scene.SimpleBake_Props, "textures_show", text="Texture settings", icon="PROP_ON" if bpy.context.scene.SimpleBake_Props.textures_show else "PROP_OFF", icon_only=False, emboss=False)
-        
+
         if bpy.context.scene.SimpleBake_Props.textures_show:
-            
+
             row = box.row()
             row.label(text="Bake at:")
-            row.scale_y = 0.5 
-            
+            row.scale_y = 0.5
+
             row = box.row()
-            row.prop(context.scene.SimpleBake_Props, "imgwidth") 
+            row.prop(context.scene.SimpleBake_Props, "imgwidth")
             row.prop(context.scene.SimpleBake_Props, "imgheight")
-            
+
             row = box.row()
             row.operator("object.simple_bake_decrease_texture_res", icon = "TRIA_DOWN")
             row.operator("object.simple_bake_increase_texture_res", icon = "TRIA_UP")
 
             row=box.row()
-            
+
             row = box.row()
             row.label(text="Output at:")
-            row.scale_y = 0.5 
-            
+            row.scale_y = 0.5
+
             row = box.row()
-            row.prop(context.scene.SimpleBake_Props, "outputwidth") 
+            row.prop(context.scene.SimpleBake_Props, "outputwidth")
             row.prop(context.scene.SimpleBake_Props, "outputheight")
-            
+
             row = box.row()
             row.operator("object.simple_bake_decrease_output_res", icon = "TRIA_DOWN")
             row.operator("object.simple_bake_increase_output_res", icon = "TRIA_UP")
 
-            
+
             row = box.row()
             row.alignment = "RIGHT"
             row.prop(context.scene.render.bake, "margin", text="Bake Margin")
-            
+
             row = box.row()
             row.prop(context.scene.SimpleBake_Props, "everything32bitfloat")
             #if bpy.context.scene.SimpleBake_Props.saveExternal:
                 #row.enabled = False
-            
+
             row = box.row()
             row.prop(context.scene.SimpleBake_Props, "useAlpha")
-            
+
             #For now, this is CyclesBake only
             if context.scene.SimpleBake_Props.global_mode == "cycles_bake":
                 row = box.row()
                 row.prop(context.scene.SimpleBake_Props, "tex_per_mat")
-            
+
             row = box.row()
             row.prop(context.scene.SimpleBake_Props, "mergedBake")
             # if context.scene.SimpleBake_Props.useAlpha or context.scene.SimpleBake_Props.selected_s2a or context.scene.SimpleBake_Props.cycles_s2a or context.scene.SimpleBake_Props.tex_per_mat:
                 # row.enabled = False
             # if (context.scene.SimpleBake_Props.advancedobjectselection and len(context.scene.SimpleBake_Props.bakeobjs_advanced_list)<2) or ((not context.scene.SimpleBake_Props.advancedobjectselection) and len(context.selected_objects)<2):
                 # row.enabled = False
-            
+
             if context.scene.SimpleBake_Props.mergedBake:
                 row = box.row()
                 row.prop(context.scene.SimpleBake_Props, "mergedBakeName")
@@ -553,11 +572,11 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
         #row.prop(bpy.context.scene.SimpleBake_Props, "export_show", icon="TRIA_DOWN" if bpy.context.scene.SimpleBake_Props.export_show else "TRIA_RIGHT", icon_only=True, emboss=False)
         #row.label(text="Export settings", icon="PROP_ON")
         row.prop(bpy.context.scene.SimpleBake_Props, "export_show", text="Export settings", icon="PROP_ON" if bpy.context.scene.SimpleBake_Props.export_show else "PROP_OFF", icon_only=False, emboss=False)
-   
+
         if bpy.context.scene.SimpleBake_Props.export_show:
-            
+
             if functions.isBlendSaved():
-                
+
                 row = box.row()
                 col = row.column()
                 col.prop(context.scene.SimpleBake_Props, "saveExternal")
@@ -566,46 +585,46 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                 col = row.column()
                 col.prop(context.scene.SimpleBake_Props, "saveObj")
                 if(not functions.isBlendSaved()):
-                    col.enabled = False  
-                    
-                
+                    col.enabled = False
+
+
                 if context.scene.SimpleBake_Props.saveExternal or context.scene.SimpleBake_Props.saveObj:
                     row = box.row()
                     #row.alignment = "RIGHT"
                     row.prop(context.scene.SimpleBake_Props, "saveFolder", text="Folder name")
-                
-                 
+
+
                     row = box.row()
                     row.prop(context.scene.SimpleBake_Props, "exportFolderPerObject")
                     if bpy.context.scene.SimpleBake_Props.saveExternal == False:
                         row.enabled = False
-        
+
                     if context.scene.SimpleBake_Props.saveObj:
                         row=box.row()
                         row.prop(context.scene.SimpleBake_Props, "applymodsonmeshexport")
                         #row.alignment = "RIGHT"
-                        
+
                         row=box.row()
                         row.prop(context.scene.SimpleBake_Props, "applytransformation")
-        
-        
+
+
                     row = box.row()
                     #row.alignment = "RIGHT"
-                    row.prop(context.scene.SimpleBake_Props, "folderdatetime")        
-        
-        
-        
+                    row.prop(context.scene.SimpleBake_Props, "folderdatetime")
+
+
+
                     if context.scene.SimpleBake_Props.saveObj and not bpy.context.scene.SimpleBake_Props.exportFolderPerObject:
                         row = box.row()
                         row.alignment = "RIGHT"
                         row.prop(context.scene.SimpleBake_Props, "fbxName")
-        
-            
+
+
                     row = box.row()
                     #row.alignment = "RIGHT"
                     row.prop(context.scene.SimpleBake_Props, "exportfileformat", text="Format")
-                    
-        
+
+
                     row = box.row()
                     #row.alignment = "RIGHT"
                     if context.scene.SimpleBake_Props.exportfileformat == "OPEN_EXR":
@@ -615,23 +634,23 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                         if not context.scene.SimpleBake_Props.saveExternal or context.scene.SimpleBake_Props.exportfileformat == "JPEG"\
                         or context.scene.SimpleBake_Props.exportfileformat == "TARGA":
                             row.enabled = False
-                
-                    
+
+
                     if(context.scene.SimpleBake_Props.global_mode == "pbr_bake"):
                         row = box.row()
                         row.prop(context.scene.SimpleBake_Props, "selected_applycolmantocol")
                         if not bpy.context.scene.SimpleBake_Props.selected_col:
                             row.enabled = False
-                    
+
                     if(context.scene.SimpleBake_Props.global_mode == "cycles_bake"):
                         row = box.row()
                         row.prop(context.scene.SimpleBake_Props, "exportcyclescolspace")
                         if bpy.context.scene.cycles.bake_type == "NORMAL":
-                            row.enabled = False 
-                        
-            
-                
-                
+                            row.enabled = False
+
+
+
+
                 if not context.scene.SimpleBake_Props.folderdatetime and context.scene.SimpleBake_Props.saveExternal:
                     #Tip alert
                     message_lines = [
@@ -640,8 +659,8 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                         "overwritten. Be careful!"
                         ]
                     monkeyTip(message_lines, box)
-            
-            
+
+
                 if context.scene.SimpleBake_Props.everything32bitfloat and context.scene.SimpleBake_Props.saveExternal and context.scene.SimpleBake_Props.exportfileformat != "OPEN_EXR":
                     #Tip alert
                     message_lines = [
@@ -650,8 +669,8 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                         "to preserve your 32bit image(s)"
                         ]
                     monkeyTip(message_lines, box)
-                    
-                    
+
+
                 if context.scene.SimpleBake_Props.exportfileformat == "OPEN_EXR" and context.scene.SimpleBake_Props.saveExternal:
                     #Tip alert
                     message_lines = [
@@ -661,21 +680,21 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                         "Blender defaults will be ignored"
                         ]
                     monkeyTip(message_lines, box)
-        
+
             else:
                 row=box.row()
                 row.label(text="Unavailable - Blend file not saved")
-    
-        
+
+
         #--------UV Settings-------------------
         box = layout.box()
         row = box.row()
         #row.prop(bpy.context.scene.SimpleBake_Props, "uv_show", icon="TRIA_DOWN" if bpy.context.scene.SimpleBake_Props.uv_show else "TRIA_RIGHT", icon_only=True, emboss=False)
         #row.label(text="UV settings", icon="PROP_ON")
         row.prop(bpy.context.scene.SimpleBake_Props, "uv_show", text="UV settings", icon="PROP_ON" if bpy.context.scene.SimpleBake_Props.uv_show else "PROP_OFF", icon_only=False, emboss=False)
-        
+
         if bpy.context.scene.SimpleBake_Props.uv_show:
-            
+
             #UV mode
             row = box.row()
             row.prop(context.scene.SimpleBake_Props, "uv_mode", expand=True)
@@ -683,37 +702,37 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                 row.enabled = True
             else:
                 row.enabled = False
-            
-            
+
+
             if bpy.context.scene.SimpleBake_Props.uv_mode == "udims":
-                
+
                 #Tip alert
                 message_lines = [
                     "You must manually create UV map over",
                     "UDIM tiles prior to bake"
                     ]
                 monkeyTip(message_lines, box)
-            
+
                 row = box.row()
                 row.prop(context.scene.SimpleBake_Props, "udim_tiles")
-                
-                
-            
+
+
+
             if bpy.context.scene.SimpleBake_Props.uv_mode == "udims":
                 pass
-            
+
             elif not context.scene.SimpleBake_Props.tex_per_mat:
                 row = box.row()
                 row.prop(context.scene.SimpleBake_Props, "newUVoption")
-                
+
                 if context.scene.SimpleBake_Props.newUVoption:
                     objects = []
                     if context.scene.SimpleBake_Props.advancedobjectselection:
                         objects = functions.advanced_object_selection_to_list()
                     else:
                         objects = context.selected_objects
-                    
-                    
+
+
                     if len(objects) >1 and not (context.scene.SimpleBake_Props.selected_s2a or context.scene.SimpleBake_Props.cycles_s2a):
                         row = box.row()
                         row.alignment = "RIGHT"
@@ -736,17 +755,17 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
             else:
                 row = box.row()
                 row.prop(context.scene.SimpleBake_Props, "expand_mat_uvs")
-                
-            
-            row = box.row()  
+
+
+            row = box.row()
             row.prop(context.scene.SimpleBake_Props, "prefer_existing_sbmap")
             if context.scene.SimpleBake_Props.newUVoption == True or context.scene.SimpleBake_Props.expand_mat_uvs:
                 row.enabled = False
-            
-                
+
+
             row = box.row()
             row.prop(context.scene.SimpleBake_Props, "restoreOrigUVmap")
-            
+
             if bpy.context.scene.SimpleBake_Props.newUVoption and bpy.context.scene.SimpleBake_Props.restoreOrigUVmap and not bpy.context.scene.SimpleBake_Props.prepmesh:
                 #Tip alert
                 message_lines = [
@@ -755,8 +774,8 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                 "original UVs. Manually change active UV map ",
                 "after bake"
                 ]
-                
-            
+
+
             if bpy.context.scene.SimpleBake_Props.newUVoption and bpy.context.scene.SimpleBake_Props.newUVmethod == "SmartUVProject_Individual" and bpy.context.scene.SimpleBake_Props.mergedBake and bpy.context.scene.SimpleBake_Props.uv_mode != "udims":
                 #Tip alert
                 message_lines = [
@@ -765,8 +784,8 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                 "Bakes will be on top of each other!"
                 ]
                 monkeyTip(message_lines, box)
-            
-    
+
+
             if not bpy.context.scene.SimpleBake_Props.newUVoption  and bpy.context.scene.SimpleBake_Props.mergedBake:
                 #Tip alert
                 message_lines = [
@@ -775,8 +794,8 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                 "make sure those UVs don't overlap!"
                 ]
                 monkeyTip(message_lines, box)
-                       
-            
+
+
             if bpy.context.scene.SimpleBake_Props.newUVoption and not bpy.context.scene.SimpleBake_Props.saveObj and not bpy.context.scene.SimpleBake_Props.prepmesh and bpy.context.scene.SimpleBake_Props.bgbake == "bg":
                 #Tip alert
                 message_lines = [
@@ -786,36 +805,36 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                 "have no access to an object with the new UV map!"
                 ]
                 monkeyTip(message_lines, box)
-                
-        
-        
+
+
+
         #--------Other Settings-------------------
-        
-        
+
+
         box = layout.box()
         row = box.row()
         #row.prop(bpy.context.scene.SimpleBake_Props, "other_show", icon="TRIA_DOWN" if bpy.context.scene.SimpleBake_Props.other_show else "TRIA_RIGHT", icon_only=True, emboss=False)
         #row.label(text="Other settings", icon="PROP_ON")
         row.prop(bpy.context.scene.SimpleBake_Props, "other_show", text="Other settings", icon="PROP_ON" if bpy.context.scene.SimpleBake_Props.other_show else "PROP_OFF", icon_only=False, emboss=False)
-        
+
         if bpy.context.scene.SimpleBake_Props.other_show:
-            
+
             row=box.row()
             row.alignment = 'LEFT'
             row.prop(context.scene.SimpleBake_Props, "batchName")
-            
-        
+
+
             row = box.row()
             if bpy.context.scene.SimpleBake_Props.bgbake == "fg":
                 text = "Copy objects and apply bakes"
             else:
                 text = "Copy objects and apply bakes (after import)"
-            
+
             row.prop(context.scene.SimpleBake_Props, "prepmesh", text=text)
             if context.scene.SimpleBake_Props.tex_per_mat:
                 row.enabled = False
-                    
-            
+
+
             if (context.scene.SimpleBake_Props.prepmesh == True):
                 if bpy.context.scene.SimpleBake_Props.bgbake == "fg":
                     text = "Hide source objects after bake"
@@ -823,17 +842,17 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                     text = "Hide source objects after bake (after import)"
                 row = box.row()
                 row.prop(context.scene.SimpleBake_Props, "hidesourceobjects", text=text)
-                
+
                 row = box.row()
                 row.prop(context.scene.SimpleBake_Props, "createglTFnode")
                 if bpy.context.scene.SimpleBake_Props.createglTFnode:
                     row.prop(context.scene.SimpleBake_Props, "glTFselection", text="")
-            
+
             row = box.row()
             row.prop(context.scene.SimpleBake_Props, "preserve_materials")
-        
-            
-            
+
+
+
             if bpy.context.preferences.addons["cycles"].preferences.has_active_device():
                 row=box.row()
                 row.prop(context.scene.cycles, "device")
@@ -845,7 +864,7 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
             else:
                 row=box.row()
                 row.label(text="No valid GPU device in Blender Preferences. Using CPU.")
-                
+
             if bpy.context.preferences.addons["cycles"].preferences.compute_device_type == "OPTIX" and bpy.context.preferences.addons["cycles"].preferences.has_active_device():
                 #Tip alert
                 message_lines = [
@@ -854,8 +873,8 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                 "If you encounter problems bake with CPU"
                 ]
                 monkeyTip(message_lines, box)
-                
-            
+
+
             if bpy.context.scene.SimpleBake_Props.global_mode == "pbr_bake" and\
                 not bpy.context.scene.SimpleBake_Props.selected_col and\
                 not bpy.context.scene.SimpleBake_Props.selected_metal and\
@@ -876,7 +895,7 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                     bpy.context.scene.SimpleBake_Props.selected_ao or \
                     bpy.context.scene.SimpleBake_Props.selected_thickness or \
                     bpy.context.scene.SimpleBake_Props.selected_curvature):
-                        
+
                         message_lines = [
                         "You are baking only special maps (no primary)",
                         "while using 'Copy objects and apply bakes'",
@@ -884,42 +903,42 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                         "material(s), but disconnected"
                         ]
                         monkeyTip(message_lines, box)
-                        
-                    
-            
-        
+
+
+
+
         #-------------Channel packing --------------------------
         if(context.scene.SimpleBake_Props.global_mode == "pbr_bake"):
-            
+
             box = layout.box()
             row = box.row()
             #row.prop(bpy.context.scene.SimpleBake_Props, "channelpacking_show", icon="TRIA_DOWN" if bpy.context.scene.SimpleBake_Props.channelpacking_show else "TRIA_RIGHT", icon_only=True, emboss=False)
             #row.label(text="Channel packing", icon="PROP_ON")
             row.prop(bpy.context.scene.SimpleBake_Props, "channelpacking_show", text="Channel packing", icon="PROP_ON" if bpy.context.scene.SimpleBake_Props.channelpacking_show else "PROP_OFF", icon_only=False, emboss=False)
-            
+
             if bpy.context.scene.SimpleBake_Props.channelpacking_show:
-            
+
                 if not functions.isBlendSaved():
-            
+
                     row=box.row()
                     row.label(text="Unavailable - Blend file not saved")
-            
+
                 elif not bpy.context.scene.SimpleBake_Props.saveExternal:
-        
+
                     row=box.row()
                     row.label(text="Unavailable - You must be exporting your bakes")
-        
+
                 else:
-                
+
                     row=box.row()
                     col = row.column()
-            
+
                     col.template_list("CPTEX_UL_List", "CP Textures List", context.scene.SimpleBake_Props,
                                           "cp_list", context.scene.SimpleBake_Props, "cp_list_index")
                     col = row.column()
                     col.operator("object.simple_bake_cptex_delete", text="", icon="CANCEL")
                     col.operator("object.simple_bake_cptex_setdefaults", text="", icon="MONKEY")
-                    
+
                     row=box.row()
                     row.prop(context.scene.SimpleBake_Props, "cp_name")
                     row=box.row()
@@ -936,20 +955,20 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                     row=box.row()
                     row.scale_y=0.7
                     row.prop(context.scene.SimpleBake_Props, "cptex_A", text="A")
-                    
-                    
+
+
                     cp_list = bpy.context.scene.SimpleBake_Props.cp_list
-                    current_name = bpy.context.scene.SimpleBake_Props.cp_name 
+                    current_name = bpy.context.scene.SimpleBake_Props.cp_name
                     if current_name in cp_list: #Editing a cpt that is already there
                         index = cp_list.find(current_name)
                         cpt = cp_list[index]
-                        
+
                         if cpt.R != bpy.context.scene.SimpleBake_Props.cptex_R or\
                             cpt.G != bpy.context.scene.SimpleBake_Props.cptex_G or\
                             cpt.B != bpy.context.scene.SimpleBake_Props.cptex_B or\
                             cpt.A != bpy.context.scene.SimpleBake_Props.cptex_A or\
                             cpt.file_format != bpy.context.scene.SimpleBake_Props.channelpackfileformat:
-                                
+
                                 row = box.row()
                                 row.alert=True
                                 text = f"Update {current_name} (!!not saved!!)"
@@ -959,21 +978,21 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                             row = box.row()
                             row.label(text=text)
                             row.alignment = 'CENTER'
-                            
+
                     else: #New item
                         row = box.row()
                         text = "Add new (!!not saved!!)"
                         row.alert = True
                         row.operator("object.simple_bake_cptex_add", text=text, icon="ADD")
-                        
-                    
-                    
+
+
+
                     if bpy.context.scene.SimpleBake_Props.cptex_R == "" or\
                         bpy.context.scene.SimpleBake_Props.cptex_G == "" or\
                         bpy.context.scene.SimpleBake_Props.cptex_B == "" or\
                         bpy.context.scene.SimpleBake_Props.cptex_A == "":
                             row.enabled = False
-                
+
                 if context.scene.SimpleBake_Props.channelpackfileformat != "OPEN_EXR":
                     lines = [\
                         "Other formats MIGHT work, but the",\
@@ -981,36 +1000,36 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                         "channel packing in Blender is to use",\
                         "OpenEXR. Use OpenEXR if you can"]
                     monkeyTip(lines, box)
-                
-        
+
+
         #-------------Buttons-------------------------
-        
-        
+
+
         row = layout.row()
         row.scale_y = 1.5
         row.prop(context.scene.SimpleBake_Props, "bgbake", expand=True)
-        
+
         if bpy.context.scene.SimpleBake_Props.bgbake == "bg":
             row=layout.row()
-            row.prop(context.scene.SimpleBake_Props, "bgbake_name", text="Name: ")         
-        
+            row.prop(context.scene.SimpleBake_Props, "bgbake_name", text="Name: ")
+
         row = layout.row()
         row.scale_y = 2
         row.operator("object.simple_bake_mapbake", icon='RENDER_RESULT')
-            
-        
 
 
-        box = layout.box()    
+
+
+        box = layout.box()
         row=box.row()
         row.label(text="Background bakes")
-        
+
         row = box.row()
         row.prop(context.scene.SimpleBake_Props, "bg_status_show", text="", icon="TRIA_DOWN" if bpy.context.scene.SimpleBake_Props.bg_status_show else "TRIA_RIGHT", icon_only=False, emboss=False)
         row.label(text="Show status of background bakes")
 
         if context.scene.SimpleBake_Props.bg_status_show:
-            
+
             if len(bgbake_ops.bgops_list) == 0 and len(bgbake_ops.bgops_list_finished) == 0:
                 row = box.row()
                 row.label(text="No running or finished background bakes", icon="MONKEY")
@@ -1019,21 +1038,21 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                 for p in bgbake_ops.bgops_list:
                     t = Path(tempfile.gettempdir())
                     t = t / f"SimpleBake_Bgbake_{str(p[0].pid)}"
-                    
+
                     try:
                         with open(str(t), "r") as progfile:
                             progress = progfile.readline()
                     except:
                         #No file yet, as no bake operation has completed yet. Holding message
                         progress = 0
-                    
+
                     row = box.row()
                     name = p[3]
                     if name == "": name = "Untitled"
-                    row.label(text=f"{name} - baking in progress {progress}%", icon="GHOST_DISABLED")  
+                    row.label(text=f"{name} - baking in progress {progress}%", icon="GHOST_DISABLED")
                     row.scale_y = 0.7
-        
-        
+
+
             if len(bgbake_ops.bgops_list_finished) == 0:
                 pass
             else:
@@ -1045,18 +1064,18 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
                     if name == "": name = "Untitled"
                     col.label(text=f"{name} - finished!", icon="GHOST_ENABLED")
                     col = row.column()
-                    col.operator("object.simple_bake_bgbake_import_individual", text="", icon="IMPORT").pnum = int(p[0].pid)  
+                    col.operator("object.simple_bake_bgbake_import_individual", text="", icon="IMPORT").pnum = int(p[0].pid)
                     col = row.column()
                     col.operator("object.simple_bake_bgbake_delete_individual", text="", icon="CANCEL").pnum = int(p[0].pid)
-                    
-                    
-                
-        
+
+
+
+
         #-----Import buttons-----------------
-        
+
         row = box.row()
         row.scale_y = 1.5
-        
+
         # - BG status button
         # col = row.column()
         # if len(bgbake_ops.bgops_list) == 0:
@@ -1065,12 +1084,12 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
         # else:
             # enable = True
             # icon = "GHOST_ENABLED"
-                
+
         # col.operator("object.simple_bake_bgbake_status", text="Status", icon=icon)
         # col.enabled = enable
-        
+
         # - BG import button
-        
+
         col = row.column()
         if len(bgbake_ops.bgops_list_finished) != 0:
             enable = True
@@ -1078,13 +1097,13 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
         else:
             enable = False
             icon = "IMPORT"
-        
+
         col.operator("object.simple_bake_bgbake_import", text="Import all", icon=icon)
         col.enabled = enable
 
-        
+
         #BG erase button
-        
+
         col = row.column()
         if len(bgbake_ops.bgops_list_finished) != 0:
             enable = True
@@ -1092,11 +1111,11 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
         else:
             enable = False
             icon = "TRASH"
-        
+
         col.operator("object.simple_bake_bgbake_clear", text="Discard all", icon=icon)
-        col.enabled = enable       
-        
-        
+        col.enabled = enable
+
+
         # row = box.row()
         # row.alignment = 'CENTER'
         # row.label(text=f"BG bakes running - {len(bgbake_ops.bgops_list)} | Available for import - {len(bgbake_ops.bgops_list_finished)}")
@@ -1110,18 +1129,18 @@ class OBJECT_PT_simple_bake_panel(bpy.types.Panel):
             # ]
             # monkeyTip(message_lines, box)
 
-        
+
         if(context.scene.SimpleBake_Props.global_mode == "pbr_bake"):
             row = layout.row()
             row.scale_y = 1.5
-            row.operator("object.simple_bake_sketchfabupload", text="Sketchfab Upload", icon="EXPORT") 
-            
+            row.operator("object.simple_bake_sketchfabupload", text="Sketchfab Upload", icon="EXPORT")
+
         box = layout.box()
         row = box.row()
         #row.operator("object.simple_bake_popnodegroups")
-            
-            
-        
+
+
+
 
 class SimpleBakePreferences(bpy.types.AddonPreferences):
     # this must match the add-on name, use '__package__'
@@ -1131,9 +1150,9 @@ class SimpleBakePreferences(bpy.types.AddonPreferences):
     apikey: bpy.props.StringProperty(name="Sketchfab API Key: ")
     img_name_format: bpy.props.StringProperty(name="Image format string",
         default="%OBJ%_%BATCH%_%BAKEMODE%_%BAKETYPE%")
-    
+
     justupdated = False
-    
+
     #Aliases
     diffuse_alias: bpy.props.StringProperty(name="Diffuse", default="diffuse")
     metal_alias: bpy.props.StringProperty(name="Metal", default="metalness")
@@ -1146,50 +1165,50 @@ class SimpleBakePreferences(bpy.types.AddonPreferences):
     clearcoatrough_alias: bpy.props.StringProperty(name="Clearcoat Roughness", default="clearcoatroughness")
     emission_alias: bpy.props.StringProperty(name="Emission", default="emission")
     specular_alias: bpy.props.StringProperty(name="Specular", default="specular")
-    alpha_alias: bpy.props.StringProperty(name="Alpha", default="alpha")    
+    alpha_alias: bpy.props.StringProperty(name="Alpha", default="alpha")
     sss_alias: bpy.props.StringProperty(name="SSS", default="sss")
     ssscol_alias: bpy.props.StringProperty(name="SSS Colour", default="ssscol")
-    
+
     ao_alias: bpy.props.StringProperty(name=SimpleBakeConstants.AO, default="ao")
     curvature_alias: bpy.props.StringProperty(name=SimpleBakeConstants.CURVATURE, default="curvature")
     thickness_alias: bpy.props.StringProperty(name=SimpleBakeConstants.THICKNESS, default="thickness")
     vertexcol_alias: bpy.props.StringProperty(name=SimpleBakeConstants.VERTEXCOL, default="vertexcol")
     colid_alias: bpy.props.StringProperty(name=SimpleBakeConstants.COLOURID, default="colid")
     lightmap_alias: bpy.props.StringProperty(name=SimpleBakeConstants.LIGHTMAP, default="lightmap")
-    
+
     @classmethod
     def reset_img_string(self):
         prefs = bpy.context.preferences.addons[__package__].preferences
         #prefs.img_name_format = "BOO"
         prefs.property_unset("img_name_format")
         bpy.ops.wm.save_userpref()
-        
+
     @classmethod
     def reset_aliases(self):
         prefs = bpy.context.preferences.addons[__package__].preferences
-        
+
         prefs.property_unset("diffuse_alias")
-        prefs.property_unset("metal_alias")  
-        prefs.property_unset("roughness_alias")  
-        prefs.property_unset("normal_alias")  
-        prefs.property_unset("transmission_alias")  
-        prefs.property_unset("transmissionrough_alias")  
-        prefs.property_unset("clearcoat_alias")  
-        prefs.property_unset("clearcoatrough_alias")  
+        prefs.property_unset("metal_alias")
+        prefs.property_unset("roughness_alias")
+        prefs.property_unset("normal_alias")
+        prefs.property_unset("transmission_alias")
+        prefs.property_unset("transmissionrough_alias")
+        prefs.property_unset("clearcoat_alias")
+        prefs.property_unset("clearcoatrough_alias")
         prefs.property_unset("emission_alias")
-        prefs.property_unset("specular_alias")  
+        prefs.property_unset("specular_alias")
         prefs.property_unset("alpha_alias")
         prefs.property_unset("sss_alias")
         prefs.property_unset("ssscol_alias")
-        prefs.property_unset("ao_alias") 
-        prefs.property_unset("curvature_alias") 
-        prefs.property_unset("thickness_alias") 
-        prefs.property_unset("vertexcol_alias") 
-        prefs.property_unset("colid_alias") 
-        prefs.property_unset("lightmap_alias") 
+        prefs.property_unset("ao_alias")
+        prefs.property_unset("curvature_alias")
+        prefs.property_unset("thickness_alias")
+        prefs.property_unset("vertexcol_alias")
+        prefs.property_unset("colid_alias")
+        prefs.property_unset("lightmap_alias")
 
-        bpy.ops.wm.save_userpref()     
-    
+        bpy.ops.wm.save_userpref()
+
     def draw(self, context):
         layout = self.layout
         row = layout.row()
@@ -1197,25 +1216,25 @@ class SimpleBakePreferences(bpy.types.AddonPreferences):
         row = layout.row()
         row.prop(self, "apikey")
         current = OBJECT_PT_simple_bake_panel.current
-        
+
         row = layout.row()
         if current:
             row.label(text="SimpleBake is up to date (last checked when Blender started)")
         else:
             if self.justupdated:
                 row.label(text="Update complete. Please restart Blender to take effect", icon="MONKEY")
-                
+
             else:
                 row.label(text="There is a newer version of SimpleBake available. Click below to update", icon="MOD_WAVE")
                 row = layout.row()
                 row.operator("object.simple_bake_installupdate", icon="MOD_WAVE")
                 row.scale_y = 2
-       
+
         row = layout.row()
         row.scale_y = 2
         row.operator("object.simple_bake_releasenotes", icon="MOD_WAVE")
-        
-        
+
+
         box = layout.box()
         row = box.row()
         row.label(text="Format string for image names")
@@ -1233,34 +1252,34 @@ class SimpleBakePreferences(bpy.types.AddonPreferences):
         test_obj = "Cube"
         test_baketype = "diffuse"
         row.label(text=f"Current: {functions.gen_image_name(test_obj, test_baketype, demo=True)}")
-        
+
         row = box.row()
         row.prop(self, "img_name_format")
         row = box.row()
         row.operator("object.simple_bake_default_imgname_string")
-        
+
         #PBR Aliases
         box = layout.box()
-        
-        
+
+
         row = box.row()
         row.label(text="Aliases for PBR bake types")
-        
+
         row = box.row()
         row.label(text="WARNING: Sketchfab looks for certain values. Changing these may break SF Upload")
-        
+
         row = box.row()
         col = row.column()
         col.prop(self, "diffuse_alias")
         col = row.column()
-        col.prop(self, "metal_alias")        
+        col.prop(self, "metal_alias")
 
         row = box.row()
         col = row.column()
         col.prop(self, "sss_alias")
         col = row.column()
-        col.prop(self, "ssscol_alias")        
-        
+        col.prop(self, "ssscol_alias")
+
         row = box.row()
         col = row.column()
         col.prop(self, "roughness_alias")
@@ -1271,70 +1290,70 @@ class SimpleBakePreferences(bpy.types.AddonPreferences):
         col = row.column()
         col.prop(self, "transmission_alias")
         col = row.column()
-        col.prop(self, "transmissionrough_alias")  
+        col.prop(self, "transmissionrough_alias")
 
         row = box.row()
         col = row.column()
         col.prop(self, "clearcoat_alias")
         col = row.column()
-        col.prop(self, "clearcoatrough_alias")  
+        col.prop(self, "clearcoatrough_alias")
 
         row = box.row()
         col = row.column()
         col.prop(self, "emission_alias")
         col = row.column()
-        col.prop(self, "specular_alias")  
-        
+        col.prop(self, "specular_alias")
+
         row = box.row()
         col = row.column()
         col.prop(self, "alpha_alias")
         col = row.column()
-        col.prop(self, "normal_alias")    
-        col.label(text="")  
-        
+        col.prop(self, "normal_alias")
+        col.label(text="")
+
         #Specials Aliases
         box = layout.box()
-        
+
         row = box.row()
         row.label(text="Aliases for special bake types")
-        
+
         row = box.row()
         col = row.column()
         col.prop(self, "ao_alias")
         col = row.column()
-        col.prop(self, "curvature_alias")        
-        
+        col.prop(self, "curvature_alias")
+
         row = box.row()
         col = row.column()
         col.prop(self, "thickness_alias")
         col = row.column()
-        col.prop(self, "vertexcol_alias")    
+        col.prop(self, "vertexcol_alias")
 
         row = box.row()
         col = row.column()
         col.prop(self, "colid_alias")
         col = row.column()
         col.prop(self, "lightmap_alias")
-        
+
         #Reset button
         box = layout.box()
         row = box.row()
         row.operator("object.simple_bake_default_aliases")
-        
- 
+
+
 
 class OBJECT_OT_simple_bake_releasenotes(bpy.types.Operator):
     """View the SimpleBake release notes (opens browser)"""
     bl_idname = "object.simple_bake_releasenotes"
     bl_label = "View the SimpleBake release notes (opens browser)"
-    
+
     def execute(self, context):
         import webbrowser
         webbrowser.open('http://www.toohey.co.uk/SimpleBake/releasenotes3.html', new=2)
-        return {'FINISHED'} 
+        return {'FINISHED'}
 
-        
-        
+
+
 #---------------------Advanced object selection list -----------------------------------
 class ListItem(PropertyGroup):
     """Group of properties representing an item in the list."""
@@ -1377,34 +1396,34 @@ class LIST_OT_NewItem(Operator):
     @classmethod
     def poll(cls, context):
         return len(bpy.context.selected_objects)
-    
+
     def execute(self, context):
         #Lets get rid of the non-mesh objects
         functions.deselect_all_not_mesh()
-        
-        
+
+
         objs = bpy.context.selected_objects.copy()
-        
+
         #Check all mesh. Throw error if not
         for obj in objs:
-            
+
             if obj.type != "MESH":
                 self.report({"ERROR"}, f"ERROR: Selected object '{obj.name}' is not mesh")
                 return {"CANCELLED"}
-        
-        
+
+
         #Add if not already in the list
         for obj in objs:
             r = [i.name for i in context.scene.SimpleBake_Props.bakeobjs_advanced_list if i.name == obj.name]
-            
+
             if len(r) == 0:
-                n = context.scene.SimpleBake_Props.bakeobjs_advanced_list.add()    
+                n = context.scene.SimpleBake_Props.bakeobjs_advanced_list.add()
                 n.obj_point = obj
                 n.name = obj.name
-        
+
         #Throw in a refresh
         functions.update_advanced_object_list()
-        
+
         return{'FINISHED'}
 
 
@@ -1424,10 +1443,10 @@ class LIST_OT_DeleteItem(Operator):
 
         my_list.remove(index)
         context.scene.SimpleBake_Props.bakeobjs_advanced_list_index = min(max(0, index - 1), len(my_list) - 1)
-        
+
         #Throw in a refresh
         functions.update_advanced_object_list()
-        
+
         return{'FINISHED'}
 
 
@@ -1445,11 +1464,11 @@ class LIST_OT_ClearAll(Operator):
     def execute(self, context):
         my_list = context.scene.SimpleBake_Props.bakeobjs_advanced_list
         my_list.clear()
-        
+
         #Throw in a refresh
         functions.update_advanced_object_list()
-        
-        
+
+
         return{'FINISHED'}
 
 
@@ -1483,10 +1502,10 @@ class LIST_OT_MoveItem(Operator):
         neighbor = index + (-1 if self.direction == 'UP' else 1)
         my_list.move(neighbor, index)
         self.move_index()
-        
+
         #Throw in a refresh
         functions.update_advanced_object_list()
-        
+
         return{'FINISHED'}
 
 
@@ -1505,7 +1524,7 @@ class LIST_OT_Refresh(Operator):
 
     def execute(self, context):
         functions.update_advanced_object_list()
-        
+
         return{'FINISHED'}
 
 #----------------------Presets
@@ -1527,7 +1546,7 @@ class PRESETS_UL_List(UIList):
         elif self.layout_type in {'GRID'}:
             layout.alignment = 'CENTER'
             layout.label(text="", icon = custom_icon)
-            
+
 class PresetItem(PropertyGroup):
     """Group of properties representing a SimpleBake preset."""
 
@@ -1535,7 +1554,7 @@ class PresetItem(PropertyGroup):
            name="Name",
            description="A name for this item",
            default= "Untitled")
-           
+
 #-----------------------Channel packing
 class CPTEX_UL_List(UIList):
     """UIList."""
