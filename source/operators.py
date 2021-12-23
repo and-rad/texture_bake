@@ -299,23 +299,6 @@ class OBJECT_OT_texture_bake_selectnone(bpy.types.Operator):
         bpy.context.scene.TextureBake_Props.selected_ssscol = False
         return {'FINISHED'}
 
-class OBJECT_OT_texture_bake_installupdate(bpy.types.Operator):
-    """Download and install the most recent version of TextureBake"""
-    bl_idname = "object.texture_bake_installupdate"
-    bl_label = "Download and Install Update"
-
-    def execute(self, context):
-        global justupdated
-        result = functions.install_addon_update()
-
-        if result[0] == True:
-            self.report({"INFO"}, "Update complete. Restart Blender")
-            TextureBakePreferences.justupdated = True
-        else:
-            self.report({"ERROR"}, f"Could not download update. Error: {result[1]}")
-            justupdated = False
-        return {'FINISHED'}
-
 class OBJECT_OT_texture_bake_default_imgname_string(bpy.types.Operator):
     """Reset the image name string to default (Sketchfab compatible)"""
     bl_idname = "object.texture_bake_default_imgname_string"

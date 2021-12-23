@@ -25,16 +25,8 @@ from . import bakefunctions
 from .bg_bake import bgbake_ops
 from .bake_operation import TextureBakeConstants
 
-
 from bpy.props import StringProperty, IntProperty, CollectionProperty, PointerProperty
 from bpy.types import PropertyGroup, UIList, Operator, Panel
-
-
-
-class TextureBake_Previews:
-
-    pcoll = None
-
 
 
 def monkeyTip(message_lines, box):
@@ -52,112 +44,15 @@ def monkeyTip(message_lines, box):
             row.label(text=line)
 
 
-
-
 class OBJECT_PT_texture_bake_panel(bpy.types.Panel):
-    #bl_idname = "object.texture_bake_panel"
     bl_label = "Texture Bake"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "render"
 
-    current = True
-    version = "0.0.0"
-
-    """
-    @classmethod
-    def poll(cls, context):
-        return (context.object is not None)
-    """
 
     def draw(self, context):
-
         layout = self.layout
-
-        if self.current == True:
-            row = layout.row()
-            row.alignment = 'CENTER'
-            row.scale_y = 0.6
-            row.label(text="", icon="CHECKMARK")
-
-            row = layout.row()
-            row.alignment = 'CENTER'
-            row.scale_y = 0.6
-            row.label(text="TextureBake is up-to-date")
-
-
-        if self.current == False:
-            row = layout.row()
-            row.alignment = 'CENTER'
-            row.scale_y = 0.6
-            row.alert=True
-            row.label(text="", icon="MOD_WAVE")
-
-            row = layout.row()
-            row.alignment = 'CENTER'
-            row.scale_y = 0.6
-            row.alert=True
-            row.label(text="Newer version of TextureBake available")
-            row = layout.row()
-            row.alignment = 'CENTER'
-            row.scale_y = 0.6
-            row.alert=True
-            row.label(text="Update automatically in addon preferences")
-
-
-        if self.current == "ERROR":
-            row = layout.row()
-            row.alignment = 'CENTER'
-            row.scale_y = 0.6
-            row.label(text="", icon="ERROR")
-
-            row = layout.row()
-            row.alignment = 'CENTER'
-            row.scale_y = 0.6
-            row.label(text="WARNING: TextureBake wasn't able to check")
-            row = layout.row()
-            row.alignment = 'CENTER'
-            row.scale_y = 0.6
-            row.label(text="for updates. Are you online?")
-
-            row = layout.row()
-            row.operator("object.texture_bake_protect_clear", icon='URL', text="Yes I *AM* online!!")
-            row.scale_y = 1.5
-
-
-        #Version
-        row = layout.row()
-        row.alignment = 'CENTER'
-        row.scale_y = 0.6
-        row.label(text=f"Installed version {self.version}")
-
-
-        #if(bpy.context.scene.render.engine != "CYCLES"):
-            #return
-
-        #layout.use_property_split = True
-        #layout.use_property_decorate = False
-
-
-        #--------------Supported version message------------------------
-        n = bpy.app.version_string
-        mvn = n.split(".")[0]
-        if int(mvn) < 3:
-            box = layout.box()
-            row = box.row()
-            row.alignment = 'CENTER'
-            row.label(text="", icon="ERROR")
-            row = box.row()
-            row.scale_y = 0.5
-            row.alignment = 'CENTER'
-            row.label(text="This version of TextureBake is for")
-            row = box.row()
-            row.scale_y = 0.5
-            row.alignment = 'CENTER'
-            row.label(text="Blender 3.0 or higher")
-            return None
-
-
 
         #-----------Global Mode Select------------------------
         box = layout.box()
@@ -1202,31 +1097,16 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
 
         bpy.ops.wm.save_userpref()
 
+
     def draw(self, context):
         layout = self.layout
         row = layout.row()
         row.label(text="Enter your Sketchfab API key below. Don't forget to click \"Save Preferences\" after.")
         row = layout.row()
         row.prop(self, "apikey")
-        current = OBJECT_PT_texture_bake_panel.current
-
-        row = layout.row()
-        if current:
-            row.label(text="TextureBake is up to date (last checked when Blender started)")
-        else:
-            if self.justupdated:
-                row.label(text="Update complete. Please restart Blender to take effect", icon="MONKEY")
-
-            else:
-                row.label(text="There is a newer version of TextureBake available. Click below to update", icon="MOD_WAVE")
-                row = layout.row()
-                row.operator("object.texture_bake_installupdate", icon="MOD_WAVE")
-                row.scale_y = 2
-
         row = layout.row()
         row.scale_y = 2
         row.operator("object.texture_bake_releasenotes", icon="MOD_WAVE")
-
 
         box = layout.box()
         row = box.row()

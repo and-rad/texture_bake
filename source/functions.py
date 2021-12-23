@@ -27,7 +27,6 @@ import sys
 import tempfile
 from . import material_setup
 from .bake_operation import BakeOperation, MasterOperation, TextureBakeConstants
-from .ui import TextureBake_Previews
 from .bake_operation import bakestolist
 
 
@@ -188,51 +187,6 @@ def restoreAllMaterials():
     for mat in del_list:
         bpy.data.materials.remove(mat)
 
-
-
-def install_addon_update():
-
-    try:
-        #Current ver URL
-        current_ver_url = base64.b64decode("aHR0cDovL3d3dy50b29oZXkuY28udWsvU2ltcGxlQmFrZS9TaW1wbGVCYWtlX0N1cnJlbnQzLnppcA==").decode("utf-8")
-        current_ver_zip_name = "TextureBake_Curent3.zip"
-        addon_dir_name =  "TextureBake"
-
-        import zipfile #only needed here
-
-        #Get the path where the addons are kept
-        if bpy.utils.script_path_pref() != None:
-            addons_path = Path(bpy.utils.script_path_pref())
-        else:
-            addons_path = Path(bpy.utils.script_path_user())
-        addons_path = addons_path / "addons"
-
-        #Make our current directory the addons directory
-        os.chdir(str(addons_path))
-
-        #Download new SimbleBake_Current.zip to addons folder
-        printmsg("Starting download")
-        urllib.request.urlretrieve(current_ver_url, current_ver_zip_name)
-        current_ver_zip_name = "TextureBake_Curent3.zip"
-        printmsg("Download complete")
-
-        #Delete current TextureBake folder
-        addon_dir = addons_path / addon_dir_name
-        shutil.rmtree(str(addon_dir))
-
-        #Unzip
-        current_ver_zip = zipfile.ZipFile(current_ver_zip_name, "r")
-        current_ver_zip.extractall()
-        current_ver_zip.close()
-
-        #Delete the zip file we downlaoded
-        downloaded_zip = addons_path / current_ver_zip_name
-        downloaded_zip.unlink()
-
-        return [True]
-
-    except Exception as e:
-        return [False, e]
 
 def isBlendSaved():
     path = bpy.data.filepath
@@ -1147,32 +1101,6 @@ def getFileName():
     fullpath = bpy.data.filepath
     pathelements = os.path.split(fullpath)
     return pathelements[1]
-
-def checkAtCurrentVersion(v):
-    v = v.replace(".","")
-    v = int(v)
-
-    #Grab the most recent version from my website
-    from urllib.request import urlopen
-    link = "http://www.toohey.co.uk/TextureBake/currentversion3"
-
-    try:
-        f = urlopen(link, timeout=2)
-        cver = f.read()
-        cver = cver.decode("utf-8")
-        cver = cver.replace(".","")
-        cver = int(cver)
-
-    except:
-        printmsg("Unable to check for latest version of TextureBake - are you online?")
-        cver = v
-        return "ERROR"
-
-    if cver > v:
-        return False
-    else:
-        return True
-
 
 
 def getMatType(nodetree):

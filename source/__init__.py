@@ -23,7 +23,7 @@ bl_info = {
     "version": (0, 9, 0),
     "blender": (3, 0, 0),
     "location": "Properties Panel -> Render Settings Tab",
-    "description": "Streamline texture baking",
+    "description": "Streamline PBR texture baking",
     "warning": "",
     "doc_url": "",
     "tracker_url": "",
@@ -49,7 +49,6 @@ from .operators import(
     OBJECT_OT_texture_bake_sketchfabupload,
     OBJECT_OT_texture_bake_selectall,
     OBJECT_OT_texture_bake_selectnone,
-    OBJECT_OT_texture_bake_installupdate,
     OBJECT_OT_texture_bake_default_imgname_string,
     OBJECT_OT_texture_bake_default_aliases,
     OBJECT_OT_texture_bake_bgbake_status,
@@ -100,7 +99,6 @@ classes = ([
     OBJECT_OT_texture_bake_sketchfabupload,
     OBJECT_OT_texture_bake_selectall,
     OBJECT_OT_texture_bake_selectnone,
-    OBJECT_OT_texture_bake_installupdate,
     OBJECT_PT_texture_bake_panel,
     OBJECT_OT_texture_bake_releasenotes,
     TextureBakePreferences,
@@ -661,25 +659,15 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
 
 
 def register():
-
     #Register classes
     global classes
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    global bl_info
-    version = bl_info["version"]
-    version = str(version[0]) + str(version[1]) + str(version[2])
-    current = functions.checkAtCurrentVersion(version)
-
-    OBJECT_PT_texture_bake_panel.current = current
-    OBJECT_PT_texture_bake_panel.version = f"{str(version[0])}.{str(version[1])}.{str(version[2])}"
-
     bpy.utils.register_class(TextureBakePropGroup)
 
     #Register property group
     bpy.types.Scene.TextureBake_Props = bpy.props.PointerProperty(type=TextureBakePropGroup)
-
 
 
 def unregister():
