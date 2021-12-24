@@ -91,21 +91,12 @@ from .ui import (
 )
 
 
-def ShowMessageBox(message = "", title = "Message Box", icon = 'INFO'):
-
-    def draw(self, context):
-        self.layout.label(text=message)
-
-    bpy.context.window_manager.popup_menu(draw, title = title, icon = icon)
-
-
 #---------------------UPDATE FUNCTIONS--------------------------------------------
 
 def tex_per_mat_update(self, context):
     if context.scene.TextureBake_Props.tex_per_mat == True:
         context.scene.TextureBake_Props.prepmesh = False
         context.scene.TextureBake_Props.hidesourceobjects = False
-        #context.scene.TextureBake_Props.mergedBake = False
         context.scene.TextureBake_Props.expand_mat_uvs = False
 
 
@@ -127,11 +118,6 @@ def exportfileformat_update(self,context):
         context.scene.TextureBake_Props.everything16bit = False
 
 
-def s2a_update(self, context):
-    #bpy.context.scene.TextureBake_Props.mergedBake = False
-    pass
-
-
 def saveExternal_update(self, context):
     if bpy.context.scene.TextureBake_Props.saveExternal == False:
         bpy.context.scene.TextureBake_Props.everything16bit = False
@@ -139,34 +125,11 @@ def saveExternal_update(self, context):
         bpy.context.scene.TextureBake_Props.selected_lightmap_denoise = False
         bpy.context.scene.TextureBake_Props.exportFolderPerObject = False
         bpy.context.scene.TextureBake_Props.uv_mode = "normal"
-    else:
-        pass
-        #bpy.context.scene.TextureBake_Props.everything32bitfloat = False
-
-
-def repackUVs_update(self, context):
-    pass
 
 
 def newUVoption_update(self, context):
     if bpy.context.scene.TextureBake_Props.newUVoption == True:
         bpy.context.scene.TextureBake_Props.prefer_existing_sbmap = False
-        #bpy.context.scene.repackUVs = False
-
-
-def prefer_existing_sbmap_update(self, context):
-    pass
-
-
-def mergedBake_update(self, context):
-    #if bpy.context.scene.TextureBake_Props.newUVmethod == "SmartUVProject_Individual" and bpy.context.scene.TextureBake_Props.mergedBake:
-        #ShowMessageBox("This combination of options probably isn't what you want. You are unwrapping multiple objects individually, and then baking them all to one texture. The bakes will be on top of each other.", "Warning", "MONKEY")
-    pass
-
-def newUVmethod_update(self, context):
-    pass
-    #if bpy.context.scene.TextureBake_Props.newUVmethod == "SmartUVProject_Individual" and bpy.context.scene.TextureBake_Props.mergedBake:
-        #ShowMessageBox("This combination of options probably isn't what you want. You are unwrapping multiple objects individually, and then baking them all to one texture. The bakes will be on top of each other.", "Warning", "MONKEY")
 
 
 def global_mode_update(self, context):
@@ -182,23 +145,9 @@ def global_mode_update(self, context):
         bpy.context.scene.TextureBake_Props.targetobj = None
 
 
-def cycles_s2a_update(self, context):
-    if context.scene.TextureBake_Props.cycles_s2a:
-        #context.scene.TextureBake_Props.mergedBake = False
-        pass
-
-
-def bgbake_update(self,context):
-    pass
-
-
 def uv_mode_update(self, context):
     if context.scene.TextureBake_Props.uv_mode == "udims":
         context.scene.TextureBake_Props.newUVoption = False
-
-
-def exportcyclescolspace_update(self, context):
-    pass
 
 
 def presets_list_update(self,context):
@@ -260,7 +209,7 @@ def cp_list_index_update(self, context):
 
     bpy.context.scene.TextureBake_Props.cp_name = cpt.name
 
-    #Show messages
+    # Show messages
     if len(messages)>0:
         functions.ShowMessageBox(messages, title = "Warning", icon = "ERROR")
 
@@ -358,7 +307,6 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
     selected_s2a: BoolProperty(
         name = "Bake selected objects to target object",
         description = "Bake maps from one or more source objects (usually high poly) to a single target object (usually low poly). Source and target objects must be in the same location (overlapping). See Blender documentation on selected to active baking for more details",
-        update = s2a_update,
     )
 
     targetobj: PointerProperty(
@@ -371,7 +319,6 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
         name = "Multiple objects to one texture set",
         default = False,
         description = "Bake multiple objects to one set of textures. Not available with 'Bake maps to target object' (would not make sense). You must have more than one object selected for baking",
-        update = mergedBake_update,
     )
 
     mergedBakeName: StringProperty(
@@ -383,7 +330,6 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
     cycles_s2a: BoolProperty(
         name = "Selected to Active",
         description = "Bake using the Cycles selected to active option",
-        update = cycles_s2a_update,
     )
 
     targetobj_cycles: PointerProperty(
@@ -572,7 +518,6 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
     prefer_existing_sbmap: BoolProperty(
         name = "Prefer existing UV maps called TextureBake",
         description = "If one exists for the object being baked, use any existing UV maps called 'TextureBake' for baking (rather than the active UV map)",
-        update = prefer_existing_sbmap_update,
     )
 
     newUVmethod: EnumProperty(
@@ -584,7 +529,6 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
             ("SmartUVProject_Atlas", "Smart UV Project (Atlas)", "Create a combined UV map (atlas map) using Smart UV Project"),
             ("CombineExisting", "Combine Active UVs (Atlas)", "Create a combined UV map (atlas map) by combining the existing, active UV maps on each object"),
         ],
-        update = newUVmethod_update,
     )
 
     restoreOrigUVmap: BoolProperty(
@@ -715,7 +659,6 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
         name = "Export with col management settings",
         description = "Apply colour space settings (exposure, gamma etc.) from current scene when saving the image externally. Only available if you are exporting baked images. Not available if you have Cycles bake mode set to Normal. Will be ignored if exporting to EXR files as these don't support colour management.",
         default = True,
-        update = exportcyclescolspace_update,
     )
 
     folderdatetime: BoolProperty(
@@ -764,7 +707,6 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
             ("fg", "Foreground", "Perform baking in the foreground. Blender will lock up until baking is complete"),
             ("bg", "Background", "Perform baking in the background, leaving you free to continue to work in Blender while the baking is being carried out"),
         ],
-        update=bgbake_update,
     )
 
     bgbake_name: StringProperty(
