@@ -42,8 +42,8 @@ def bakestolist(justcount = False):
     else:
         return selectedbakes
 
-class TextureBakeConstants:
 
+class TextureBakeConstants:
     #Constants
     PBR = "PBR"
     PBRS2A = "PBR StoA"
@@ -78,11 +78,8 @@ class TextureBakeConstants:
 
 
 class BakeOperation:
-
-
     def __init__(self):
         self.udim_counter = 0
-
 
         #Mapping of object name to active UVs
         self.bake_mode = TextureBakeConstants.PBR #So the example in the user prefs will work
@@ -100,7 +97,6 @@ class BakeOperation:
         #cycles stuff
         self.cycles_bake_type = bpy.context.scene.cycles.bake_type
 
-
         #ColIdmap stuff
         self.used_cols = [] #[[r,g,b],[r,g,b],[r,g,b]]
         self.mat_col_dict = {} #{matname, [r,g,b]
@@ -109,8 +105,8 @@ class BakeOperation:
     def assemble_pbr_bake_list(self):
         self.pbr_selected_bake_types = bakestolist()
 
-class MasterOperation:
 
+class MasterOperation:
     current_bake_operation = None
     total_bake_operations = 0
     this_bake_operation_num = 0
@@ -131,8 +127,6 @@ class MasterOperation:
     orig_tile_size = 0
 
     orig_textures_folder = False
-
-
 
 
     def clear():
@@ -160,7 +154,6 @@ class BakeStatus:
     total_maps = 0
     current_map = 0
 
+
 class VarsTest:
 	test = bpy.props.BoolProperty(name="MyTest")
-
-

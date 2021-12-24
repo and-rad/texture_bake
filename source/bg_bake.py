@@ -31,8 +31,8 @@ class bgbake_ops():
     bgops_list_last = []
     bgops_list_finished = []
 
-def remove_dead():
 
+def remove_dead():
     #Remove dead processes from current list
     for p in bgbake_ops.bgops_list:
         if p[0].poll() == 0:
@@ -44,6 +44,7 @@ def remove_dead():
             bgbake_ops.bgops_list.remove(p)
 
     return 1 #1 second timer
+
 
 bpy.app.timers.register(remove_dead, persistent=True)
 
@@ -63,12 +64,12 @@ bpy.app.timers.register(remove_dead, persistent=True)
 
 # bpy.app.timers.register(check_merged_bake_setting, persistent=True)
 
-def check_export_col_setting():
 
+def check_export_col_setting():
     if (bpy.context.scene.cycles.bake_type == "NORMAL" or not bpy.context.scene.TextureBake_Props.saveExternal) and bpy.context.scene.TextureBake_Props.exportcyclescolspace:
         bpy.context.scene.TextureBake_Props.exportcyclescolspace = False
 
     return 1 #1 second timer
 
-bpy.app.timers.register(check_export_col_setting, persistent=True)
 
+bpy.app.timers.register(check_export_col_setting, persistent=True)

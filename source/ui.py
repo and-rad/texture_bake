@@ -674,7 +674,7 @@ class OBJECT_PT_texture_bake_panel(bpy.types.Panel):
                 monkeyTip(message_lines, box)
 
 
-            if not bpy.context.scene.TextureBake_Props.newUVoption  and bpy.context.scene.TextureBake_Props.mergedBake:
+            if not bpy.context.scene.TextureBake_Props.newUVoption and bpy.context.scene.TextureBake_Props.mergedBake:
                 #Tip alert
                 message_lines = [
                 "ALERT: You are baking multiple objects to one texture",

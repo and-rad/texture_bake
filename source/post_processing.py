@@ -25,7 +25,6 @@ import os
 
 
 def post_process(internal_img_name, path_dir="", path_filename="", file_format="OPEN_EXR", save=False, mode="3to1", remove_internal=False, **args):
-
     #Import the compositing scene that we need
     path = os.path.dirname(__file__) + "/compositing/compositing.blend\\Scene\\"
 
@@ -47,7 +46,6 @@ def post_process(internal_img_name, path_dir="", path_filename="", file_format="
         if "invert_a_input" in args and args["invert_a_input"]: nodes["invert_a_input"].mute = False
 
         if "invert_combined" in args and args["invert_combined"]: nodes["invert_combined"].mute=False
-
 
     if mode == "3to1":
         if "SBCompositing_3to1" in bpy.data.scenes:
@@ -97,7 +95,6 @@ def post_process(internal_img_name, path_dir="", path_filename="", file_format="
             #Leave it muted
             pass
 
-
         #The inverts all start muted
         if "invert_r_input_r" in args and args["invert_r_input_r"]: nodes["invert_r_input_r"].mute = False
         if "invert_r_input_g" in args and args["invert_r_input_g"]: nodes["invert_r_input_g"].mute = False
@@ -136,9 +133,6 @@ def post_process(internal_img_name, path_dir="", path_filename="", file_format="
             node_tree.links.remove(nodes["Combine RGBA.004"].inputs["A"].links[0])
             nodes["Combine RGBA.004"].mute=True
 
-
-    #-----------------------------------------------------------------------------
-
     #Disable the BW nodes
     if "mute_bws" in args and args["mute_bws"]:
         bw_nodes = [node for node in nodes if node.bl_idname == "CompositorNodeRGBToBW"]
@@ -155,7 +149,6 @@ def post_process(internal_img_name, path_dir="", path_filename="", file_format="
     #Let's always do this an EXR
     scene.render.image_settings.file_format = "OPEN_EXR"
     bpy.ops.render.render(animation=False, write_still=True, use_viewport=False, scene=scene.name)
-
 
     #Reload the temp file into an internal image again
     img = bpy.data.images.load(str(tmpdir / path_filename)+"."+"exr")
@@ -193,7 +186,6 @@ def post_process(internal_img_name, path_dir="", path_filename="", file_format="
         #Save
         bpy.ops.render.render(animation=False, write_still=True, use_viewport=False, scene=scene.name)
 
-
     if mode == "3to1":
         #Restore original image colour spaces
         if "input_r" in args and args["input_r"] != None: args["input_r"].colorspace_settings.name = input_r_orig_colspace
@@ -208,10 +200,4 @@ def post_process(internal_img_name, path_dir="", path_filename="", file_format="
     #Remove the internal image
         bpy.data.images.remove(img)
 
-
     return True
-
-
-
-
-
