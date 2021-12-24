@@ -30,8 +30,6 @@ bl_info = {
     "category": "Object",
 }
 
-
-
 import bpy
 import os
 import signal
@@ -89,52 +87,6 @@ from .ui import (
     CPTexItem
 
     )
-
-#Classes list for register
-#List of all classes that will be registered
-classes = ([
-    OBJECT_OT_texture_bake_mapbake,
-    OBJECT_OT_texture_bake_selectall,
-    OBJECT_OT_texture_bake_selectnone,
-    OBJECT_PT_texture_bake_panel,
-    TextureBakePreferences,
-    OBJECT_OT_texture_bake_default_imgname_string,
-    OBJECT_OT_texture_bake_default_aliases,
-    OBJECT_OT_texture_bake_bgbake_status,
-    OBJECT_OT_texture_bake_bgbake_import,
-    OBJECT_OT_texture_bake_bgbake_delete_individual,
-    OBJECT_OT_texture_bake_bgbake_import_individual,
-    OBJECT_OT_texture_bake_bgbake_clear,
-    OBJECT_OT_texture_bake_protect_clear,
-    ListItem,
-    BAKEOBJECTS_UL_List,
-    LIST_OT_NewItem,
-    LIST_OT_DeleteItem,
-    LIST_OT_MoveItem,
-    LIST_OT_ClearAll,
-    LIST_OT_Refresh,
-    OBJECT_OT_texture_bake_import_special_mats,
-    OBJECT_OT_texture_bake_preset_save,
-    OBJECT_OT_texture_bake_preset_load,
-    OBJECT_OT_texture_bake_preset_refresh,
-    PresetItem,
-    CPTexItem,
-    PRESETS_UL_List,
-    OBJECT_OT_texture_bake_preset_delete,
-    OBJECT_OT_texture_bake_show_all,
-    OBJECT_OT_texture_bake_hide_all,
-    OBJECT_OT_texture_bake_increase_texture_res,
-    OBJECT_OT_texture_bake_decrease_texture_res,
-    OBJECT_OT_texture_bake_increase_output_res,
-    OBJECT_OT_texture_bake_decrease_output_res,
-    OBJECT_OT_texture_bake_cptex_add,
-    OBJECT_OT_texture_bake_cptex_delete,
-    CPTEX_UL_List,
-    OBJECT_OT_texture_bake_cptex_setdefaults,
-    OBJECT_OT_texture_bake_popnodegroups
-    ])
-
-
 
 
 def ShowMessageBox(message = "", title = "Message Box", icon = 'INFO'):
@@ -652,22 +604,59 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
 
 #-------------------REGISTER----------------------------------------------
 
+# List of all classes that will be registered
+classes = [
+    OBJECT_OT_texture_bake_mapbake,
+    OBJECT_OT_texture_bake_selectall,
+    OBJECT_OT_texture_bake_selectnone,
+    OBJECT_PT_texture_bake_panel,
+    TextureBakePreferences,
+    OBJECT_OT_texture_bake_default_imgname_string,
+    OBJECT_OT_texture_bake_default_aliases,
+    OBJECT_OT_texture_bake_bgbake_status,
+    OBJECT_OT_texture_bake_bgbake_import,
+    OBJECT_OT_texture_bake_bgbake_delete_individual,
+    OBJECT_OT_texture_bake_bgbake_import_individual,
+    OBJECT_OT_texture_bake_bgbake_clear,
+    OBJECT_OT_texture_bake_protect_clear,
+    ListItem,
+    BAKEOBJECTS_UL_List,
+    LIST_OT_NewItem,
+    LIST_OT_DeleteItem,
+    LIST_OT_MoveItem,
+    LIST_OT_ClearAll,
+    LIST_OT_Refresh,
+    OBJECT_OT_texture_bake_import_special_mats,
+    OBJECT_OT_texture_bake_preset_save,
+    OBJECT_OT_texture_bake_preset_load,
+    OBJECT_OT_texture_bake_preset_refresh,
+    PresetItem,
+    CPTexItem,
+    PRESETS_UL_List,
+    OBJECT_OT_texture_bake_preset_delete,
+    OBJECT_OT_texture_bake_show_all,
+    OBJECT_OT_texture_bake_hide_all,
+    OBJECT_OT_texture_bake_increase_texture_res,
+    OBJECT_OT_texture_bake_decrease_texture_res,
+    OBJECT_OT_texture_bake_increase_output_res,
+    OBJECT_OT_texture_bake_decrease_output_res,
+    OBJECT_OT_texture_bake_cptex_add,
+    OBJECT_OT_texture_bake_cptex_delete,
+    CPTEX_UL_List,
+    OBJECT_OT_texture_bake_cptex_setdefaults,
+    OBJECT_OT_texture_bake_popnodegroups,
+    TextureBakePropGroup
+]
 
 
 def register():
-    #Register classes
-    global classes
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    bpy.utils.register_class(TextureBakePropGroup)
-
-    #Register property group
     bpy.types.Scene.TextureBake_Props = bpy.props.PointerProperty(type=TextureBakePropGroup)
 
 
 def unregister():
-
     from .bg_bake import bgbake_ops
 
     #Clear the files for any finished background bakes
@@ -693,15 +682,12 @@ def unregister():
             pass
 
 
-    #User preferences
-    global classes
+    # User preferences
+    del bpy.types.Scene.TextureBake_Props
+
     for cls in classes:
         bpy.utils.unregister_class(cls)
-
-    del bpy.types.Scene.TextureBake_Props
 
 
 if __name__ == "__main__":
     register()
-
-
