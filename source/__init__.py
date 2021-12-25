@@ -38,56 +38,10 @@ from bpy.types import PropertyGroup
 from . import bakefunctions
 from . import functions
 from . import bg_bake
+from . import operators
+from . import ui
+from .bake_operation import TextureBakeConstants
 
-from .bake_operation import (
-    BakeOperation,
-    TextureBakeConstants,
-)
-
-from .operators import (
-    OBJECT_OT_texture_bake_mapbake,
-    OBJECT_OT_texture_bake_selectall,
-    OBJECT_OT_texture_bake_selectnone,
-    OBJECT_OT_texture_bake_default_imgname_string,
-    OBJECT_OT_texture_bake_default_aliases,
-    OBJECT_OT_texture_bake_bgbake_status,
-    OBJECT_OT_texture_bake_bgbake_import,
-    OBJECT_OT_texture_bake_bgbake_delete_individual,
-    OBJECT_OT_texture_bake_bgbake_import_individual,
-    OBJECT_OT_texture_bake_bgbake_clear,
-    OBJECT_OT_texture_bake_protect_clear,
-    OBJECT_OT_texture_bake_import_special_mats,
-    OBJECT_OT_texture_bake_preset_save,
-    OBJECT_OT_texture_bake_preset_load,
-    OBJECT_OT_texture_bake_preset_refresh,
-    OBJECT_OT_texture_bake_preset_delete,
-    OBJECT_OT_texture_bake_increase_texture_res,
-    OBJECT_OT_texture_bake_decrease_texture_res,
-    OBJECT_OT_texture_bake_increase_output_res,
-    OBJECT_OT_texture_bake_decrease_output_res,
-    OBJECT_OT_texture_bake_cptex_add,
-    OBJECT_OT_texture_bake_cptex_delete,
-    OBJECT_OT_texture_bake_cptex_setdefaults,
-    OBJECT_OT_texture_bake_popnodegroups,
-)
-
-from .ui import (
-    TextureBakePreferences,
-    ListItem,
-    TEXTUREBAKE_OBJECTS_UL_List,
-    LIST_OT_NewItem,
-    LIST_OT_DeleteItem,
-    LIST_OT_MoveItem,
-    LIST_OT_ClearAll,
-    LIST_OT_Refresh,
-    TEXTUREBAKE_PRESETS_UL_List,
-    CPTEX_UL_List,
-    PresetItem,
-    CPTexItem,
-)
-
-
-#---------------------UPDATE FUNCTIONS--------------------------------------------
 
 def tex_per_mat_update(self, context):
     if context.scene.TextureBake_Props.tex_per_mat == True:
@@ -672,7 +626,7 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
     )
 
     bakeobjs_advanced_list: CollectionProperty(
-        type = ListItem,
+        type = ui.TextureBakeObjectListItem,
     )
 
     bakeobjs_advanced_list_index: IntProperty(
@@ -733,7 +687,7 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
     presets_list: CollectionProperty(
         name = "Presets",
         description = "List of presets",
-        type = PresetItem,
+        type = ui.TextureBakePresetItem,
     )
 
     presets_list_index: IntProperty(
@@ -789,7 +743,7 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
     cp_list: CollectionProperty(
         name = "CP Textures",
         description = "CP Textures",
-        type = CPTexItem,
+        type = ui.TextureBakePackedTextureItem,
     )
 
     cp_list_index: IntProperty(
@@ -811,52 +765,50 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
 
 # List of all classes that will be registered
 classes = [
-    OBJECT_OT_texture_bake_mapbake,
-    OBJECT_OT_texture_bake_selectall,
-    OBJECT_OT_texture_bake_selectnone,
-    ui.OBJECT_PT_texture_bake_panel,
-    ui.OBJECT_PT_texture_bake_panel_presets,
-    ui.OBJECT_PT_texture_bake_panel_objects,
-    ui.OBJECT_PT_texture_bake_panel_input,
-    ui.OBJECT_PT_texture_bake_panel_output,
-    ui.OBJECT_PT_texture_bake_panel_bake_settings,
-    ui.OBJECT_PT_texture_bake_panel_export_settings,
-    ui.OBJECT_PT_texture_bake_panel_uv,
-    ui.OBJECT_PT_texture_bake_panel_other,
-    ui.OBJECT_PT_texture_bake_panel_packing,
-    TextureBakePreferences,
-    OBJECT_OT_texture_bake_default_imgname_string,
-    OBJECT_OT_texture_bake_default_aliases,
-    OBJECT_OT_texture_bake_bgbake_status,
-    OBJECT_OT_texture_bake_bgbake_import,
-    OBJECT_OT_texture_bake_bgbake_delete_individual,
-    OBJECT_OT_texture_bake_bgbake_import_individual,
-    OBJECT_OT_texture_bake_bgbake_clear,
-    OBJECT_OT_texture_bake_protect_clear,
-    ListItem,
-    TEXTUREBAKE_OBJECTS_UL_List,
-    LIST_OT_NewItem,
-    LIST_OT_DeleteItem,
-    LIST_OT_MoveItem,
-    LIST_OT_ClearAll,
-    LIST_OT_Refresh,
-    OBJECT_OT_texture_bake_import_special_mats,
-    OBJECT_OT_texture_bake_preset_save,
-    OBJECT_OT_texture_bake_preset_load,
-    OBJECT_OT_texture_bake_preset_refresh,
-    PresetItem,
-    CPTexItem,
-    TEXTUREBAKE_PRESETS_UL_List,
-    OBJECT_OT_texture_bake_preset_delete,
-    OBJECT_OT_texture_bake_increase_texture_res,
-    OBJECT_OT_texture_bake_decrease_texture_res,
-    OBJECT_OT_texture_bake_increase_output_res,
-    OBJECT_OT_texture_bake_decrease_output_res,
-    OBJECT_OT_texture_bake_cptex_add,
-    OBJECT_OT_texture_bake_cptex_delete,
-    CPTEX_UL_List,
-    OBJECT_OT_texture_bake_cptex_setdefaults,
-    OBJECT_OT_texture_bake_popnodegroups,
+    operators.TEXTUREBAKE_OT_bake,
+    operators.TEXTUREBAKE_OT_pbr_select_all,
+    operators.TEXTUREBAKE_OT_pbr_select_none,
+    operators.TEXTUREBAKE_OT_reset_name_format,
+    operators.TEXTUREBAKE_OT_reset_aliases,
+    operators.TEXTUREBAKE_OT_bake_status,
+    operators.TEXTUREBAKE_OT_bake_import,
+    operators.TEXTUREBAKE_OT_bake_delete_individual,
+    operators.TEXTUREBAKE_OT_bake_import_individual,
+    operators.TEXTUREBAKE_OT_bake_delete,
+    operators.TEXTUREBAKE_OT_import_materials,
+    operators.TEXTUREBAKE_OT_save_preset,
+    operators.TEXTUREBAKE_OT_load_preset,
+    operators.TEXTUREBAKE_OT_refresh_presets,
+    operators.TEXTUREBAKE_OT_delete_preset,
+    operators.TEXTUREBAKE_OT_increase_bake_res,
+    operators.TEXTUREBAKE_OT_decrease_bake_res,
+    operators.TEXTUREBAKE_OT_increase_output_res,
+    operators.TEXTUREBAKE_OT_decrease_output_res,
+    operators.TEXTUREBAKE_OT_add_packed_texture,
+    operators.TEXTUREBAKE_OT_delete_packed_texture,
+    operators.TEXTUREBAKE_OT_reset_packed_textures,
+    ui.TEXTUREBAKE_PT_main,
+    ui.TEXTUREBAKE_PT_presets,
+    ui.TEXTUREBAKE_PT_objects,
+    ui.TEXTUREBAKE_PT_input,
+    ui.TEXTUREBAKE_PT_output,
+    ui.TEXTUREBAKE_PT_bake_settings,
+    ui.TEXTUREBAKE_PT_export_settings,
+    ui.TEXTUREBAKE_PT_uv,
+    ui.TEXTUREBAKE_PT_other,
+    ui.TEXTUREBAKE_PT_packing,
+    ui.TextureBakePreferences,
+    ui.TextureBakeObjectListItem,
+    ui.TEXTUREBAKE_UL_object_list,
+    ui.TEXTUREBAKE_OT_add_object,
+    ui.TEXTUREBAKE_OT_remove_object,
+    ui.TEXTUREBAKE_OT_move_object,
+    ui.TEXTUREBAKE_OT_clear_objects,
+    ui.TEXTUREBAKE_OT_refresh_objects,
+    ui.TextureBakePresetItem,
+    ui.TextureBakePackedTextureItem,
+    ui.TEXTUREBAKE_UL_presets,
+    ui.TEXTUREBAKE_UL_packed_textures,
     TextureBakePropGroup,
 ]
 
@@ -871,7 +823,7 @@ def unregister():
     from .bg_bake import bgbake_ops
 
     # Clear the files for any finished background bakes
-    bpy.ops.object.texture_bake_bgbake_clear()
+    bpy.ops.texture_bake.bake_delete()
 
     # Stop any running and clear files
     running = bgbake_ops.bgops_list

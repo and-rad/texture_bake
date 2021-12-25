@@ -21,24 +21,24 @@ import bpy
 import sys
 import subprocess
 import os
-from .bake_operation import BakeOperation, MasterOperation, BakeStatus, bakestolist, TextureBakeConstants
-from . import functions
-from . import bakefunctions
-from .bg_bake import bgbake_ops
-from pathlib import Path
 import tempfile
 import json
 
-from .ui import TextureBakePreferences
+from pathlib import Path
 from datetime import datetime
 from math import floor
 
+from . import functions
+from . import bakefunctions
+from .bake_operation import BakeOperation, MasterOperation, BakeStatus, bakestolist, TextureBakeConstants
+from .bg_bake import bgbake_ops
+from .ui import TextureBakePreferences
 
-class OBJECT_OT_texture_bake_mapbake(bpy.types.Operator):
+
+class TEXTUREBAKE_OT_bake(bpy.types.Operator):
     """Start the baking process"""
-    bl_idname = "object.texture_bake_mapbake"
+    bl_idname = "texture_bake.bake"
     bl_label = "Bake"
-
 
     def execute(self, context):
 
@@ -193,7 +193,7 @@ class OBJECT_OT_texture_bake_mapbake(bpy.types.Operator):
                 from pathlib import Path;\
                 savepath=Path(bpy.data.filepath).parent / (str(os.getpid()) + \".blend\");\
                 bpy.ops.wm.save_as_mainfile(filepath=str(savepath), check_existing=False);\
-                bpy.ops.object.texture_bake_mapbake();"],
+                bpy.ops.texture_bake.bake();"],
                 shell=False)
 
             bgbake_ops.bgops_list.append([process, bpy.context.scene.TextureBake_Props.prepmesh,
@@ -215,9 +215,9 @@ class OBJECT_OT_texture_bake_mapbake(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_texture_bake_selectall(bpy.types.Operator):
+class TEXTUREBAKE_OT_pbr_select_all(bpy.types.Operator):
     """Select all PBR bake types"""
-    bl_idname = "object.texture_bake_selectall"
+    bl_idname = "texture_bake.pbr_select_all"
     bl_label = "Select All"
 
     def execute(self, context):
@@ -236,9 +236,10 @@ class OBJECT_OT_texture_bake_selectall(bpy.types.Operator):
         bpy.context.scene.TextureBake_Props.selected_ssscol = True
         return {'FINISHED'}
 
-class OBJECT_OT_texture_bake_selectnone(bpy.types.Operator):
+
+class TEXTUREBAKE_OT_pbr_select_none(bpy.types.Operator):
     """Select none PBR bake types"""
-    bl_idname = "object.texture_bake_selectnone"
+    bl_idname = "texture_bake.pbr_select_none"
     bl_label = "Select None"
 
     def execute(self, context):
@@ -257,9 +258,10 @@ class OBJECT_OT_texture_bake_selectnone(bpy.types.Operator):
         bpy.context.scene.TextureBake_Props.selected_ssscol = False
         return {'FINISHED'}
 
-class OBJECT_OT_texture_bake_default_imgname_string(bpy.types.Operator):
-    """Reset the image name string to default"""
-    bl_idname = "object.texture_bake_default_imgname_string"
+
+class TEXTUREBAKE_OT_reset_name_format(bpy.types.Operator):
+    """Reset the image name format string to default"""
+    bl_idname = "texture_bake.reset_name_format"
     bl_label = "Restore image string to default"
 
     def execute(self, context):
@@ -268,9 +270,10 @@ class OBJECT_OT_texture_bake_default_imgname_string(bpy.types.Operator):
 
         return {'FINISHED'}
 
-class OBJECT_OT_texture_bake_default_aliases(bpy.types.Operator):
-    """Reset the image name string to default"""
-    bl_idname = "object.texture_bake_default_aliases"
+
+class TEXTUREBAKE_OT_reset_aliases(bpy.types.Operator):
+    """Reset the baked image name aliases"""
+    bl_idname = "texture_bake.reset_aliases"
     bl_label = "Restore all bake type aliases to default"
 
     def execute(self, context):
@@ -279,9 +282,10 @@ class OBJECT_OT_texture_bake_default_aliases(bpy.types.Operator):
 
         return {'FINISHED'}
 
-class OBJECT_OT_texture_bake_bgbake_status(bpy.types.Operator):
+
+class TEXTUREBAKE_OT_bake_status(bpy.types.Operator):
     """Check on the status of bakes running in the background"""
-    bl_idname = "object.texture_bake_bgbake_status"
+    bl_idname = "texture_bake.bake_status"
     bl_label = "Check on the status of bakes running in the background"
 
     def execute(self, context):
@@ -312,9 +316,10 @@ class OBJECT_OT_texture_bake_bgbake_status(bpy.types.Operator):
 
         return {'FINISHED'}
 
-class OBJECT_OT_texture_bake_bgbake_import(bpy.types.Operator):
+
+class TEXTUREBAKE_OT_bake_import(bpy.types.Operator):
     """Import baked objects previously baked in the background"""
-    bl_idname = "object.texture_bake_bgbake_import"
+    bl_idname = "texture_bake.bake_import"
     bl_label = "Import baked objects previously baked in the background"
 
     def execute(self, context):
@@ -434,9 +439,9 @@ class OBJECT_OT_texture_bake_bgbake_import(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_texture_bake_bgbake_import_individual(bpy.types.Operator):
+class TEXTUREBAKE_OT_bake_import_individual(bpy.types.Operator):
     """Import baked objects previously baked in the background"""
-    bl_idname = "object.texture_bake_bgbake_import_individual"
+    bl_idname = "texture_bake.bake_import_individual"
     bl_label = "Import baked objects previously baked in the background"
 
     pnum: bpy.props.IntProperty()
@@ -528,9 +533,10 @@ class OBJECT_OT_texture_bake_bgbake_import_individual(bpy.types.Operator):
 
         return {'FINISHED'}
 
-class OBJECT_OT_texture_bake_bgbake_clear(bpy.types.Operator):
+
+class TEXTUREBAKE_OT_bake_delete(bpy.types.Operator):
     """Delete the background bakes because you don't want to import them into Blender. NOTE: If you chose to save bakes or FBX externally, these are safe and NOT deleted. This is just if you don't want to import into this Blender session"""
-    bl_idname = "object.texture_bake_bgbake_clear"
+    bl_idname = "texture_bake.bake_delete"
     bl_label = "Delete the background bakes"
 
     def execute(self, context):
@@ -548,9 +554,10 @@ class OBJECT_OT_texture_bake_bgbake_clear(bpy.types.Operator):
 
         return {'FINISHED'}
 
-class OBJECT_OT_texture_bake_bgbake_delete_individual(bpy.types.Operator):
+
+class TEXTUREBAKE_OT_bake_delete_individual(bpy.types.Operator):
     """Delete this individual background bake because you don't want to import the results into Blender. NOTE: If you chose to save bakes or FBX externally, these are safe and NOT deleted. This is just if you don't want to import into this Blender session"""
-    bl_idname = "object.texture_bake_bgbake_delete_individual"
+    bl_idname = "texture_bake.bake_delete_individual"
     bl_label = "Delete the individual background bake"
 
     pnum: bpy.props.IntProperty()
@@ -569,22 +576,9 @@ class OBJECT_OT_texture_bake_bgbake_delete_individual(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_texture_bake_protect_clear(bpy.types.Operator):
-    """If you are online, you likely need to complete the 'I am not a robot' check on the web server. Click here to do that. All will be explained..."""
-    bl_idname = "object.texture_bake_protect_clear"
-    bl_label = "Launch web browser"
-
-    def execute(self, context):
-        import webbrowser
-        webbrowser.open('http://www.toohey.co.uk/TextureBake/protect_clear.html', new=2)
-
-        return {'FINISHED'}
-
-
-
-class OBJECT_OT_texture_bake_import_special_mats(bpy.types.Operator):
+class TEXTUREBAKE_OT_import_materials(bpy.types.Operator):
     """Import the selected specials materials if you want to edit them. Once edited, they will be used for all bakes of that type in this file"""
-    bl_idname = "object.texture_bake_import_special_mats"
+    bl_idname = "texture_bake.import_materials"
     bl_label = "Import specials materials"
 
     @classmethod
@@ -601,9 +595,9 @@ class OBJECT_OT_texture_bake_import_special_mats(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class OBJECT_OT_texture_bake_preset_save(bpy.types.Operator):
+class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
     """Save current TextureBake settings to preset"""
-    bl_idname = "object.texture_bake_preset_save"
+    bl_idname = "texture_bake.save_preset"
     bl_label = "Save"
 
     @classmethod
@@ -765,15 +759,16 @@ class OBJECT_OT_texture_bake_preset_save(bpy.types.Operator):
         jsonFile.close()
 
         #Refreh the list
-        bpy.ops.object.texture_bake_preset_refresh()
+        bpy.ops.texture_bake.refresh_presets()
 
 
         self.report({"INFO"}, "Preset saved")
         return {'FINISHED'}
 
-class OBJECT_OT_texture_bake_preset_load(bpy.types.Operator):
+
+class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
     """Load selected TextureBake preset"""
-    bl_idname = "object.texture_bake_preset_load"
+    bl_idname = "texture_bake.load_preset"
     bl_label = "Load"
 
     @classmethod
@@ -800,7 +795,7 @@ class OBJECT_OT_texture_bake_preset_load(bpy.types.Operator):
         try:
             fileObject = open(str(p), "r")
         except:
-            bpy.ops.object.texture_bake_preset_refresh()
+            bpy.ops.texture_bake.refresh_presets()
             self.report({"ERROR"}, f"Preset {loadname} no longer exists")
             return {'CANCELLED'}
 
@@ -946,9 +941,10 @@ class OBJECT_OT_texture_bake_preset_load(bpy.types.Operator):
 
         return {'FINISHED'}
 
-class OBJECT_OT_texture_bake_preset_refresh(bpy.types.Operator):
+
+class TEXTUREBAKE_OT_refresh_presets(bpy.types.Operator):
     """Refresh list of TextureBake presets"""
-    bl_idname = "object.texture_bake_preset_refresh"
+    bl_idname = "texture_bake.refresh_presets"
     bl_label = "Refresh"
 
     def execute(self, context):
@@ -981,9 +977,10 @@ class OBJECT_OT_texture_bake_preset_refresh(bpy.types.Operator):
 
         return {'FINISHED'}
 
-class OBJECT_OT_texture_bake_preset_delete(bpy.types.Operator):
+
+class TEXTUREBAKE_OT_delete_preset(bpy.types.Operator):
     """Delete selected TextureBake preset"""
-    bl_idname = "object.texture_bake_preset_delete"
+    bl_idname = "texture_bake.delete_preset"
     bl_label = "Delete"
 
     @classmethod
@@ -1009,15 +1006,15 @@ class OBJECT_OT_texture_bake_preset_delete(bpy.types.Operator):
 
         #Refreh the list
 
-        bpy.ops.object.texture_bake_preset_refresh()
+        bpy.ops.texture_bake.refresh_presets()
 
 
         return {'FINISHED'}
 
 
-class OBJECT_OT_texture_bake_increase_texture_res(bpy.types.Operator):
+class TEXTUREBAKE_OT_increase_bake_res(bpy.types.Operator):
     """Increase texture resolution by 1k"""
-    bl_idname = "object.texture_bake_increase_texture_res"
+    bl_idname = "texture_bake.increase_bake_res"
     bl_label = "+1k"
 
 
@@ -1042,9 +1039,10 @@ class OBJECT_OT_texture_bake_increase_texture_res(bpy.types.Operator):
 
         return {'FINISHED'}
 
-class OBJECT_OT_texture_bake_decrease_texture_res(bpy.types.Operator):
+
+class TEXTUREBAKE_OT_decrease_bake_res(bpy.types.Operator):
     """Decrease texture resolution by 1k"""
-    bl_idname = "object.texture_bake_decrease_texture_res"
+    bl_idname = "texture_bake.decrease_bake_res"
     bl_label = "-1k"
 
 
@@ -1076,9 +1074,10 @@ class OBJECT_OT_texture_bake_decrease_texture_res(bpy.types.Operator):
 
         return {'FINISHED'}
 
-class OBJECT_OT_texture_bake_increase_output_res(bpy.types.Operator):
+
+class TEXTUREBAKE_OT_increase_output_res(bpy.types.Operator):
     """Increase output resolution by 1k"""
-    bl_idname = "object.texture_bake_increase_output_res"
+    bl_idname = "texture_bake.increase_output_res"
     bl_label = "+1k"
 
 
@@ -1103,9 +1102,10 @@ class OBJECT_OT_texture_bake_increase_output_res(bpy.types.Operator):
 
         return {'FINISHED'}
 
-class OBJECT_OT_texture_bake_decrease_output_res(bpy.types.Operator):
+
+class TEXTUREBAKE_OT_decrease_output_res(bpy.types.Operator):
     """Decrease output resolution by 1k"""
-    bl_idname = "object.texture_bake_decrease_output_res"
+    bl_idname = "texture_bake.decrease_output_res"
     bl_label = "-1k"
 
 
@@ -1138,10 +1138,9 @@ class OBJECT_OT_texture_bake_decrease_output_res(bpy.types.Operator):
         return {'FINISHED'}
 
 
-#-------------------------------------Channel packing
-class OBJECT_OT_texture_bake_cptex_add(bpy.types.Operator):
+class TEXTUREBAKE_OT_add_packed_texture(bpy.types.Operator):
     """Add a TextureBake CP Texture item"""
-    bl_idname = "object.texture_bake_cptex_add"
+    bl_idname = "texture_bake.add_packed_texture"
     bl_label = "Add"
 
     @classmethod
@@ -1171,9 +1170,10 @@ class OBJECT_OT_texture_bake_cptex_add(bpy.types.Operator):
         self.report({"INFO"}, "CP texture saved")
         return {'FINISHED'}
 
-class OBJECT_OT_texture_bake_cptex_delete(bpy.types.Operator):
+
+class TEXTUREBAKE_OT_delete_packed_texture(bpy.types.Operator):
     """Delete the selected channel pack texture"""
-    bl_idname = "object.texture_bake_cptex_delete"
+    bl_idname = "texture_bake.delete_packed_texture"
     bl_label = "Delete"
 
     @classmethod
@@ -1190,9 +1190,10 @@ class OBJECT_OT_texture_bake_cptex_delete(bpy.types.Operator):
         self.report({"INFO"}, "CP texture deleted")
         return {'FINISHED'}
 
-class OBJECT_OT_texture_bake_cptex_setdefaults(bpy.types.Operator):
+
+class TEXTUREBAKE_OT_reset_packed_textures(bpy.types.Operator):
     """Add some example channel pack textures"""
-    bl_idname = "object.texture_bake_cptex_setdefaults"
+    bl_idname = "texture_bake.reset_packed_textures"
     bl_label = "Add examples"
 
     @classmethod
@@ -1249,63 +1250,3 @@ class OBJECT_OT_texture_bake_cptex_setdefaults(bpy.types.Operator):
 
         self.report({"INFO"}, "Default textures added")
         return {'FINISHED'}
-
-class OBJECT_OT_texture_bake_popnodegroups(bpy.types.Operator):
-    """Move an object with the mouse, example"""
-    bl_idname = "object.texture_bake_popnodegroups"
-    bl_label = "Pop all node groups"
-
-    index = 0
-    _timer = None
-    original_uitype = None
-
-
-    def modal(self, context, event):
-
-        if event.type == 'TIMER': #Only respond to timer events
-
-            obj = bpy.data.objects["Cube"]#Need to figure out how we will get this in here
-
-            l = len(obj.material_slots)
-
-            if OBJECT_OT_texture_bake_popnodegroups.index == l:
-                #We are done
-                wm = context.window_manager
-                wm.event_timer_remove(self._timer)
-                OBJECT_OT_texture_bake_popnodegroups.index = 0
-
-                bpy.context.area.ui_type = OBJECT_OT_texture_bake_popnodegroups.original_uitype
-
-                return {'FINISHED'}
-
-            elif obj.active_material_index == OBJECT_OT_texture_bake_popnodegroups.index:
-                #Do it
-
-                mat = obj.material_slots[OBJECT_OT_texture_bake_popnodegroups.index].material
-                nodes = mat.node_tree.nodes
-
-                for node in nodes:
-                    if node.bl_idname == "ShaderNodeGroup":
-                        #Here's one
-                        node.select = True
-                        nodes.active = node
-                        bpy.ops.node.group_ungroup('INVOKE_DEFAULT')
-
-                OBJECT_OT_texture_bake_popnodegroups.index += 1
-
-            else:
-                #Change active slot and do it next time
-                obj.active_material_index = OBJECT_OT_texture_bake_popnodegroups.index
-
-        return {'PASS_THROUGH'}
-
-    def execute(self, context  ):
-        OBJECT_OT_texture_bake_popnodegroups.original_uitype = bpy.context.area.ui_type
-        bpy.context.area.ui_type = "ShaderNodeTree"
-
-        wm = context.window_manager
-        self._timer = wm.event_timer_add(0.1, window=context.window)
-        wm.modal_handler_add(self)
-
-        return {'RUNNING_MODAL'}
-

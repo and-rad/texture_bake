@@ -540,26 +540,6 @@ def startingChecks(objects, bakemode):
                     for node_name in result:
                         messages.append(f"ERROR: Node '{node_name}' in material '{mat.name}' on object '{obj.name}' is not valid for PBR bake. Principled BSDFs and/or Emission only!")
 
-            # #TEMP###
-            # import time
-            # node_groups_present = True #Need to run at least once
-            # op_running = False
-            # while node_groups_present:
-                # print("loop")
-                # node_groups_present = False #Assume no node groups
-                # for slot in obj.material_slots:
-                    # mat = slot.material
-                    # result = checkMatsValidforPBR(mat)
-                    # if len(result) > 0:
-                        # print("Found some node groups")
-                        # node_groups_present = True
-                        # #Try and fix if we aren't already
-                        # if not op_running:
-                            # op_running = True
-                            # bpy.ops.object.texture_bake_popnodegroups()
-                            # print("Operator just ran")
-                            # time.sleep(3)
-
     #PBR Bake - S2A
     if bakemode == TextureBakeConstants.PBRS2A:
 
@@ -2006,6 +1986,7 @@ def update_advanced_object_list():
         if g in bpy.data.objects:
             bpy.data.objects.remove(bpy.data.objects[g])
 
+
 def deselect_all_not_mesh():
     import bpy
 
@@ -2017,6 +1998,7 @@ def deselect_all_not_mesh():
     if bpy.context.active_object == None:
         #Pick arbitary
         bpy.context.view_layer.objects.active = bpy.context.selected_objects[0]
+
 
 def fix_invalid_material_config(obj):
 
