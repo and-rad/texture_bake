@@ -2152,17 +2152,6 @@ def any_specials():
 
 
 def auto_set_bake_margin():
-
     context = bpy.context
-
-    multiplier = 4
-
     current_width = context.scene.TextureBake_Props.imgwidth
-    margin = (current_width / 1024) * multiplier
-    margin = round(margin, 0)
-
-    context.scene.render.bake.margin = margin
-
-
-    return True
-
+    context.scene.render.bake.margin = round((current_width / 1024) * 4)

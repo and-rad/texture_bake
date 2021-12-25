@@ -14,3 +14,4 @@
 ### Fixed
 - Trying to deactivate and activate the add-on consecutively during the same
   Blender session no longer throws an error.
+- Fixed type mismatch when automatically setting bake margin.
