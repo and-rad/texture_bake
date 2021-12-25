@@ -45,42 +45,38 @@ from .bake_operation import TextureBakeConstants
 
 def tex_per_mat_update(self, context):
     if context.scene.TextureBake_Props.tex_per_mat == True:
-        context.scene.TextureBake_Props.prepmesh = False
-        context.scene.TextureBake_Props.hidesourceobjects = False
+        context.scene.TextureBake_Props.prep_mesh = False
+        context.scene.TextureBake_Props.hide_source_objects = False
 
 
-def prepmesh_update(self, context):
-    if context.scene.TextureBake_Props.prepmesh == False:
-        context.scene.TextureBake_Props.hidesourceobjects = False
-        bpy.context.scene.TextureBake_Props.createglTFnode = False
+def prep_mesh_update(self, context):
+    if context.scene.TextureBake_Props.prep_mesh == False:
+        context.scene.TextureBake_Props.hide_source_objects = False
+        bpy.context.scene.TextureBake_Props.create_gltf_node = False
     else:
-        context.scene.TextureBake_Props.hidesourceobjects = True
+        context.scene.TextureBake_Props.hide_source_objects = True
 
 
-def exportfileformat_update(self,context):
-    if context.scene.TextureBake_Props.exportfileformat == "JPEG" or context.scene.TextureBake_Props.exportfileformat == "TARGA":
-        context.scene.TextureBake_Props.everything16bit = False
+def export_file_format_update(self,context):
+    if context.scene.TextureBake_Props.export_file_format == "JPEG" or context.scene.TextureBake_Props.export_file_format == "TARGA":
+        context.scene.TextureBake_Props.export_16bit = False
 
 
-def saveExternal_update(self, context):
-    if bpy.context.scene.TextureBake_Props.saveExternal == False:
-        bpy.context.scene.TextureBake_Props.everything16bit = False
-        bpy.context.scene.TextureBake_Props.rundenoise = False
+def export_textures_update(self, context):
+    if bpy.context.scene.TextureBake_Props.export_textures == False:
+        bpy.context.scene.TextureBake_Props.export_16bit = False
+        bpy.context.scene.TextureBake_Props.run_denoise = False
         bpy.context.scene.TextureBake_Props.selected_lightmap_denoise = False
-        bpy.context.scene.TextureBake_Props.exportFolderPerObject = False
+        bpy.context.scene.TextureBake_Props.export_folder_per_object = False
         bpy.context.scene.TextureBake_Props.uv_mode = "normal"
 
 
 def global_mode_update(self, context):
     if not bpy.context.scene.TextureBake_Props.global_mode == "cycles_bake":
         bpy.context.scene.TextureBake_Props.tex_per_mat = False
-        bpy.context.scene.TextureBake_Props.cycles_s2a = False
-        bpy.context.scene.TextureBake_Props.targetobj_cycles = None
 
     if not bpy.context.scene.TextureBake_Props.global_mode == "pbr_bake":
-        bpy.context.scene.TextureBake_Props.selected_s2a = False
         bpy.context.scene.TextureBake_Props.selected_lightmap_denoise = False
-        bpy.context.scene.TextureBake_Props.targetobj = None
 
 
 def presets_list_update(self,context):
@@ -89,12 +85,12 @@ def presets_list_update(self,context):
     context.scene.TextureBake_Props.preset_name = item.name
 
 
-def imgheight_update(self,context):
-    bpy.context.scene.TextureBake_Props.outputheight = bpy.context.scene.TextureBake_Props.imgheight
+def input_height_update(self,context):
+    bpy.context.scene.TextureBake_Props.output_height = bpy.context.scene.TextureBake_Props.input_height
 
 
-def imgwidth_update(self,context):
-    bpy.context.scene.TextureBake_Props.outputwidth = bpy.context.scene.TextureBake_Props.imgwidth
+def input_width_update(self,context):
+    bpy.context.scene.TextureBake_Props.output_width = bpy.context.scene.TextureBake_Props.input_width
 
 
 def cp_list_index_update(self, context):
@@ -102,7 +98,7 @@ def cp_list_index_update(self, context):
     cpt = bpy.context.scene.TextureBake_Props.cp_list[index]
 
     messages = []
-    bpy.context.scene.TextureBake_Props.channelpackfileformat = cpt.file_format
+    bpy.context.scene.TextureBake_Props.cp_file_format = cpt.file_format
     try:
         bpy.context.scene.TextureBake_Props.cptex_R = cpt.R
     except:
@@ -142,7 +138,7 @@ def get_selected_bakes_dropdown(self, context):
     if bpy.context.scene.TextureBake_Props.selected_sss:
         items.append(("sss", "SSS",""))
     if bpy.context.scene.TextureBake_Props.selected_ssscol:
-        items.append(("ssscol", "SSS Colour",""))
+        items.append(("ssscol", "SSS Color",""))
 
     if bpy.context.scene.TextureBake_Props.selected_rough:
         if bpy.context.scene.TextureBake_Props.rough_glossy_switch == "glossy":
@@ -183,8 +179,6 @@ def get_selected_bakes_dropdown(self, context):
     return items
 
 
-#-------------------END UPDATE FUNCTIONS----------------------------------------------
-
 class TextureBakePropGroup(bpy.types.PropertyGroup):
     """Contains per-file bake properties."""
 
@@ -221,73 +215,62 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
         default = 0.0,
     )
 
-    selected_s2a: BoolProperty(
+    selected_to_target: BoolProperty(
         name = "Bake selected objects to target object",
         description = "Bake maps from one or more source objects (usually high poly) to a single target object (usually low poly). Source and target objects must be in the same location (overlapping). See Blender documentation on selected to active baking for more details",
     )
 
-    targetobj: PointerProperty(
+    target_object: PointerProperty(
         name = "Target Object",
         description = "Specify the target object for the baking. Note, this need not be part of your selection in the viewport (though it can be)",
         type = bpy.types.Object,
     )
 
-    mergedBake: BoolProperty(
+    merged_bake: BoolProperty(
         name = "Multiple objects to one texture set",
         default = False,
         description = "Bake multiple objects to one set of textures. You must have more than one object selected for baking. You will need to manually make sure their UVs don't overlap",
     )
 
-    mergedBakeName: StringProperty(
+    merged_bake_name: StringProperty(
         name = "Texture name for multiple bake",
         description = "When baking one object at a time, the object's name is used in the texture name. Baking multiple objects to one texture set, however requires you to proivde a name for the textures",
-        default = "MergedBake",
+        default = "merged_bake",
     )
 
-    cycles_s2a: BoolProperty(
-        name = "Selected to Active",
-        description = "Bake using the Cycles selected to active option",
-    )
-
-    targetobj_cycles: PointerProperty(
-        name = "Target Object",
-        description = "Specify the target object to bake to (this would be the active object with vanilla Blender baking)",
-        type = bpy.types.Object,
-    )
-
-    imgheight: IntProperty(
+    input_height: IntProperty(
         name = "Bake height",
         default = 1024,
         description = "Set the height of the baked image that will be produced",
-        update = imgheight_update,
+        update = input_height_update,
     )
 
-    imgwidth: IntProperty(
+    input_width: IntProperty(
         name = "Bake width",
         description = "Set the width of the baked image that will be produced",
         default = 1024,
-        update = imgwidth_update,
+        update = input_width_update,
     )
 
-    outputheight: IntProperty(
+    output_height: IntProperty(
         name = "Output Height",
         description = "Set the height of the baked image that will be ouput",
         default = 1024,
     )
 
-    outputwidth: IntProperty(
+    output_width: IntProperty(
         name = "Output Width",
         description = "Set the width of the baked image that will be output",
         default = 1024,
     )
 
-    everything32bitfloat: BoolProperty(
+    bake_32bit_float: BoolProperty(
         name = "All internal 32bit float",
         description = "Normal maps are always created as 32bit float images, but this option causes all images to be created as 32bit float. Image quality is theoretically increased, but often not noticably. Images must be exported as EXR to preserve 32bit quality",
         default = False,
     )
 
-    useAlpha: BoolProperty(
+    use_alpha: BoolProperty(
         name = "Use Alpha",
         description = "Baked images have a transparent background (else Black)",
         default = False,
@@ -321,7 +304,7 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
 
     selected_col: BoolProperty(
         name = "Diffuse",
-        description = "Bake a PBR Colour map",
+        description = "Bake a PBR Color map",
         default = True,
     )
 
@@ -362,7 +345,7 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
 
     selected_ssscol: BoolProperty(
         name = "SSS Col",
-        description = "Bake a Subsurface colour map",
+        description = "Bake a Subsurface color map",
     )
 
     selected_clearcoat: BoolProperty(
@@ -387,12 +370,12 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
 
     selected_col_mats: BoolProperty(
         name = TextureBakeConstants.COLOURID,
-        description = "ColourID Map based on random colour per material",
+        description = "ColorID Map based on random color per material",
     )
 
     selected_col_vertex: BoolProperty(
         name = TextureBakeConstants.VERTEXCOL,
-        description = "Bake the active vertex colours to a texture",
+        description = "Bake the active vertex colors to a texture",
     )
 
     selected_ao: BoolProperty(
@@ -416,8 +399,8 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
     )
 
     lightmap_apply_colman: BoolProperty(
-        name = "Export with colour management settings",
-        description = "Apply the colour management settings you have set in the render properties panel to the lightmap. Only available when you are exporting your bakes. Will be ignored if exporting to EXR files as these don't support colour management",
+        name = "Export with color management settings",
+        description = "Apply the color management settings you have set in the render properties panel to the lightmap. Only available when you are exporting your bakes. Will be ignored if exporting to EXR files as these don't support color management",
         default = False,
     )
 
@@ -431,21 +414,9 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
         description = "If one exists for the object being baked, use any existing UV maps called 'TextureBake' for baking (rather than the active UV map)",
     )
 
-    restoreOrigUVmap: BoolProperty(
+    restore_active_uvmap: BoolProperty(
         name = "Restore originally active UV map at end",
         description = "If you are preferring an existing UV map called TextureBake, the UV map used for baking may not be the one you had displayed in the viewport before baking. This option restores what you had active before baking",
-        default = True,
-    )
-
-    uvpackmargin: FloatProperty(
-        name = "Pack Margin",
-        description = "Margin to use when packing combined UVs into Atlas map",
-        default = 0.1,
-    )
-
-    averageUVsize: BoolProperty(
-        name = "Average UV Island Size",
-        description = "Average the size of the UV islands when combining them into the atlas map",
         default = True,
     )
 
@@ -465,46 +436,40 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
         default = 2,
     )
 
-    unwrapmargin: FloatProperty(
-        name = "UV Unwrap Margin",
-        description = "Margin between islands to use for Smart UV Project",
-        default = 0.1,
-    )
-
-    saveExternal: BoolProperty(
+    export_textures: BoolProperty(
         name = "Export bakes",
         description = "Export your bakes to the folder specified below, under the same folder where your .blend file is saved. Not available if .blend file not saved",
         default = False,
-        update = saveExternal_update,
+        update = export_textures_update,
     )
 
-    exportFolderPerObject: BoolProperty(
+    export_folder_per_object: BoolProperty(
         name = "Sub-folder per object",
         description = "Create a sub-folder for the textures and FBX of each baked object. Only available if you are exporting bakes",
         default = False,
     )
 
-    saveObj: BoolProperty(
+    export_mesh: BoolProperty(
         name = "Export mesh",
         description = "Export your mesh as a .fbx file with a single texture and the UV map used for baking (i.e. ready for import somewhere else. File is saved in the folder specified below, under the folder where your blend file is saved. Not available if .blend file not saved",
         default = False,
     )
 
-    fbxName: StringProperty(
+    fbx_name: StringProperty(
         name = "FBX name",
         description = "File name of the fbx. NOTE: To maintain compatibility, only MS Windows acceptable characters will be used",
         default = "Export",
         maxlen = 20,
     )
 
-    prepmesh: BoolProperty(
+    prep_mesh: BoolProperty(
         name = "Copy objects and apply bakes",
         description = "Create a copy of your selected objects in Blender (or target object if baking to a target) and apply the baked textures to it. If you are baking in the background, this happens after you import",
         default = False,
-        update = prepmesh_update,
+        update = prep_mesh_update,
     )
 
-    hidesourceobjects: BoolProperty(
+    hide_source_objects: BoolProperty(
         name = "Hide source objects after bake",
         description = "Hide the source object that you baked from in the viewport after baking. If you are baking in the background, this happens after you import",
         default = False,
@@ -515,13 +480,13 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
         description = "Preserve original material assignments for baked objects (NOTE: all materials will be identical, and point to the baked texture set, but face assignments for each material will be preserved)",
     )
 
-    everything16bit: BoolProperty(
+    export_16bit: BoolProperty(
         name = "All exports 16bit",
         description = "Normal maps are always exported as 16bit, but this option causes all images to be exported 16bit. This should probably stay enabled unless file sizes are an issue",
         default = True,
     )
 
-    exportfileformat: EnumProperty(
+    export_file_format: EnumProperty(
         name = "Export File Format",
         description = "Select the file format for exported bakes",
         default = "PNG",
@@ -532,68 +497,62 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
             ("TARGA", "TGA", ""),
             ("OPEN_EXR", "Open EXR", "Color management settings are not supported by the EXR format"),
         ],
-        update = exportfileformat_update,
+        update = export_file_format_update,
     )
 
-    saveFolder: StringProperty(
+    export_folder_name: StringProperty(
         name = "Save folder name",
         description = "Name of the folder to create and save the bakes/mesh into. Created in the folder where you blend file is saved. NOTE: To maintain compatibility, only MS Windows acceptable characters will be used",
         default = "TextureBake_Bakes",
         maxlen = 20,
     )
 
-    selected_applycolmantocol: BoolProperty(
-        name = "Export diffuse with col management settings",
-        description = "Apply colour space settings (exposure, gamma etc.) from current scene when saving the diffuse image externally. Only available if you are exporting baked images. Will be ignored if exporting to EXR files as these don't support colour management",
+    export_color_space: BoolProperty(
+        name = "Export color space settings",
+        description = "Apply color space settings (exposure, gamma etc.) from current scene when saving the diffuse image externally. Only available if you are exporting baked images. Will be ignored if exporting to EXR files as these don't support color management",
         default = False,
     )
 
-    exportcyclescolspace: BoolProperty(
-        name = "Export with col management settings",
-        description = "Apply colour space settings (exposure, gamma etc.) from current scene when saving the image externally. Only available if you are exporting baked images. Not available if you have Cycles bake mode set to Normal. Will be ignored if exporting to EXR files as these don't support colour management",
-        default = True,
-    )
-
-    folderdatetime: BoolProperty(
+    export_datetime: BoolProperty(
         name = "Append date and time to folder",
         description = "Append date and time to folder name. If you turn this off, previous bakes with the same name will be overwritten",
         default = True,
     )
 
-    rundenoise: BoolProperty(
+    run_denoise: BoolProperty(
         name = "Denoise",
         description = "Run baked images through the compositor. Your blend file must be saved, and you must be exporting your bakes",
         default = False,
     )
 
-    applymodsonmeshexport: BoolProperty(
+    export_apply_modifiers: BoolProperty(
         name = "Apply object modifiers",
         description = "Apply modifiers to object on export of the mesh to FBX",
         default = True,
     )
 
-    applytransformation: BoolProperty(
+    export_apply_transforms: BoolProperty(
         name = "Apply transformation",
         description = "Use the 'Apply Transformation' option when exporting to FBX",
         default = False,
     )
 
-    advancedobjectselection: BoolProperty(
+    use_object_list: BoolProperty(
         name = "Use advanced object selection",
         description = "When turned on, you will bake the objects added to the bake list. When turned off, you will bake objects selected in the viewport",
         default = True,
     )
 
-    bakeobjs_advanced_list: CollectionProperty(
+    object_list: CollectionProperty(
         type = ui.TextureBakeObjectListItem,
     )
 
-    bakeobjs_advanced_list_index: IntProperty(
+    object_list_index: IntProperty(
         name = "Index for bake objects list",
         default = 0,
     )
 
-    bgbake: EnumProperty(
+    background_bake: EnumProperty(
         name="Background Bake",
         default="fg",
         items=[
@@ -602,12 +561,12 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
         ],
     )
 
-    bgbake_name: StringProperty(
+    background_bake_name: StringProperty(
         name = "Background bake task name",
         description = "Name to help you identify the background bake task. This can be anything, and is only to help keep track of multiple background bake tasks. The name will show in the list below",
     )
 
-    memLimit: EnumProperty(
+    memory_limit: EnumProperty(
         name = "GPU Memory Limit",
         description = "Limit memory usage by limiting render tile size. More memory means faster bake times, but it is possible to exceed the capabilities of your computer which will lead to a crash or slow bake times",
         default = "4096",
@@ -620,20 +579,20 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
         ],
     )
 
-    batchName: StringProperty(
+    batch_name: StringProperty(
         name = "Batch name",
         description = "Name to apply to these bakes (is incorporated into the bakes file name, provided you have included this in the image format string - see addon preferences). NOTE: To maintain compatibility, only MS Windows acceptable characters will be used",
         default = "Bake1",
         maxlen = 20,
     )
 
-    createglTFnode: BoolProperty(
+    create_gltf_node: BoolProperty(
         name = "Create glTF settings",
         description = "Create the glTF settings node group",
         default = False,
     )
 
-    glTFselection: EnumProperty(
+    gltf_selection: EnumProperty(
         name = "glTF selection",
         description = "Which map should be plugged into the glTF settings node",
         default = TextureBakeConstants.AO,
@@ -660,11 +619,6 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
         description = "Name to save this preset under",
         default = "Preset Name",
         maxlen = 20,
-    )
-
-    showtips: BoolProperty(
-        name = "",
-        default = False,
     )
 
     first_texture_show: BoolProperty(
@@ -711,7 +665,7 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
         update = cp_list_index_update,
     )
 
-    channelpackfileformat: EnumProperty(
+    cp_file_format: EnumProperty(
         name = "Export File Format for Channel Packing",
         default = "OPEN_EXR",
         items = [
@@ -779,19 +733,14 @@ def register():
 
 
 def unregister():
-    from .bg_bake import bgbake_ops
+    from .bg_bake import background_bake_ops
 
-    # Clear the files for any finished background bakes
+    # Stop any ongoing background bakes
     bpy.ops.texture_bake.bake_delete()
-
-    # Stop any running and clear files
-    running = bgbake_ops.bgops_list
-
+    running = background_bake_ops.bgops_list
     savepath = Path(bpy.data.filepath).parent
-
     for p in running:
         pid_str = str(p[0].pid)
-
         try:
             os.kill(pid_str, signal.SIGKILL)
         except:

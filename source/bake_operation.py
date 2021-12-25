@@ -19,32 +19,26 @@
 
 import bpy
 
-def bakestolist(justcount = False):
-    #Assemble properties into list
-    selectedbakes = []
-    selectedbakes.append("diffuse") if bpy.context.scene.TextureBake_Props.selected_col else False
-    selectedbakes.append("metalness") if bpy.context.scene.TextureBake_Props.selected_metal else False
-    selectedbakes.append("roughness") if bpy.context.scene.TextureBake_Props.selected_rough else False
-    selectedbakes.append("normal") if bpy.context.scene.TextureBake_Props.selected_normal else False
-    selectedbakes.append("transparency") if bpy.context.scene.TextureBake_Props.selected_trans else False
-    selectedbakes.append("transparencyroughness") if bpy.context.scene.TextureBake_Props.selected_transrough else False
-    selectedbakes.append("clearcoat") if bpy.context.scene.TextureBake_Props.selected_clearcoat else False
-    selectedbakes.append("clearcoatroughness") if bpy.context.scene.TextureBake_Props.selected_clearcoat_rough else False
-    selectedbakes.append("emission") if bpy.context.scene.TextureBake_Props.selected_emission else False
-    selectedbakes.append("specular") if bpy.context.scene.TextureBake_Props.selected_specular else False
-    selectedbakes.append("alpha") if bpy.context.scene.TextureBake_Props.selected_alpha else False
-
-    selectedbakes.append("sss") if bpy.context.scene.TextureBake_Props.selected_sss else False
-    selectedbakes.append("ssscol") if bpy.context.scene.TextureBake_Props.selected_ssscol else False
-
-    if justcount:
-        return len(selectedbakes)
-    else:
-        return selectedbakes
+def bakes_to_list(justcount = False):
+    selection = []
+    if bpy.context.scene.TextureBake_Props.selected_col: selection.append("diffuse")
+    if bpy.context.scene.TextureBake_Props.selected_metal: selection.append("metalness")
+    if bpy.context.scene.TextureBake_Props.selected_rough: selection.append("roughness")
+    if bpy.context.scene.TextureBake_Props.selected_normal: selection.append("normal")
+    if bpy.context.scene.TextureBake_Props.selected_trans: selection.append("transparency")
+    if bpy.context.scene.TextureBake_Props.selected_transrough: selection.append("transparencyroughness")
+    if bpy.context.scene.TextureBake_Props.selected_clearcoat: selection.append("clearcoat")
+    if bpy.context.scene.TextureBake_Props.selected_clearcoat_rough: selection.append("clearcoatroughness")
+    if bpy.context.scene.TextureBake_Props.selected_emission: selection.append("emission")
+    if bpy.context.scene.TextureBake_Props.selected_specular: selection.append("specular")
+    if bpy.context.scene.TextureBake_Props.selected_alpha: selection.append("alpha")
+    if bpy.context.scene.TextureBake_Props.selected_sss: selection.append("sss")
+    if bpy.context.scene.TextureBake_Props.selected_ssscol: selection.append("ssscol")
+    return len(selection) if justcount else selection
 
 
 class TextureBakeConstants:
-    #Constants
+    # Constants
     PBR = "PBR"
     PBRS2A = "PBR StoA"
     CYCLESBAKE = "CyclesBake"
@@ -52,11 +46,11 @@ class TextureBakeConstants:
     SPECIALS_PBR_TARGET_ONLY = "specials_pbr_targetonly"
     SPECIALS_CYCLES_TARGET_ONLY = "specials_cycles_targetonly"
 
-    #PBR names - NOT YET USED
+    # PBR names - NOT YET USED
     PBR_DIFFUSE = "Diffuse"
     PBR_METAL = "Metalness"
     PBR_SSS = "SSS"
-    PBR_SSSCOL = "SSS Colour"
+    PBR_SSSCOL = "SSS Color"
     PBR_ROUGHNESS = "Roughness"
     PBR_GLOSSY = "Glossiness"
     PBR_NORMAL = "Normal"
@@ -68,12 +62,12 @@ class TextureBakeConstants:
     PBR_SPECULAR = "Specular"
     PBR_ALPHA = "Alpha"
 
-    #Specials names
+    # Specials names
     THICKNESS = "Thickness"
     AO = "Ambient Occlusion"
     CURVATURE = "Curvature"
-    COLOURID = "Colour ID"
-    VERTEXCOL = "Vertex Colour"
+    COLOURID = "Color ID"
+    VERTEXCOL = "Vertex Color"
     LIGHTMAP = "Lightmap"
 
 
@@ -81,29 +75,27 @@ class BakeOperation:
     def __init__(self):
         self.udim_counter = 0
 
-        #Mapping of object name to active UVs
+        # Mapping of object name to active UVs
         self.bake_mode = TextureBakeConstants.PBR #So the example in the user prefs will work
         self.bake_objects = []
         self.active_object = None
         self.sb_target_object = None
-        self.sb_target_object_cycles = None
 
-        #normal, udims
+        # normal, udims
         self.uv_mode = "normal"
 
-        #pbr stuff
+        # pbr stuff
         self.pbr_selected_bake_types = []
 
-        #cycles stuff
+        # cycles stuff
         self.cycles_bake_type = bpy.context.scene.cycles.bake_type
 
-        #ColIdmap stuff
+        # ColIdmap stuff
         self.used_cols = [] #[[r,g,b],[r,g,b],[r,g,b]]
         self.mat_col_dict = {} #{matname, [r,g,b]
 
-
     def assemble_pbr_bake_list(self):
-        self.pbr_selected_bake_types = bakestolist()
+        self.pbr_selected_bake_types = bakes_to_list()
 
 
 class MasterOperation:
@@ -128,7 +120,6 @@ class MasterOperation:
 
     orig_textures_folder = False
 
-
     def clear():
         MasterOperation.orig_UVs_dict = {}
         MasterOperation.total_bake_operations = 0
@@ -139,7 +130,6 @@ class MasterOperation:
         MasterOperation.merged_bake = False
         MasterOperation.merged_bake_name = ""
         MasterOperation.batch_name = ""
-
         MasterOperation.orig_s2A = False
         MasterOperation.orig_objects = []
         MasterOperation.orig_active_object = ""
@@ -147,13 +137,7 @@ class MasterOperation:
         MasterOperation.orig_sample_count = 0
         MasterOperation.orig_textures_folder = False
 
-        return True
-
 
 class BakeStatus:
     total_maps = 0
     current_map = 0
-
-
-class VarsTest:
-	test = bpy.props.BoolProperty(name="MyTest")

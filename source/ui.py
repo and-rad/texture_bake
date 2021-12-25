@@ -22,7 +22,7 @@ from pathlib import Path
 import tempfile
 from . import functions
 from . import bakefunctions
-from .bg_bake import bgbake_ops
+from .bg_bake import background_bake_ops
 from .bake_operation import TextureBakeConstants
 
 from bpy.props import StringProperty, IntProperty, CollectionProperty, PointerProperty
@@ -48,10 +48,10 @@ class TEXTUREBAKE_PT_main(bpy.types.Panel):
         row.prop(context.scene.TextureBake_Props, "global_mode", text = "Bake Mode", expand = True)
 
         row = layout.row()
-        row.prop(context.scene.TextureBake_Props, "bgbake", expand = True)
+        row.prop(context.scene.TextureBake_Props, "background_bake", expand = True)
 
-        if bpy.context.scene.TextureBake_Props.bgbake == "bg":
-            layout.row().prop(context.scene.TextureBake_Props, "bgbake_name", text="Name: ")
+        if bpy.context.scene.TextureBake_Props.background_bake == "bg":
+            layout.row().prop(context.scene.TextureBake_Props, "background_bake_name", text="Name: ")
 
         row = layout.row()
         row.scale_y = 1.5
@@ -61,19 +61,19 @@ class TEXTUREBAKE_PT_main(bpy.types.Panel):
         row = box.row()
         row.label(text="Background bakes")
 
-        if len(bgbake_ops.bgops_list) == 0 and len(bgbake_ops.bgops_list_finished) == 0:
+        if len(background_bake_ops.bgops_list) == 0 and len(background_bake_ops.bgops_list_finished) == 0:
             row = box.row()
             row.label(text="No running or finished background bakes", icon="MONKEY")
         else:
-            for p in bgbake_ops.bgops_list:
+            for p in background_bake_ops.bgops_list:
                 t = Path(tempfile.gettempdir())
-                t = t / f"TextureBake_Bgbake_{str(p[0].pid)}"
+                t = t / f"TextureBake_background_bake_{str(p[0].pid)}"
 
                 try:
                     with open(str(t), "r") as progfile:
                         progress = progfile.readline()
                 except:
-                    #No file yet, as no bake operation has completed yet. Holding message
+                    # No file yet, as no bake operation has completed yet. Holding message
                     progress = 0
 
                 row = box.row()
@@ -82,8 +82,8 @@ class TEXTUREBAKE_PT_main(bpy.types.Panel):
                     name = "Untitled"
                 row.label(text=f"{name} - baking in progress {progress}%", icon="GHOST_DISABLED")
 
-        if len(bgbake_ops.bgops_list_finished) != 0:
-            for p in bgbake_ops.bgops_list_finished:
+        if len(background_bake_ops.bgops_list_finished) != 0:
+            for p in background_bake_ops.bgops_list_finished:
                 row = box.row()
                 col = row.column()
                 name = p[3]
@@ -98,7 +98,7 @@ class TEXTUREBAKE_PT_main(bpy.types.Panel):
         row = box.row()
         row.operator("texture_bake.bake_import", text="Import all", icon="IMPORT")
         row.operator("texture_bake.bake_delete", text="Discard all", icon="TRASH")
-        row.enabled = len(bgbake_ops.bgops_list_finished) != 0
+        row.enabled = len(background_bake_ops.bgops_list_finished) != 0
 
 
 class TEXTUREBAKE_PT_presets(TextureBakeCategoryPanel, bpy.types.Panel):
@@ -134,12 +134,12 @@ class TEXTUREBAKE_PT_objects(TextureBakeCategoryPanel, bpy.types.Panel):
 
         row = layout.row()
         row.use_property_split = False
-        row.prop(context.scene.TextureBake_Props, "advancedobjectselection")
+        row.prop(context.scene.TextureBake_Props, "use_object_list")
 
-        if context.scene.TextureBake_Props.advancedobjectselection:
+        if context.scene.TextureBake_Props.use_object_list:
             row = layout.row()
             row.template_list("TEXTUREBAKE_UL_object_list", "", context.scene.TextureBake_Props,
-                            "bakeobjs_advanced_list", context.scene.TextureBake_Props, "bakeobjs_advanced_list_index")
+                            "object_list", context.scene.TextureBake_Props, "object_list_index")
             row = layout.row()
             row.operator('texture_bake.add_object', text='Add', icon="PRESET_NEW")
             row.operator('texture_bake.remove_object', text='Remove', icon="CANCEL")
@@ -150,29 +150,16 @@ class TEXTUREBAKE_PT_objects(TextureBakeCategoryPanel, bpy.types.Panel):
             row.operator('texture_bake.move_object', text='Down', icon="TRIA_DOWN").direction="DOWN"
             row.operator('texture_bake.refresh_objects', text='Refresh', icon="FILE_REFRESH")
 
-        if context.scene.TextureBake_Props.global_mode == "pbr_bake":
+        row = layout.row()
+        row.use_property_split = False
+        row.prop(context.scene.TextureBake_Props, "selected_to_target")
+
+        if bpy.context.scene.TextureBake_Props.selected_to_target:
+            layout.row().prop(context.scene.TextureBake_Props, "target_object")
+            layout.row().prop(context.scene.render.bake, "cage_object", text="Cage Object (Optional)")
             row = layout.row()
-            row.use_property_split = False
-            row.prop(context.scene.TextureBake_Props, "selected_s2a")
-
-            if bpy.context.scene.TextureBake_Props.selected_s2a:
-                layout.row().prop(context.scene.TextureBake_Props, "targetobj")
-                layout.row().prop(context.scene.render.bake, "cage_object", text="Cage Object (Optional)")
-                row = layout.row()
-                row.prop(context.scene.TextureBake_Props, "ray_distance")
-                row.prop(context.scene.TextureBake_Props, "cage_extrusion")
-
-        if context.scene.TextureBake_Props.global_mode == "cycles_bake":
-            row = layout.row()
-            row.use_property_split = False
-            row.prop(context.scene.TextureBake_Props, "cycles_s2a", text="Bake to target object (selected to active)")
-
-            if bpy.context.scene.TextureBake_Props.cycles_s2a:
-                layout.row().prop(context.scene.TextureBake_Props, "targetobj_cycles")
-                layout.row().prop(context.scene.render.bake, "cage_object", text="Cage Object (Optional)")
-                row = layout.row()
-                row.prop(context.scene.TextureBake_Props, "ray_distance")
-                row.prop(context.scene.TextureBake_Props, "cage_extrusion")
+            row.prop(context.scene.TextureBake_Props, "ray_distance")
+            row.prop(context.scene.TextureBake_Props, "cage_extrusion")
 
 
 class TEXTUREBAKE_PT_input(TextureBakeCategoryPanel, bpy.types.Panel):
@@ -200,12 +187,12 @@ class TEXTUREBAKE_PT_input(TextureBakeCategoryPanel, bpy.types.Panel):
         if bpy.context.scene.TextureBake_Props.selected_lightmap:
             row = layout.row()
             row.prop(context.scene.TextureBake_Props, "selected_lightmap_denoise")
-            if not bpy.context.scene.TextureBake_Props.saveExternal:
+            if not bpy.context.scene.TextureBake_Props.export_textures:
                 row.enabled = False
 
             row = layout.row()
             row.prop(context.scene.TextureBake_Props, "lightmap_apply_colman")
-            if not bpy.context.scene.TextureBake_Props.saveExternal:
+            if not bpy.context.scene.TextureBake_Props.export_textures:
                 row.enabled = False
 
         layout.row().operator("texture_bake.import_materials", icon='ADD')
@@ -293,8 +280,8 @@ class TEXTUREBAKE_PT_output(TextureBakeCategoryPanel, bpy.types.Panel):
             layout.row().prop(context.scene.cycles, "samples")
 
             row = layout.row()
-            row.prop(context.scene.TextureBake_Props, "rundenoise", text="Denoise CyclesBake")
-            if not bpy.context.scene.TextureBake_Props.saveExternal:
+            row.prop(context.scene.TextureBake_Props, "run_denoise", text="Denoise CyclesBake")
+            if not bpy.context.scene.TextureBake_Props.export_textures:
                 row.enabled = False
 
 
@@ -308,8 +295,8 @@ class TEXTUREBAKE_PT_bake_settings(TextureBakeCategoryPanel, bpy.types.Panel):
         layout.row().label(text="Bake at:")
 
         row = layout.row()
-        row.prop(context.scene.TextureBake_Props, "imgwidth")
-        row.prop(context.scene.TextureBake_Props, "imgheight")
+        row.prop(context.scene.TextureBake_Props, "input_width")
+        row.prop(context.scene.TextureBake_Props, "input_height")
 
         row = layout.row()
         row.operator("texture_bake.decrease_bake_res", icon = "TRIA_DOWN")
@@ -319,8 +306,8 @@ class TEXTUREBAKE_PT_bake_settings(TextureBakeCategoryPanel, bpy.types.Panel):
         layout.row().label(text="Output at:")
 
         row = layout.row()
-        row.prop(context.scene.TextureBake_Props, "outputwidth")
-        row.prop(context.scene.TextureBake_Props, "outputheight")
+        row.prop(context.scene.TextureBake_Props, "output_width")
+        row.prop(context.scene.TextureBake_Props, "output_height")
 
         row = layout.row()
         row.operator("texture_bake.decrease_output_res", icon = "TRIA_DOWN")
@@ -329,17 +316,17 @@ class TEXTUREBAKE_PT_bake_settings(TextureBakeCategoryPanel, bpy.types.Panel):
         layout.row().prop(context.scene.render.bake, "margin", text="Bake Margin")
 
         layout.separator()
-        layout.row().prop(context.scene.TextureBake_Props, "everything32bitfloat")
-        layout.row().prop(context.scene.TextureBake_Props, "useAlpha")
+        layout.row().prop(context.scene.TextureBake_Props, "bake_32bit_float")
+        layout.row().prop(context.scene.TextureBake_Props, "use_alpha")
 
-        #For now, this is CyclesBake only
+        # For now, this is CyclesBake only
         if context.scene.TextureBake_Props.global_mode == "cycles_bake":
             layout.row().prop(context.scene.TextureBake_Props, "tex_per_mat")
 
-        layout.row().prop(context.scene.TextureBake_Props, "mergedBake")
+        layout.row().prop(context.scene.TextureBake_Props, "merged_bake")
 
-        if context.scene.TextureBake_Props.mergedBake:
-            layout.row().prop(context.scene.TextureBake_Props, "mergedBakeName")
+        if context.scene.TextureBake_Props.merged_bake:
+            layout.row().prop(context.scene.TextureBake_Props, "merged_bake_name")
 
 
 class TEXTUREBAKE_PT_export_settings(TextureBakeCategoryPanel, bpy.types.Panel):
@@ -352,44 +339,42 @@ class TEXTUREBAKE_PT_export_settings(TextureBakeCategoryPanel, bpy.types.Panel):
 
         if functions.isBlendSaved():
             row = layout.row()
-            row.prop(context.scene.TextureBake_Props, "saveExternal")
-            row.prop(context.scene.TextureBake_Props, "saveObj")
+            row.prop(context.scene.TextureBake_Props, "export_textures")
+            row.prop(context.scene.TextureBake_Props, "export_mesh")
 
             layout.use_property_split = True
-            if context.scene.TextureBake_Props.saveExternal or context.scene.TextureBake_Props.saveObj:
+            if context.scene.TextureBake_Props.export_textures or context.scene.TextureBake_Props.export_mesh:
                 layout.separator()
-                layout.row().prop(context.scene.TextureBake_Props, "saveFolder", text="Folder name")
+                layout.row().prop(context.scene.TextureBake_Props, "export_folder_name", text="Folder name")
 
                 row = layout.row()
-                row.prop(context.scene.TextureBake_Props, "exportFolderPerObject")
-                row.enabled = bpy.context.scene.TextureBake_Props.saveExternal
+                row.prop(context.scene.TextureBake_Props, "export_folder_per_object")
+                row.enabled = bpy.context.scene.TextureBake_Props.export_textures
 
-                if context.scene.TextureBake_Props.saveObj:
-                    layout.row().prop(context.scene.TextureBake_Props, "applymodsonmeshexport")
-                    layout.row().prop(context.scene.TextureBake_Props, "applytransformation")
+                if context.scene.TextureBake_Props.export_mesh:
+                    layout.row().prop(context.scene.TextureBake_Props, "export_apply_modifiers")
+                    layout.row().prop(context.scene.TextureBake_Props, "export_apply_transforms")
 
-                layout.row().prop(context.scene.TextureBake_Props, "folderdatetime")
+                layout.row().prop(context.scene.TextureBake_Props, "export_datetime")
 
-                if context.scene.TextureBake_Props.saveObj and not bpy.context.scene.TextureBake_Props.exportFolderPerObject:
-                    layout.row().prop(context.scene.TextureBake_Props, "fbxName")
+                if context.scene.TextureBake_Props.export_mesh and not bpy.context.scene.TextureBake_Props.export_folder_per_object:
+                    layout.row().prop(context.scene.TextureBake_Props, "fbx_name")
 
-                layout.row().prop(context.scene.TextureBake_Props, "exportfileformat", text="Format")
+                layout.row().prop(context.scene.TextureBake_Props, "export_file_format", text="Format")
 
                 row = layout.row()
-                row.prop(context.scene.TextureBake_Props, "everything16bit")
-                if (not context.scene.TextureBake_Props.saveExternal
-                    or context.scene.TextureBake_Props.exportfileformat == "JPEG"
-                    or context.scene.TextureBake_Props.exportfileformat == "TARGA"):
+                row.prop(context.scene.TextureBake_Props, "export_16bit")
+                if (not context.scene.TextureBake_Props.export_textures
+                    or context.scene.TextureBake_Props.export_file_format == "JPEG"
+                    or context.scene.TextureBake_Props.export_file_format == "TARGA"):
                     row.enabled = False
 
+                row = layout.row()
+                row.prop(context.scene.TextureBake_Props, "export_color_space")
                 if context.scene.TextureBake_Props.global_mode == "pbr_bake":
-                    row = layout.row()
-                    row.prop(context.scene.TextureBake_Props, "selected_applycolmantocol")
                     row.enabled = bpy.context.scene.TextureBake_Props.selected_col
 
                 if context.scene.TextureBake_Props.global_mode == "cycles_bake":
-                    row = layout.row()
-                    row.prop(context.scene.TextureBake_Props, "exportcyclescolspace")
                     row.enabled = bpy.context.scene.cycles.bake_type != "NORMAL"
         else:
             layout.row().label(text="Unavailable - Blend file not saved")
@@ -404,7 +389,7 @@ class TEXTUREBAKE_PT_uv(TextureBakeCategoryPanel, bpy.types.Panel):
 
         row = layout.row()
         row.prop(context.scene.TextureBake_Props, "uv_mode", expand=True)
-        row.enabled = context.scene.TextureBake_Props.saveExternal
+        row.enabled = context.scene.TextureBake_Props.export_textures
 
         if bpy.context.scene.TextureBake_Props.uv_mode == "udims":
             layout.row().prop(context.scene.TextureBake_Props, "udim_tiles")
@@ -413,7 +398,7 @@ class TEXTUREBAKE_PT_uv(TextureBakeCategoryPanel, bpy.types.Panel):
         row.prop(context.scene.TextureBake_Props, "prefer_existing_uvmap")
 
         row = layout.row()
-        row.prop(context.scene.TextureBake_Props, "restoreOrigUVmap")
+        row.prop(context.scene.TextureBake_Props, "restore_active_uvmap")
 
 
 class TEXTUREBAKE_PT_other(TextureBakeCategoryPanel, bpy.types.Panel):
@@ -424,29 +409,29 @@ class TEXTUREBAKE_PT_other(TextureBakeCategoryPanel, bpy.types.Panel):
         layout = self.layout
 
         row=layout.row()
-        row.prop(context.scene.TextureBake_Props, "batchName")
+        row.prop(context.scene.TextureBake_Props, "batch_name")
 
         row = layout.row()
-        if bpy.context.scene.TextureBake_Props.bgbake == "fg":
+        if bpy.context.scene.TextureBake_Props.background_bake == "fg":
             text = "Copy objects and apply bakes"
         else:
             text = "Copy objects and apply bakes (after import)"
 
-        row.prop(context.scene.TextureBake_Props, "prepmesh", text=text)
+        row.prop(context.scene.TextureBake_Props, "prep_mesh", text=text)
         row.enabled = not context.scene.TextureBake_Props.tex_per_mat
 
-        if (context.scene.TextureBake_Props.prepmesh):
-            if bpy.context.scene.TextureBake_Props.bgbake == "fg":
+        if (context.scene.TextureBake_Props.prep_mesh):
+            if bpy.context.scene.TextureBake_Props.background_bake == "fg":
                 text = "Hide source objects after bake"
             else:
                 text = "Hide source objects after bake (after import)"
             row = layout.row()
-            row.prop(context.scene.TextureBake_Props, "hidesourceobjects", text=text)
+            row.prop(context.scene.TextureBake_Props, "hide_source_objects", text=text)
 
             row = layout.row()
-            row.prop(context.scene.TextureBake_Props, "createglTFnode")
-            if bpy.context.scene.TextureBake_Props.createglTFnode:
-                row.prop(context.scene.TextureBake_Props, "glTFselection", text="")
+            row.prop(context.scene.TextureBake_Props, "create_gltf_node")
+            if bpy.context.scene.TextureBake_Props.create_gltf_node:
+                row.prop(context.scene.TextureBake_Props, "gltf_selection", text="")
 
         row = layout.row()
         row.prop(context.scene.TextureBake_Props, "preserve_materials")
@@ -455,7 +440,7 @@ class TEXTUREBAKE_PT_other(TextureBakeCategoryPanel, bpy.types.Panel):
             row = layout.row()
             row.prop(context.scene.cycles, "device")
             row = layout.row()
-            row.prop(context.scene.TextureBake_Props, "memLimit")
+            row.prop(context.scene.TextureBake_Props, "memory_limit")
             row.enabled = bpy.context.scene.cycles.device != "CPU"
         else:
             row=layout.row()
@@ -473,7 +458,7 @@ class TEXTUREBAKE_PT_packing(TextureBakeCategoryPanel, bpy.types.Panel):
             if not functions.isBlendSaved():
                 row = layout.row()
                 row.label(text="Unavailable - Blend file not saved")
-            elif not bpy.context.scene.TextureBake_Props.saveExternal:
+            elif not bpy.context.scene.TextureBake_Props.export_textures:
                 row = layout.row()
                 row.label(text="Unavailable - You must be exporting your bakes")
             else:
@@ -486,7 +471,7 @@ class TEXTUREBAKE_PT_packing(TextureBakeCategoryPanel, bpy.types.Panel):
                 col.operator("texture_bake.reset_packed_textures", text="", icon="MONKEY")
 
                 layout.row().prop(context.scene.TextureBake_Props, "cp_name")
-                layout.row().prop(context.scene.TextureBake_Props, "channelpackfileformat", text="Format")
+                layout.row().prop(context.scene.TextureBake_Props, "cp_file_format", text="Format")
                 layout.row().prop(context.scene.TextureBake_Props, "cptex_R", text="R")
                 layout.row().prop(context.scene.TextureBake_Props, "cptex_G", text="G")
                 layout.row().prop(context.scene.TextureBake_Props, "cptex_B", text="B")
@@ -502,7 +487,7 @@ class TEXTUREBAKE_PT_packing(TextureBakeCategoryPanel, bpy.types.Panel):
                         or cpt.G != bpy.context.scene.TextureBake_Props.cptex_G
                         or cpt.B != bpy.context.scene.TextureBake_Props.cptex_B
                         or cpt.A != bpy.context.scene.TextureBake_Props.cptex_A
-                        or cpt.file_format != bpy.context.scene.TextureBake_Props.channelpackfileformat):
+                        or cpt.file_format != bpy.context.scene.TextureBake_Props.cp_file_format):
                         row = layout.row()
                         row.alert=True
                         text = f"Update {current_name} (!!not saved!!)"
@@ -527,9 +512,7 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
     img_name_format: bpy.props.StringProperty(name="Image format string",
         default="%OBJ%_%BATCH%_%BAKEMODE%_%BAKETYPE%")
 
-    justupdated = False
-
-    #Aliases
+    # Aliases
     diffuse_alias: bpy.props.StringProperty(name="Diffuse", default="diffuse")
     metal_alias: bpy.props.StringProperty(name="Metal", default="metalness")
     roughness_alias: bpy.props.StringProperty(name="Roughness", default="roughness")
@@ -543,7 +526,7 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
     specular_alias: bpy.props.StringProperty(name="Specular", default="specular")
     alpha_alias: bpy.props.StringProperty(name="Alpha", default="alpha")
     sss_alias: bpy.props.StringProperty(name="SSS", default="sss")
-    ssscol_alias: bpy.props.StringProperty(name="SSS Colour", default="ssscol")
+    ssscol_alias: bpy.props.StringProperty(name="SSS Color", default="ssscol")
 
     ao_alias: bpy.props.StringProperty(name=TextureBakeConstants.AO, default="ao")
     curvature_alias: bpy.props.StringProperty(name=TextureBakeConstants.CURVATURE, default="curvature")
@@ -555,14 +538,12 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
     @classmethod
     def reset_img_string(self):
         prefs = bpy.context.preferences.addons[__package__].preferences
-        #prefs.img_name_format = "BOO"
         prefs.property_unset("img_name_format")
         bpy.ops.wm.save_userpref()
 
     @classmethod
     def reset_aliases(self):
         prefs = bpy.context.preferences.addons[__package__].preferences
-
         prefs.property_unset("diffuse_alias")
         prefs.property_unset("metal_alias")
         prefs.property_unset("roughness_alias")
@@ -582,9 +563,7 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
         prefs.property_unset("vertexcol_alias")
         prefs.property_unset("colid_alias")
         prefs.property_unset("lightmap_alias")
-
         bpy.ops.wm.save_userpref()
-
 
     def draw(self, context):
         layout = self.layout
@@ -593,7 +572,7 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
         row = box.row()
         row.label(text="Format string for image names")
         row = box.row()
-        row.label(text="Valid variables are %OBJ% (object name or 'MergedBake'), %BATCH% (batch name),")
+        row.label(text="Valid variables are %OBJ% (object name or 'merged_bake'), %BATCH% (batch name),")
         row.scale_y = 0.5
         row = box.row()
         row.label(text="%BAKEMODE% (pbr or cycles bake) and %BAKETYPE% (diffuse, emission etc.)")
@@ -612,7 +591,7 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
         row = box.row()
         row.operator("texture_bake.reset_name_format")
 
-        #PBR Aliases
+        # PBR Aliases
         box = layout.box()
 
         row = box.row()
@@ -661,7 +640,7 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
         col.prop(self, "normal_alias")
         col.label(text="")
 
-        #Specials Aliases
+        # Specials Aliases
         box = layout.box()
 
         row = box.row()
@@ -685,7 +664,7 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
         col = row.column()
         col.prop(self, "lightmap_alias")
 
-        #Reset button
+        # Reset button
         box = layout.box()
         row = box.row()
         row.operator("texture_bake.reset_aliases")
@@ -737,11 +716,11 @@ class TEXTUREBAKE_OT_add_object(Operator):
         functions.deselect_all_not_mesh()
         objs = bpy.context.selected_objects.copy()
 
-        #Add if not already in the list
+        # Add if not already in the list
         for obj in objs:
-            r = [i.name for i in context.scene.TextureBake_Props.bakeobjs_advanced_list if i.name == obj.name]
+            r = [i.name for i in context.scene.TextureBake_Props.object_list if i.name == obj.name]
             if len(r) == 0:
-                n = context.scene.TextureBake_Props.bakeobjs_advanced_list.add()
+                n = context.scene.TextureBake_Props.object_list.add()
                 n.obj_point = obj
                 n.name = obj.name
 
@@ -756,14 +735,14 @@ class TEXTUREBAKE_OT_remove_object(Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.scene.TextureBake_Props.bakeobjs_advanced_list
+        return context.scene.TextureBake_Props.object_list
 
     def execute(self, context):
-        my_list = context.scene.TextureBake_Props.bakeobjs_advanced_list
-        index = context.scene.TextureBake_Props.bakeobjs_advanced_list_index
+        my_list = context.scene.TextureBake_Props.object_list
+        index = context.scene.TextureBake_Props.object_list_index
 
         my_list.remove(index)
-        context.scene.TextureBake_Props.bakeobjs_advanced_list_index = min(max(0, index - 1), len(my_list) - 1)
+        context.scene.TextureBake_Props.object_list_index = min(max(0, index - 1), len(my_list) - 1)
 
         functions.update_advanced_object_list()
         return{'FINISHED'}
@@ -779,7 +758,7 @@ class TEXTUREBAKE_OT_clear_objects(Operator):
         return True
 
     def execute(self, context):
-        context.scene.TextureBake_Props.bakeobjs_advanced_list.clear()
+        context.scene.TextureBake_Props.object_list.clear()
         functions.update_advanced_object_list()
         return{'FINISHED'}
 
@@ -793,17 +772,17 @@ class TEXTUREBAKE_OT_move_object(Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.scene.TextureBake_Props.bakeobjs_advanced_list
+        return context.scene.TextureBake_Props.object_list
 
     def move_index(self):
-        index = bpy.context.scene.TextureBake_Props.bakeobjs_advanced_list_index
-        max_index = len(bpy.context.scene.TextureBake_Props.bakeobjs_advanced_list) - 1
+        index = bpy.context.scene.TextureBake_Props.object_list_index
+        max_index = len(bpy.context.scene.TextureBake_Props.object_list) - 1
         new_index = index + (-1 if self.direction == 'UP' else 1)
-        bpy.context.scene.TextureBake_Props.bakeobjs_advanced_list_index = max(0, min(new_index, max_index))
+        bpy.context.scene.TextureBake_Props.object_list_index = max(0, min(new_index, max_index))
 
     def execute(self, context):
-        my_list = context.scene.TextureBake_Props.bakeobjs_advanced_list
-        index = context.scene.TextureBake_Props.bakeobjs_advanced_list_index
+        my_list = context.scene.TextureBake_Props.object_list
+        index = context.scene.TextureBake_Props.object_list_index
 
         neighbor = index + (-1 if self.direction == 'UP' else 1)
         my_list.move(neighbor, index)
