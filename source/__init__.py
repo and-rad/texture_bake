@@ -25,8 +25,8 @@ bl_info = {
     "location": "Properties Panel -> Render Settings Tab",
     "description": "Streamlined PBR texture baking",
     "warning": "",
-    "doc_url": "",
-    "tracker_url": "",
+    "doc_url": "https://github.com/and-rad/texture_bake/wiki",
+    "tracker_url": "https://github.com/and-rad/texture_bake/issues",
     "category": "Object",
 }
 
