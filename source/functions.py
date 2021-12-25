@@ -2079,76 +2079,21 @@ def sacle_image_if_needed(img):
         img.scale(proposed_width, proposed_height)
 
 def set_image_internal_col_space(image, thisbake):
-
     if thisbake == TextureBakeConstants.CYCLESBAKE:
         if bpy.context.scene.cycles.bake_type not in ["COMBINED", "DIFFUSE"]:
             image.colorspace_settings.name = "Non-Color"
-
-    else: #PBR
+    else: # PBR
         if thisbake != "diffuse" and thisbake != "emission":
             image.colorspace_settings.name = "Non-Color"
 
-def check_for_render_inactive_modifiers():
-
-    #This is hacky. A better way to do this needs to be found
-    advancedobj = bpy.context.scene.TextureBake_Props.advancedobjectselection
-    if advancedobj:
-        objects = advanced_object_selection_to_list()
-    else:
-        objects = bpy.context.selected_objects
-
-    for obj in objects:
-        for mod in obj.modifiers:
-            if mod.show_render and not mod.show_viewport:
-                return True
-    if bpy.context.scene.TextureBake_Props.selected_s2a and bpy.context.scene.TextureBake_Props.targetobj != None:
-        for mod in bpy.context.scene.TextureBake_Props.targetobj.modifiers:
-            if mod.show_render and not mod.show_viewport:
-                return True
-
-    if bpy.context.scene.TextureBake_Props.cycles_s2a and bpy.context.scene.TextureBake_Props.targetobj_cycles != None:
-        for mod in bpy.context.scene.TextureBake_Props.targetobj_cycles.modifiers:
-            if mod.show_render and not mod.show_viewport:
-                return True
-
-    return False
-
-def check_for_viewport_inactive_modifiers():
-
-    #This is hacky. A better way to do this needs to be found
-    advancedobj = bpy.context.scene.TextureBake_Props.advancedobjectselection
-    if advancedobj:
-        objects = advanced_object_selection_to_list()
-    else:
-        objects = bpy.context.selected_objects
-
-    for obj in objects:
-        for mod in obj.modifiers:
-            if mod.show_viewport and not mod.show_render:
-                return True
-    if bpy.context.scene.TextureBake_Props.selected_s2a and bpy.context.scene.TextureBake_Props.targetobj != None:
-        for mod in bpy.context.scene.TextureBake_Props.targetobj.modifiers:
-            if mod.show_viewport and not mod.show_render:
-                return True
-
-    if bpy.context.scene.TextureBake_Props.cycles_s2a and bpy.context.scene.TextureBake_Props.targetobj_cycles != None:
-        for mod in bpy.context.scene.TextureBake_Props.targetobj_cycles.modifiers:
-            if mod.show_viewport and not mod.show_render:
-                return True
-
-    return False
-
 
 def any_specials():
-
-    if bpy.context.scene.TextureBake_Props.selected_col_mats: return True
-    if bpy.context.scene.TextureBake_Props.selected_col_vertex: return True
-    if bpy.context.scene.TextureBake_Props.selected_ao: return True
-    if bpy.context.scene.TextureBake_Props.selected_thickness: return True
-    if bpy.context.scene.TextureBake_Props.selected_curvature: return True
-    if bpy.context.scene.TextureBake_Props.selected_lightmap: return True
-
-    return False
+    return (bpy.context.scene.TextureBake_Props.selected_col_mats
+        or bpy.context.scene.TextureBake_Props.selected_col_vertex
+        or bpy.context.scene.TextureBake_Props.selected_ao
+        or bpy.context.scene.TextureBake_Props.selected_thickness
+        or bpy.context.scene.TextureBake_Props.selected_curvature
+        or bpy.context.scene.TextureBake_Props.selected_lightmap)
 
 
 def auto_set_bake_margin():

@@ -29,21 +29,6 @@ from bpy.props import StringProperty, IntProperty, CollectionProperty, PointerPr
 from bpy.types import PropertyGroup, UIList, Operator, Panel
 
 
-def monkeyTip(message_lines, box):
-    row = box.row()
-    row.alert=True
-    row.prop(bpy.context.scene.TextureBake_Props, "showtips", icon="TRIA_DOWN" if bpy.context.scene.TextureBake_Props.showtips else "TRIA_RIGHT", icon_only=True, emboss=False)
-    row.label(text=f'{"Tip" if bpy.context.scene.TextureBake_Props.showtips else "Tip available"}', icon="MONKEY")
-    row.alignment = 'CENTER'
-
-    if bpy.context.scene.TextureBake_Props.showtips:
-        for line in message_lines:
-            row = box.row()
-            row.alignment = 'CENTER'
-            row.scale_y = 0.5
-            row.label(text=line)
-
-
 class TextureBakeCategoryPanel:
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
@@ -189,25 +174,6 @@ class TEXTUREBAKE_PT_objects(TextureBakeCategoryPanel, bpy.types.Panel):
                 row.prop(context.scene.TextureBake_Props, "ray_distance")
                 row.prop(context.scene.TextureBake_Props, "cage_extrusion")
 
-        if functions.check_for_render_inactive_modifiers():
-            message_lines = [
-            "One or more selected objects",
-            "has a modifier enabled for",
-            "render (and so baking), but disabled in",
-            "viewport. May cause unexpected results"
-            ]
-            monkeyTip(message_lines, layout)
-
-        if functions.check_for_viewport_inactive_modifiers():
-            message_lines = [
-            "One or more selected objects",
-            "has a modifier enabled in the",
-            "viewport, but disabled for",
-            "render (and so baking).",
-            "May cause unexpected results"
-            ]
-            monkeyTip(message_lines, layout)
-
 
 class TEXTUREBAKE_PT_input(TextureBakeCategoryPanel, bpy.types.Panel):
     bl_label = "Input Textures"
@@ -242,29 +208,7 @@ class TEXTUREBAKE_PT_input(TextureBakeCategoryPanel, bpy.types.Panel):
             if not bpy.context.scene.TextureBake_Props.saveExternal:
                 row.enabled = False
 
-        if bpy.context.scene.TextureBake_Props.selected_lightmap and bpy.context.scene.TextureBake_Props.global_mode == "pbr_bake":
-            message_lines = [
-            "PBR bake doesn't normally need a sample",
-            "count, but a lightmap does"
-            ]
-            monkeyTip(message_lines, layout)
-
-        if bpy.context.scene.TextureBake_Props.selected_lightmap and bpy.context.scene.TextureBake_Props.global_mode == "cycles_bake":
-            message_lines = [
-            "Lightmap will have sample count",
-            "settings that you have set for CyclesBake"
-            ]
-            monkeyTip(message_lines, layout)
-
         layout.row().operator("texture_bake.import_materials", icon='ADD')
-
-        if context.scene.TextureBake_Props.selected_s2a or context.scene.TextureBake_Props.cycles_s2a:
-            message_lines = [
-            "Note: You are baking to taget object,",
-            "so these special maps will be based on",
-            "that target object only"
-            ]
-            monkeyTip(message_lines, layout)
 
 
 class TEXTUREBAKE_PT_output(TextureBakeCategoryPanel, bpy.types.Panel):
@@ -449,31 +393,6 @@ class TEXTUREBAKE_PT_export_settings(TextureBakeCategoryPanel, bpy.types.Panel):
                     row = layout.row()
                     row.prop(context.scene.TextureBake_Props, "exportcyclescolspace")
                     row.enabled = bpy.context.scene.cycles.bake_type != "NORMAL"
-
-            if not context.scene.TextureBake_Props.folderdatetime and context.scene.TextureBake_Props.saveExternal:
-                message_lines = [
-                "Not appending date and time to folder name",
-                "means all previous bakes will be",
-                "overwritten. Be careful!"
-                ]
-                monkeyTip(message_lines, layout)
-
-            if context.scene.TextureBake_Props.everything32bitfloat and context.scene.TextureBake_Props.saveExternal and context.scene.TextureBake_Props.exportfileformat != "OPEN_EXR":
-                message_lines = [
-                "You are creating all images as 32bit float.",
-                "You may want to export to EXR",
-                "to preserve your 32bit image(s)"
-                ]
-                monkeyTip(message_lines, layout)
-
-            if context.scene.TextureBake_Props.exportfileformat == "OPEN_EXR" and context.scene.TextureBake_Props.saveExternal:
-                message_lines = [
-                "Note: EXR files cannot be exported",
-                "with colour management settings.",
-                "EXR doesn't support them. Even",
-                "Blender defaults will be ignored"
-                ]
-                monkeyTip(message_lines, layout)
         else:
             layout.row().label(text="Unavailable - Blend file not saved")
 
@@ -490,11 +409,6 @@ class TEXTUREBAKE_PT_uv(TextureBakeCategoryPanel, bpy.types.Panel):
         row.enabled = context.scene.TextureBake_Props.saveExternal
 
         if bpy.context.scene.TextureBake_Props.uv_mode == "udims":
-            message_lines = [
-            "You must manually create UV map over",
-            "UDIM tiles prior to bake"
-            ]
-            monkeyTip(message_lines, layout)
             layout.row().prop(context.scene.TextureBake_Props, "udim_tiles")
 
         if bpy.context.scene.TextureBake_Props.uv_mode != "udims" and not context.scene.TextureBake_Props.tex_per_mat:
@@ -534,39 +448,6 @@ class TEXTUREBAKE_PT_uv(TextureBakeCategoryPanel, bpy.types.Panel):
 
         row = layout.row()
         row.prop(context.scene.TextureBake_Props, "restoreOrigUVmap")
-
-        if bpy.context.scene.TextureBake_Props.newUVoption and bpy.context.scene.TextureBake_Props.restoreOrigUVmap and not bpy.context.scene.TextureBake_Props.prepmesh:
-            message_lines = [
-            "Generating new UVs, but restoring originals",
-            "after bake. Baked textures won't align with the",
-            "original UVs. Manually change active UV map ",
-            "after bake"
-            ]
-
-        if bpy.context.scene.TextureBake_Props.newUVoption and bpy.context.scene.TextureBake_Props.newUVmethod == "SmartUVProject_Individual" and bpy.context.scene.TextureBake_Props.mergedBake and bpy.context.scene.TextureBake_Props.uv_mode != "udims":
-            message_lines = [
-            "Current settings will unwrap objects",
-            "individually but bake to one texture set",
-            "Bakes will be on top of each other!"
-            ]
-            monkeyTip(message_lines, layout)
-
-        if not bpy.context.scene.TextureBake_Props.newUVoption and bpy.context.scene.TextureBake_Props.mergedBake:
-            message_lines = [
-            "ALERT: You are baking multiple objects to one texture",
-            "set with existing UVs. You will need to manually",
-            "make sure those UVs don't overlap!"
-            ]
-            monkeyTip(message_lines, layout)
-
-        if bpy.context.scene.TextureBake_Props.newUVoption and not bpy.context.scene.TextureBake_Props.saveObj and not bpy.context.scene.TextureBake_Props.prepmesh and bpy.context.scene.TextureBake_Props.bgbake == "bg":
-            message_lines = [
-            "You are baking in background with new UVs, but",
-            "not exporting FBX or using 'Copy Objects and Apply Bakes'",
-            "You will recieve the baked textures on import, but you will",
-            "have no access to an object with the new UV map!"
-            ]
-            monkeyTip(message_lines, layout)
 
 
 class TEXTUREBAKE_PT_other(TextureBakeCategoryPanel, bpy.types.Panel):
@@ -613,42 +494,6 @@ class TEXTUREBAKE_PT_other(TextureBakeCategoryPanel, bpy.types.Panel):
         else:
             row=layout.row()
             row.label(text="No valid GPU device in Blender Preferences. Using CPU.")
-
-        if bpy.context.preferences.addons["cycles"].preferences.compute_device_type == "OPTIX" and bpy.context.preferences.addons["cycles"].preferences.has_active_device():
-            message_lines = [
-            "Other users have reported problems baking",
-            "with GPU and OptiX. This is a Blender issue",
-            "If you encounter problems bake with CPU"
-            ]
-            monkeyTip(message_lines, layout)
-
-        if (bpy.context.scene.TextureBake_Props.global_mode == "pbr_bake"
-            and not bpy.context.scene.TextureBake_Props.selected_col
-            and not bpy.context.scene.TextureBake_Props.selected_metal
-            and not bpy.context.scene.TextureBake_Props.selected_sss
-            and not bpy.context.scene.TextureBake_Props.selected_ssscol
-            and not bpy.context.scene.TextureBake_Props.selected_rough
-            and not bpy.context.scene.TextureBake_Props.selected_normal
-            and not bpy.context.scene.TextureBake_Props.selected_trans
-            and not bpy.context.scene.TextureBake_Props.selected_transrough
-            and not bpy.context.scene.TextureBake_Props.selected_clearcoat
-            and not bpy.context.scene.TextureBake_Props.selected_clearcoat_rough
-            and not bpy.context.scene.TextureBake_Props.selected_emission
-            and not bpy.context.scene.TextureBake_Props.selected_specular
-            and not bpy.context.scene.TextureBake_Props.selected_alpha
-            and bpy.context.scene.TextureBake_Props.prepmesh
-            and (bpy.context.scene.TextureBake_Props.selected_col_mats
-            or bpy.context.scene.TextureBake_Props.selected_col_vertex
-            or bpy.context.scene.TextureBake_Props.selected_ao
-            or bpy.context.scene.TextureBake_Props.selected_thickness
-            or bpy.context.scene.TextureBake_Props.selected_curvature)):
-            message_lines = [
-            "You are baking only special maps (no primary)",
-            "while using 'Copy objects and apply bakes'",
-            "Special maps will be in the new object(s)",
-            "material(s), but disconnected"
-            ]
-            monkeyTip(message_lines, layout)
 
 
 class TEXTUREBAKE_PT_packing(TextureBakeCategoryPanel, bpy.types.Panel):
@@ -706,14 +551,6 @@ class TEXTUREBAKE_PT_packing(TextureBakeCategoryPanel, bpy.types.Panel):
                     text = "Add new (!!not saved!!)"
                     row.alert = True
                     row.operator("texture_bake.add_packed_texture", text=text, icon="ADD")
-
-            if context.scene.TextureBake_Props.channelpackfileformat != "OPEN_EXR":
-                lines = [
-                "Other formats MIGHT work, but the",
-                "only way to get consistent, reliable",
-                "channel packing in Blender is to use",
-                "OpenEXR. Use OpenEXR if you can"]
-                monkeyTip(lines, layout)
 
 
 class TextureBakePreferences(bpy.types.AddonPreferences):

@@ -252,7 +252,7 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
     mergedBake: BoolProperty(
         name = "Multiple objects to one texture set",
         default = False,
-        description = "Bake multiple objects to one set of textures. Not available with 'Bake maps to target object' (would not make sense). You must have more than one object selected for baking",
+        description = "Bake multiple objects to one set of textures. You must have more than one object selected for baking. You will need to manually make sure their UVs don't overlap",
     )
 
     mergedBakeName: StringProperty(
@@ -300,7 +300,7 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
 
     everything32bitfloat: BoolProperty(
         name = "All internal 32bit float",
-        description = "Normal maps are always created as 32bit float images, but this option causes all images to be created as 32bit float. Image quality is theoretically increased, but often it will not be noticable.",
+        description = "Normal maps are always created as 32bit float images, but this option causes all images to be created as 32bit float. Image quality is theoretically increased, but often not noticably. Images must be exported as EXR to preserve 32bit quality",
         default = False,
     )
 
@@ -312,7 +312,7 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
 
     rough_glossy_switch: EnumProperty(
         name = "",
-        description = "Switch between roughness and glossiness (inverts of each other). NOTE: Roughness is the default for Blender so, if you change this, texture probably won't look right when used in Blender.",
+        description = "Switch between roughness and glossiness (inverts of each other). NOTE: Roughness is the default for Blender so, if you change this, texture probably won't look right when used in Blender",
         default = "rough",
         items = [
             ("rough", "Rough", ""),
@@ -429,7 +429,7 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
 
     selected_lightmap: BoolProperty(
         name = TextureBakeConstants.LIGHTMAP,
-        description = "Lightmap map",
+        description = "Lightmap. PBR baking doesn't normally need a sample count, but a lightmap does",
     )
 
     lightmap_apply_colman: BoolProperty(
@@ -521,13 +521,13 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
 
     exportFolderPerObject: BoolProperty(
         name = "Sub-folder per object",
-        description = "Create a sub-folder for the textures and FBX of each baked object. Only available if you are exporting bakes.",
+        description = "Create a sub-folder for the textures and FBX of each baked object. Only available if you are exporting bakes",
         default = False,
     )
 
     saveObj: BoolProperty(
         name = "Export mesh",
-        description = "Export your mesh as a .fbx file with a single texture and the UV map used for baking (i.e. ready for import somewhere else. File is saved in the folder specified below, under the folder where your blend file is saved. Not available if .blend file not saved.",
+        description = "Export your mesh as a .fbx file with a single texture and the UV map used for baking (i.e. ready for import somewhere else. File is saved in the folder specified below, under the folder where your blend file is saved. Not available if .blend file not saved",
         default = False,
     )
 
@@ -547,7 +547,7 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
 
     hidesourceobjects: BoolProperty(
         name = "Hide source objects after bake",
-        description = "Hide the source object that you baked from in the viewport after baking. If you are baking in the background, this happens after you import.",
+        description = "Hide the source object that you baked from in the viewport after baking. If you are baking in the background, this happens after you import",
         default = False,
     )
 
@@ -558,52 +558,52 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
 
     everything16bit: BoolProperty(
         name = "All exports 16bit",
-        description = "Normal maps are always exported as 16bit, but this option causes all images to be exported 16bit. This should probably stay enabled unless file sizes are an issue.",
+        description = "Normal maps are always exported as 16bit, but this option causes all images to be exported 16bit. This should probably stay enabled unless file sizes are an issue",
         default = True,
     )
 
     exportfileformat: EnumProperty(
         name = "Export File Format",
-        description = "Select the file format for exported bakes.",
+        description = "Select the file format for exported bakes",
         default = "PNG",
         items = [
             ("PNG", "PNG", ""),
             ("JPEG", "JPG", ""),
             ("TIFF", "TIFF", ""),
             ("TARGA", "TGA", ""),
-            ("OPEN_EXR", "Open EXR", ""),
+            ("OPEN_EXR", "Open EXR", "Color management settings are not supported by the EXR format"),
         ],
         update = exportfileformat_update,
     )
 
     saveFolder: StringProperty(
         name = "Save folder name",
-        description = "Name of the folder to create and save the bakes/mesh into. Created in the folder where you blend file is saved. NOTE: To maintain compatibility, only MS Windows acceptable characters will be used.",
+        description = "Name of the folder to create and save the bakes/mesh into. Created in the folder where you blend file is saved. NOTE: To maintain compatibility, only MS Windows acceptable characters will be used",
         default = "TextureBake_Bakes",
         maxlen = 20,
     )
 
     selected_applycolmantocol: BoolProperty(
         name = "Export diffuse with col management settings",
-        description = "Apply colour space settings (exposure, gamma etc.) from current scene when saving the diffuse image externally. Only available if you are exporting baked images. Will be ignored if exporting to EXR files as these don't support colour management.",
+        description = "Apply colour space settings (exposure, gamma etc.) from current scene when saving the diffuse image externally. Only available if you are exporting baked images. Will be ignored if exporting to EXR files as these don't support colour management",
         default = False,
     )
 
     exportcyclescolspace: BoolProperty(
         name = "Export with col management settings",
-        description = "Apply colour space settings (exposure, gamma etc.) from current scene when saving the image externally. Only available if you are exporting baked images. Not available if you have Cycles bake mode set to Normal. Will be ignored if exporting to EXR files as these don't support colour management.",
+        description = "Apply colour space settings (exposure, gamma etc.) from current scene when saving the image externally. Only available if you are exporting baked images. Not available if you have Cycles bake mode set to Normal. Will be ignored if exporting to EXR files as these don't support colour management",
         default = True,
     )
 
     folderdatetime: BoolProperty(
         name = "Append date and time to folder",
-        description = "Append date and time to folder name. If you turn this off there is a risk that you will accidentally overwrite bakes you did before if you forget to change the folder name",
+        description = "Append date and time to folder name. If you turn this off, previous bakes with the same name will be overwritten",
         default = True,
     )
 
     rundenoise: BoolProperty(
         name = "Denoise",
-        description = "Run baked images through the compositor. Your blend file must be saved, and you must be exporting your bakes.",
+        description = "Run baked images through the compositor. Your blend file must be saved, and you must be exporting your bakes",
         default = False,
     )
 
@@ -645,7 +645,7 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
 
     bgbake_name: StringProperty(
         name = "Background bake task name",
-        description = "Name to help you identify the background bake task. This can be anything, and is only to help keep track of multiple background bake tasks. The name will show in the list below.",
+        description = "Name to help you identify the background bake task. This can be anything, and is only to help keep track of multiple background bake tasks. The name will show in the list below",
     )
 
     memLimit: EnumProperty(
@@ -758,7 +758,7 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
         items = [
             ("PNG", "PNG", ""),
             ("TARGA", "TGA", ""),
-            ("OPEN_EXR", "Open EXR", ""),
+            ("OPEN_EXR", "Open EXR", "Offers the most constent and reliable channel packing at the cost of memory"),
         ],
     )
 
