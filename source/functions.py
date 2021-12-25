@@ -524,8 +524,8 @@ def startingChecks(objects, bakemode):
         for obj in objects:
 
             #Are UVs OK?
-            if bpy.context.scene.TextureBake_Props.newUVoption == False and len(obj.data.uv_layers) == 0:
-                messages.append(f"ERROR: Object {obj.name} has no UVs, and you aren't generating new ones")
+            if len(obj.data.uv_layers) == 0:
+                messages.append(f"ERROR: Object {obj.name} has no UVs")
                 continue
 
             #Are materials OK? Fix if not
@@ -589,8 +589,8 @@ def startingChecks(objects, bakemode):
 
 
             #Are UVs OK?
-            if bpy.context.scene.TextureBake_Props.newUVoption == False and len(obj.data.uv_layers) == 0:
-                messages.append(f"ERROR: Object {obj.name} has no UVs, and you aren't generating new ones")
+            if len(obj.data.uv_layers) == 0:
+                messages.append(f"ERROR: Object {obj.name} has no UVs")
                 ShowMessageBox(messages, "Errors occured", "ERROR")
                 return False
 
@@ -617,13 +617,13 @@ def startingChecks(objects, bakemode):
 
             #Are UVs OK?
             if not bpy.context.scene.TextureBake_Props.tex_per_mat:
-                if bpy.context.scene.TextureBake_Props.newUVoption == False and len(obj.data.uv_layers) == 0:
-                    messages.append(f"ERROR: Object {obj.name} has no UVs, and you aren't generating new ones")
+                if len(obj.data.uv_layers) == 0:
+                    messages.append(f"ERROR: Object {obj.name} has no UVs")
                     ShowMessageBox(messages, "Errors occured", "ERROR")
                     return False
             else:
-                if bpy.context.scene.TextureBake_Props.expand_mat_uvs == False and len(obj.data.uv_layers) == 0:
-                    messages.append(f"ERROR: Object {obj.name} has no UVs, and you aren't generating new ones")
+                if len(obj.data.uv_layers) == 0:
+                    messages.append(f"ERROR: Object {obj.name} has no UVs")
                     ShowMessageBox(messages, "Errors occured", "ERROR")
                     return False
 
@@ -653,8 +653,8 @@ def startingChecks(objects, bakemode):
             return False
 
         #Are UVs OK?
-        elif bpy.context.scene.TextureBake_Props.newUVoption == False and len(obj.data.uv_layers) == 0:
-            messages.append(f"ERROR: Object {obj.name} has no UVs, and you aren't generating new ones")
+        elif len(obj.data.uv_layers) == 0:
+            messages.append(f"ERROR: Object {obj.name} has no UVs")
             ShowMessageBox(messages, "Errors occured", "ERROR")
             return False
 
@@ -687,8 +687,6 @@ def startingChecks(objects, bakemode):
                 ShowMessageBox(messages, "Errors occured", "ERROR")
                 return False
 
-
-
     #Let's report back (if we haven't already)
     if len(messages) != 0:
         ShowMessageBox(messages, "Errors occured", "ERROR")
@@ -697,186 +695,16 @@ def startingChecks(objects, bakemode):
         #If we get here then everything looks good
         return True
 
-     #CAGE OBJECT BROKEN? CHECK IF NOT NONE AND, IF NOT, FLIP THE SWITCH TO USE CAGE
-
-
-
 
 def processUVS():
-
     original_uvs = {}
     current_bake_op = MasterOperation.current_bake_operation
 
-    #Loops over UVs. If it has one, record the active UV map for later restoration
-    #for obj in objects:
-        #try:
-            #original_uvs[obj.name] = obj.data.uv_layers.active.name
-        #except AttributeError:
-            #original_uvs[obj.name] = False
-
-    #Generating new UVs
-
-
-    #------------------NEW UVS ------------------------------------------------------------
-
-    if bpy.context.scene.TextureBake_Props.expand_mat_uvs:
-        printmsg("We are expanding the UVs for each material into a new UV map")
-        bpy.ops.object.select_all(action="DESELECT")
-
+    if bpy.context.scene.TextureBake_Props.prefer_existing_uvmap:
+        printmsg("We are preferring existing UV maps called TextureBake. Setting them to active")
         for obj in current_bake_op.bake_objects:
-
             if("TextureBake" in obj.data.uv_layers):
-                obj.data.uv_layers.remove(obj.data.uv_layers["TextureBake"])
-
-            obj.data.uv_layers.new(name="TextureBake")
-            obj.data.uv_layers["TextureBake"].active = True
-            obj.select_set(state=True)
-
-            selectOnlyThis(obj)
-
-            bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-            #Unhide any geo that's hidden in edit mode or it'll cause issues.
-            bpy.ops.mesh.reveal()
-
-
-            i=0
-            for slot in obj.material_slots:
-                obj.active_material_index = i
-                bpy.ops.mesh.select_all(action="DESELECT")
-                bpy.ops.object.material_slot_select()
-                bpy.ops.uv.smart_project(island_margin=bpy.context.scene.TextureBake_Props.unwrapmargin)
-                i += 1
-
-            bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-
-    elif bpy.context.scene.TextureBake_Props.newUVoption:
-        printmsg("We are generating new UVs")
-        #Slight hack. Single object must always be Smart UV Project (nothing else makes sense)
-        if len(current_bake_op.bake_objects) < 2 or (bpy.context.scene.TextureBake_Props.selected_s2a or bpy.context.scene.TextureBake_Props.cycles_s2a):
-            bpy.context.scene.TextureBake_Props.newUVmethod = "SmartUVProject_Individual"
-
-        #If we are using the combine method, the process is the same for merged and non-merged
-        if bpy.context.scene.TextureBake_Props.newUVmethod == "CombineExisting":
-            printmsg("We are combining all existing UVs into one big atlas map")
-            for obj in current_bake_op.bake_objects:
-                #If there is already an old map, remove it
-                if "TextureBake_Old" in obj.data.uv_layers:
-                    obj.data.uv_layers.remove(obj.data.uv_layers["TextureBake_Old"])
-                #If we already have a map called TextureBake, rename it.
-                if("TextureBake" in obj.data.uv_layers):
-                    obj.data.uv_layers["TextureBake"].name = "TextureBake_Old"
-                #Create a new UVMap called TextureBake based on whatever was active
-                obj.data.uv_layers.new(name="TextureBake")
                 obj.data.uv_layers["TextureBake"].active = True
-
-            bpy.ops.object.select_all(action="DESELECT")
-            for obj in current_bake_op.bake_objects:
-                obj.select_set(state=True)
-
-            #Check we have an active object:
-            #Older versions of Blender (may not be set at all)
-            try:
-                bpy.context.active_object.type
-            except AttributeError:
-                #We do need an active object, or we can't enter edit mode
-                bpy.context.view_layer.objects.active = bpy.context.selected_objects[0]
-            #Newer versions of Blender (always has an active object, but may not be mesh)
-            if bpy.context.active_object.type != "MESH":
-                bpy.context.view_layer.objects.active = bpy.context.selected_objects[0]
-
-
-
-            #With everything selected, pack into one big map
-            bpy.ops.object.mode_set(mode="EDIT", toggle=False)
-            #Unhide any geo that's hidden in edit mode or it'll cause issues.
-            bpy.ops.mesh.reveal()
-
-            bpy.ops.mesh.select_all(action="SELECT")
-            bpy.ops.uv.select_all(action="SELECT")
-            if bpy.context.scene.TextureBake_Props.averageUVsize:
-                bpy.ops.uv.average_islands_scale()
-            bpy.ops.uv.pack_islands(rotate=True, margin=bpy.context.scene.TextureBake_Props.uvpackmargin)
-            bpy.ops.object.mode_set(mode="OBJECT", toggle=False)
-
-        elif bpy.context.scene.TextureBake_Props.newUVmethod == "SmartUVProject_Individual":
-            printmsg("We are unwrapping each object individually with Smart UV Project")
-            obs = []
-            if bpy.context.scene.TextureBake_Props.selected_s2a:
-                objs = [current_bake_op.sb_target_object]
-            elif bpy.context.scene.TextureBake_Props.cycles_s2a:
-                objs = [current_bake_op.sb_target_object_cycles]
-            else:
-                objs = current_bake_op.bake_objects
-
-            for obj in objs:
-                if("TextureBake" in obj.data.uv_layers):
-                    obj.data.uv_layers.remove(obj.data.uv_layers["TextureBake"])
-                obj.data.uv_layers.new(name="TextureBake")
-                obj.data.uv_layers["TextureBake"].active = True
-                #Will set active object
-                selectOnlyThis(obj)
-
-                #Blender 2.91 kindly breaks Smart UV Project in object mode so... yeah... thanks
-                bpy.ops.object.mode_set(mode="EDIT", toggle=False)
-                #Unhide any geo that's hidden in edit mode or it'll cause issues.
-                bpy.ops.mesh.reveal()
-                bpy.ops.mesh.select_all(action="SELECT")
-                bpy.ops.mesh.reveal()
-
-                bpy.ops.uv.smart_project(island_margin=bpy.context.scene.TextureBake_Props.unwrapmargin)
-
-                bpy.ops.object.mode_set(mode="OBJECT", toggle=False)
-
-        elif bpy.context.scene.TextureBake_Props.newUVmethod == "SmartUVProject_Atlas":
-            printmsg("We are unwrapping all objects into an atlas map with Smart UV Project")
-            bpy.ops.object.select_all(action="DESELECT")
-            for obj in current_bake_op.bake_objects:
-                if("TextureBake" in obj.data.uv_layers):
-                    obj.data.uv_layers.remove(obj.data.uv_layers["TextureBake"])
-                obj.data.uv_layers.new(name="TextureBake")
-                obj.data.uv_layers["TextureBake"].active = True
-                obj.select_set(state=True)
-            #With everything now selected, UV project into one big map
-
-            #Check we have an active object:
-            #Older versions of Blender (may not be set at all)
-            try:
-                bpy.context.active_object.type
-            except AttributeError:
-                #We do need an active object, or we can't enter edit mode
-                bpy.context.view_layer.objects.active = bpy.context.selected_objects[0]
-            #Newer versions of Blender (always has an active object, but may not be mesh)
-            if bpy.context.active_object.type != "MESH":
-                bpy.context.view_layer.objects.active = bpy.context.selected_objects[0]
-
-
-            bpy.ops.object.mode_set(mode="EDIT", toggle=False) #Enter edit mode
-            #Unhide any geo that's hidden in edit mode or it'll cause issues.
-            bpy.ops.mesh.reveal()
-
-            bpy.ops.mesh.select_all(action="SELECT")
-            o =  bpy.context.scene.tool_settings.use_uv_select_sync
-
-            bpy.ops.uv.smart_project(island_margin=bpy.context.scene.TextureBake_Props.unwrapmargin)
-
-            #Pack islands one last time as the aspect ratio can throw it off
-            bpy.context.scene.tool_settings.use_uv_select_sync = True
-            bpy.ops.uv.pack_islands()
-
-            bpy.ops.object.mode_set(mode="OBJECT", toggle=False)# Back to object mode, as it's expected later on
-
-
-     #------------------END NEW UVS ------------------------------------------------------------
-
-    else: #i.e. New UV Option was not selected
-        printmsg("We are working with the existing UVs")
-
-        if bpy.context.scene.TextureBake_Props.prefer_existing_sbmap:
-            printmsg("We are preferring existing UV maps called TextureBake. Setting them to active")
-            for obj in current_bake_op.bake_objects:
-                if("TextureBake" in obj.data.uv_layers):
-                    obj.data.uv_layers["TextureBake"].active = True
-
 
     #Before we finish, restore the original selected and active objects
     bpy.ops.object.select_all(action="DESELECT")
@@ -884,13 +712,9 @@ def processUVS():
         obj.select_set(True)
     bpy.context.view_layer.objects.active = current_bake_op.orig_active_object
 
-    #Done
-    return True
 
 def restore_Original_UVs():
-
     current_bake_op = MasterOperation.current_bake_operation
-
 
     #First the bake objects
     for obj in current_bake_op.bake_objects:
@@ -1402,12 +1226,8 @@ def prepObjects(objs, baketype):
         #---------------------------------UVS--------------------------------------
 
         uvlayers = new_obj.data.uv_layers
-        #If we generated new UVs, it will be called "TextureBake" and we are using that. End of.
-        if bpy.context.scene.TextureBake_Props.newUVoption:
-            pass
-
         #If there is an existing map called TextureBake, and we are preferring it, use that
-        elif ("TextureBake" in uvlayers) and bpy.context.scene.TextureBake_Props.prefer_existing_sbmap:
+        if ("TextureBake" in uvlayers) and bpy.context.scene.TextureBake_Props.prefer_existing_uvmap:
             pass
 
         #Even if we are not preferring it, if there is just one map called TextureBake, we are using that
@@ -1416,7 +1236,7 @@ def prepObjects(objs, baketype):
 
         #If there is an existing map called TextureBake, and we are not preferring it, it has to go
         #Active map becommes TextureBake
-        elif ("TextureBake" in uvlayers) and not bpy.context.scene.TextureBake_Props.prefer_existing_sbmap:
+        elif ("TextureBake" in uvlayers) and not bpy.context.scene.TextureBake_Props.prefer_existing_uvmap:
             uvlayers.remove(uvlayers["TextureBake"])
             active_layer = uvlayers.active
             active_layer.name = "TextureBake"

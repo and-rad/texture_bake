@@ -376,13 +376,11 @@ class TEXTUREBAKE_PT_export_settings(TextureBakeCategoryPanel, bpy.types.Panel):
                 layout.row().prop(context.scene.TextureBake_Props, "exportfileformat", text="Format")
 
                 row = layout.row()
-                if context.scene.TextureBake_Props.exportfileformat == "OPEN_EXR":
-                    row.label(text="EXR exported as (max) 32bit")
-                else:
-                    row.prop(context.scene.TextureBake_Props, "everything16bit")
-                    if not context.scene.TextureBake_Props.saveExternal or context.scene.TextureBake_Props.exportfileformat == "JPEG"\
-                    or context.scene.TextureBake_Props.exportfileformat == "TARGA":
-                        row.enabled = False
+                row.prop(context.scene.TextureBake_Props, "everything16bit")
+                if (not context.scene.TextureBake_Props.saveExternal
+                    or context.scene.TextureBake_Props.exportfileformat == "JPEG"
+                    or context.scene.TextureBake_Props.exportfileformat == "TARGA"):
+                    row.enabled = False
 
                 if context.scene.TextureBake_Props.global_mode == "pbr_bake":
                     row = layout.row()
@@ -411,40 +409,8 @@ class TEXTUREBAKE_PT_uv(TextureBakeCategoryPanel, bpy.types.Panel):
         if bpy.context.scene.TextureBake_Props.uv_mode == "udims":
             layout.row().prop(context.scene.TextureBake_Props, "udim_tiles")
 
-        if bpy.context.scene.TextureBake_Props.uv_mode != "udims" and not context.scene.TextureBake_Props.tex_per_mat:
-            row = layout.row()
-            row.prop(context.scene.TextureBake_Props, "newUVoption")
-
-            if context.scene.TextureBake_Props.newUVoption:
-                objects = []
-                if context.scene.TextureBake_Props.advancedobjectselection:
-                    objects = functions.advanced_object_selection_to_list()
-                else:
-                    objects = context.selected_objects
-
-                if len(objects) >1 and not (context.scene.TextureBake_Props.selected_s2a or context.scene.TextureBake_Props.cycles_s2a):
-                    row = layout.row()
-                    row.prop(context.scene.TextureBake_Props, "newUVmethod")
-                    if context.scene.TextureBake_Props.newUVmethod == "SmartUVProject_Atlas" or context.scene.TextureBake_Props.newUVmethod == "SmartUVProject_Individual":
-                        row = layout.row()
-                        row.prop(context.scene.TextureBake_Props, "unwrapmargin")
-                    else:
-                        row = layout.row()
-                        row.prop(context.scene.TextureBake_Props, "averageUVsize")
-                        row.prop(context.scene.TextureBake_Props, "uvpackmargin")
-                else:
-                    #One object selected
-                    row = layout.row()
-                    row.label(text="Smart UV Project")
-                    row.prop(context.scene.TextureBake_Props, "unwrapmargin")
-        else:
-            row = layout.row()
-            row.prop(context.scene.TextureBake_Props, "expand_mat_uvs")
-
         row = layout.row()
-        row.prop(context.scene.TextureBake_Props, "prefer_existing_sbmap")
-        if context.scene.TextureBake_Props.newUVoption or context.scene.TextureBake_Props.expand_mat_uvs:
-            row.enabled = False
+        row.prop(context.scene.TextureBake_Props, "prefer_existing_uvmap")
 
         row = layout.row()
         row.prop(context.scene.TextureBake_Props, "restoreOrigUVmap")

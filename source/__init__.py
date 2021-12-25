@@ -47,12 +47,6 @@ def tex_per_mat_update(self, context):
     if context.scene.TextureBake_Props.tex_per_mat == True:
         context.scene.TextureBake_Props.prepmesh = False
         context.scene.TextureBake_Props.hidesourceobjects = False
-        context.scene.TextureBake_Props.expand_mat_uvs = False
-
-
-def expand_mat_uvs_update(self, context):
-    context.scene.TextureBake_Props.newUVoption = False
-    context.scene.TextureBake_Props.prefer_existing_sbmap = False
 
 
 def prepmesh_update(self, context):
@@ -77,15 +71,9 @@ def saveExternal_update(self, context):
         bpy.context.scene.TextureBake_Props.uv_mode = "normal"
 
 
-def newUVoption_update(self, context):
-    if bpy.context.scene.TextureBake_Props.newUVoption == True:
-        bpy.context.scene.TextureBake_Props.prefer_existing_sbmap = False
-
-
 def global_mode_update(self, context):
     if not bpy.context.scene.TextureBake_Props.global_mode == "cycles_bake":
         bpy.context.scene.TextureBake_Props.tex_per_mat = False
-        bpy.context.scene.TextureBake_Props.expand_mat_uvs = False
         bpy.context.scene.TextureBake_Props.cycles_s2a = False
         bpy.context.scene.TextureBake_Props.targetobj_cycles = None
 
@@ -93,11 +81,6 @@ def global_mode_update(self, context):
         bpy.context.scene.TextureBake_Props.selected_s2a = False
         bpy.context.scene.TextureBake_Props.selected_lightmap_denoise = False
         bpy.context.scene.TextureBake_Props.targetobj = None
-
-
-def uv_mode_update(self, context):
-    if context.scene.TextureBake_Props.uv_mode == "udims":
-        context.scene.TextureBake_Props.newUVoption = False
 
 
 def presets_list_update(self,context):
@@ -443,31 +426,14 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
         description = "Run lightmap through the compositor denoise node, only available when you are exporting you bakes",
     )
 
-    newUVoption: BoolProperty(
-        name = "New UV Map(s)",
-        description = "Use Smart UV Project to create a new UV map for your objects (or target object if baking to a target). See Blender Market FAQs for more details",
-        update = newUVoption_update,
-    )
-
-    prefer_existing_sbmap: BoolProperty(
+    prefer_existing_uvmap: BoolProperty(
         name = "Prefer existing UV maps called TextureBake",
         description = "If one exists for the object being baked, use any existing UV maps called 'TextureBake' for baking (rather than the active UV map)",
     )
 
-    newUVmethod: EnumProperty(
-        name = "New UV Method",
-        description = "New UV Method",
-        default = "SmartUVProject_Atlas",
-        items = [
-            ("SmartUVProject_Individual", "Smart UV Project (Individual)", "Each object gets a new UV map using Smart UV Project"),
-            ("SmartUVProject_Atlas", "Smart UV Project (Atlas)", "Create a combined UV map (atlas map) using Smart UV Project"),
-            ("CombineExisting", "Combine Active UVs (Atlas)", "Create a combined UV map (atlas map) by combining the existing, active UV maps on each object"),
-        ],
-    )
-
     restoreOrigUVmap: BoolProperty(
         name = "Restore originally active UV map at end",
-        description = "If you are creating new UVs, or preferring an existing UV map called TextureBake, the UV map used for baking may not be the one you had displayed in the viewport before baking. This option restores what you had active before baking",
+        description = "If you are preferring an existing UV map called TextureBake, the UV map used for baking may not be the one you had displayed in the viewport before baking. This option restores what you had active before baking",
         default = True,
     )
 
@@ -483,12 +449,6 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
         default = True,
     )
 
-    expand_mat_uvs: BoolProperty(
-        name = "New UVs per material, expanded to bounds",
-        description = "When using 'Texture per material', Create a new UV map, and expand the UVs from each material to fill that map using Smart UV Project",
-        update = expand_mat_uvs_update,
-    )
-
     uv_mode: EnumProperty(
         name = "UV Mode",
         description = "Bake to UDIMs or normal UVs. You must be exporting your bakes to use UDIMs. You must manually create your UDIM UVs (this cannot be automated)",
@@ -497,7 +457,6 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
             ("normal", "Normal", "Normal UV maps"),
             ("udims", "UDIMs", "UDIM UV maps"),
         ],
-        update = uv_mode_update,
     )
 
     udim_tiles: IntProperty(

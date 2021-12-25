@@ -646,13 +646,10 @@ class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
         d["selected_lightmap"] = bpy.context.scene.TextureBake_Props.selected_lightmap
         d["lightmap_apply_colman"] = bpy.context.scene.TextureBake_Props.lightmap_apply_colman
         d["selected_lightmap_denoise"] = bpy.context.scene.TextureBake_Props.selected_lightmap_denoise
-        d["newUVoption"] = bpy.context.scene.TextureBake_Props.newUVoption
-        d["prefer_existing_sbmap"] = bpy.context.scene.TextureBake_Props.prefer_existing_sbmap
-        d["newUVmethod"] = bpy.context.scene.TextureBake_Props.newUVmethod
+        d["prefer_existing_uvmap"] = bpy.context.scene.TextureBake_Props.prefer_existing_uvmap
         d["restoreOrigUVmap"] = bpy.context.scene.TextureBake_Props.restoreOrigUVmap
         d["uvpackmargin"] = bpy.context.scene.TextureBake_Props.uvpackmargin
         d["averageUVsize"] = bpy.context.scene.TextureBake_Props.averageUVsize
-        d["expand_mat_uvs"] = bpy.context.scene.TextureBake_Props.expand_mat_uvs
         d["uv_mode"] = bpy.context.scene.TextureBake_Props.uv_mode
         d["udim_tiles"] = bpy.context.scene.TextureBake_Props.udim_tiles
         d["unwrapmargin"] = bpy.context.scene.TextureBake_Props.unwrapmargin
@@ -842,12 +839,9 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
         bpy.context.scene.TextureBake_Props.selected_lightmap = d["selected_lightmap"]
         bpy.context.scene.TextureBake_Props.lightmap_apply_colman = d["lightmap_apply_colman"]
         bpy.context.scene.TextureBake_Props.selected_lightmap_denoise = d["selected_lightmap_denoise"]
-        bpy.context.scene.TextureBake_Props.newUVoption = d["newUVoption"]
-        bpy.context.scene.TextureBake_Props.newUVmethod = d["newUVmethod"]
         bpy.context.scene.TextureBake_Props.restoreOrigUVmap = d["restoreOrigUVmap"]
         bpy.context.scene.TextureBake_Props.uvpackmargin = d["uvpackmargin"]
         bpy.context.scene.TextureBake_Props.averageUVsize = d["averageUVsize"]
-        bpy.context.scene.TextureBake_Props.expand_mat_uvs = d["expand_mat_uvs"]
         bpy.context.scene.TextureBake_Props.uv_mode = d["uv_mode"]
         bpy.context.scene.TextureBake_Props.udim_tiles = d["udim_tiles"]
         bpy.context.scene.TextureBake_Props.unwrapmargin = d["unwrapmargin"]
@@ -874,7 +868,7 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
         bpy.context.scene.TextureBake_Props.batchName = d["batchName"]
         bpy.context.scene.TextureBake_Props.first_texture_show = d["first_texture_show"]
         bpy.context.scene.TextureBake_Props.bgbake_name = d["bgbake_name"]
-        bpy.context.scene.TextureBake_Props.prefer_existing_sbmap = d["prefer_existing_sbmap"]
+        bpy.context.scene.TextureBake_Props.prefer_existing_uvmap = d["prefer_existing_uvmap"]
 
         #Non-TextureBake Settings
         bpy.context.scene.cycles.bake_type = d["bake_type"]
