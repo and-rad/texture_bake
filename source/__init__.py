@@ -23,7 +23,7 @@ bl_info = {
     "version": (0, 9, 0),
     "blender": (3, 0, 0),
     "location": "Properties Panel -> Render Settings Tab",
-    "description": "Streamline PBR texture baking",
+    "description": "Streamlined PBR texture baking",
     "warning": "",
     "doc_url": "",
     "tracker_url": "",
@@ -61,8 +61,6 @@ from .operators import (
     OBJECT_OT_texture_bake_preset_load,
     OBJECT_OT_texture_bake_preset_refresh,
     OBJECT_OT_texture_bake_preset_delete,
-    OBJECT_OT_texture_bake_show_all,
-    OBJECT_OT_texture_bake_hide_all,
     OBJECT_OT_texture_bake_increase_texture_res,
     OBJECT_OT_texture_bake_decrease_texture_res,
     OBJECT_OT_texture_bake_increase_output_res,
@@ -74,17 +72,15 @@ from .operators import (
 )
 
 from .ui import (
-    OBJECT_PT_texture_bake_panel,
-    OBJECT_PT_texture_bake_panel,
     TextureBakePreferences,
     ListItem,
-    BAKEOBJECTS_UL_List,
+    TEXTUREBAKE_OBJECTS_UL_List,
     LIST_OT_NewItem,
     LIST_OT_DeleteItem,
     LIST_OT_MoveItem,
     LIST_OT_ClearAll,
     LIST_OT_Refresh,
-    PRESETS_UL_List,
+    TEXTUREBAKE_PRESETS_UL_List,
     CPTEX_UL_List,
     PresetItem,
     CPTexItem,
@@ -156,28 +152,12 @@ def presets_list_update(self,context):
     context.scene.TextureBake_Props.preset_name = item.name
 
 
-def presets_show_update(self,context):
-    bpy.ops.object.texture_bake_preset_refresh()
-
-
 def imgheight_update(self,context):
     bpy.context.scene.TextureBake_Props.outputheight = bpy.context.scene.TextureBake_Props.imgheight
 
 
 def imgwidth_update(self,context):
     bpy.context.scene.TextureBake_Props.outputwidth = bpy.context.scene.TextureBake_Props.imgwidth
-
-
-def textures_show_update(self,context):
-    if context.scene.TextureBake_Props.first_texture_show:
-        functions.auto_set_bake_margin()
-        context.scene.TextureBake_Props.first_texture_show = False
-
-
-def bake_objects_show_update(self,context):
-    if context.scene.TextureBake_Props.first_texture_show:
-        functions.auto_set_bake_margin()
-        context.scene.TextureBake_Props.first_texture_show = False
 
 
 def cp_list_index_update(self, context):
@@ -774,75 +754,6 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
         default = False,
     )
 
-    presets_show: BoolProperty(
-        name = "",
-        description = "Show TextureBake presets",
-        default = False,
-        update = presets_show_update,
-    )
-
-    bake_objects_show: BoolProperty(
-        name = "",
-        description = "Show bake objects",
-        default = False,
-        update = bake_objects_show_update,
-    )
-
-    pbr_settings_show: BoolProperty(
-        name = "",
-        description = "Show PBR settings",
-        default = False,
-    )
-
-    cyclesbake_settings_show: BoolProperty(
-        name = "",
-        description = "Show CyclesBake settings",
-        default = False,
-    )
-
-    specials_show: BoolProperty(
-        name = "",
-        description = "Show Specials settings",
-        default = False,
-    )
-
-    textures_show: BoolProperty(
-        name = "",
-        description = "Show Texture settings",
-        default = False,
-        update = textures_show_update,
-    )
-
-    export_show: BoolProperty(
-        name = "",
-        description = "Show Export settings",
-        default = False,
-    )
-
-    uv_show: BoolProperty(
-        name = "",
-        description = "Show UV settings",
-        default = False,
-    )
-
-    other_show: BoolProperty(
-        name = "",
-        description = "Show Other settings",
-        default = False,
-    )
-
-    channelpacking_show: BoolProperty(
-        name = "",
-        description = "Show Channel Packing settings",
-        default = False,
-    )
-
-    bg_status_show: BoolProperty(
-        name = "BG Bakes Status",
-        description = "Show status of currently running background bakes",
-        default = True,
-    )
-
     first_texture_show: BoolProperty(
         name = "",
         default = True,
@@ -903,7 +814,16 @@ classes = [
     OBJECT_OT_texture_bake_mapbake,
     OBJECT_OT_texture_bake_selectall,
     OBJECT_OT_texture_bake_selectnone,
-    OBJECT_PT_texture_bake_panel,
+    ui.OBJECT_PT_texture_bake_panel,
+    ui.OBJECT_PT_texture_bake_panel_presets,
+    ui.OBJECT_PT_texture_bake_panel_objects,
+    ui.OBJECT_PT_texture_bake_panel_input,
+    ui.OBJECT_PT_texture_bake_panel_output,
+    ui.OBJECT_PT_texture_bake_panel_bake_settings,
+    ui.OBJECT_PT_texture_bake_panel_export_settings,
+    ui.OBJECT_PT_texture_bake_panel_uv,
+    ui.OBJECT_PT_texture_bake_panel_other,
+    ui.OBJECT_PT_texture_bake_panel_packing,
     TextureBakePreferences,
     OBJECT_OT_texture_bake_default_imgname_string,
     OBJECT_OT_texture_bake_default_aliases,
@@ -914,7 +834,7 @@ classes = [
     OBJECT_OT_texture_bake_bgbake_clear,
     OBJECT_OT_texture_bake_protect_clear,
     ListItem,
-    BAKEOBJECTS_UL_List,
+    TEXTUREBAKE_OBJECTS_UL_List,
     LIST_OT_NewItem,
     LIST_OT_DeleteItem,
     LIST_OT_MoveItem,
@@ -926,10 +846,8 @@ classes = [
     OBJECT_OT_texture_bake_preset_refresh,
     PresetItem,
     CPTexItem,
-    PRESETS_UL_List,
+    TEXTUREBAKE_PRESETS_UL_List,
     OBJECT_OT_texture_bake_preset_delete,
-    OBJECT_OT_texture_bake_show_all,
-    OBJECT_OT_texture_bake_hide_all,
     OBJECT_OT_texture_bake_increase_texture_res,
     OBJECT_OT_texture_bake_decrease_texture_res,
     OBJECT_OT_texture_bake_increase_output_res,

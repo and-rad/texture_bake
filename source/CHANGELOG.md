@@ -5,6 +5,7 @@
 ### Added
 
 ### Changed
+- UX is more in line with Blender core
 
 ### Removed
 - The add-on no longer checks for automatic updates.

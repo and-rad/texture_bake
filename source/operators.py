@@ -705,16 +705,6 @@ class OBJECT_OT_texture_bake_preset_save(bpy.types.Operator):
 
         #Show/Hide
         d["showtips"] = bpy.context.scene.TextureBake_Props.showtips
-        d["presets_show"] = bpy.context.scene.TextureBake_Props.presets_show
-        d["bake_objects_show"] = bpy.context.scene.TextureBake_Props.bake_objects_show
-        d["pbr_settings_show"] = bpy.context.scene.TextureBake_Props.pbr_settings_show
-        d["cyclesbake_settings_show"] = bpy.context.scene.TextureBake_Props.cyclesbake_settings_show
-        d["specials_show"] = bpy.context.scene.TextureBake_Props.specials_show
-        d["textures_show"] = bpy.context.scene.TextureBake_Props.textures_show
-        d["export_show"] = bpy.context.scene.TextureBake_Props.export_show
-        d["uv_show"] = bpy.context.scene.TextureBake_Props.uv_show
-        d["other_show"] = bpy.context.scene.TextureBake_Props.other_show
-        d["channelpacking_show"] = bpy.context.scene.TextureBake_Props.channelpacking_show
 
         #Grab the objects in the advanced list (if any)
         d["object_list"] = [o.name for o in bpy.context.scene.TextureBake_Props.bakeobjs_advanced_list]
@@ -909,16 +899,6 @@ class OBJECT_OT_texture_bake_preset_load(bpy.types.Operator):
 
         #Show/Hide
         bpy.context.scene.TextureBake_Props.showtips = d["showtips"]
-        bpy.context.scene.TextureBake_Props.presets_show = d["presets_show"]
-        bpy.context.scene.TextureBake_Props.bake_objects_show = d["bake_objects_show"]
-        bpy.context.scene.TextureBake_Props.pbr_settings_show = d["pbr_settings_show"]
-        bpy.context.scene.TextureBake_Props.cyclesbake_settings_show = d["cyclesbake_settings_show"]
-        bpy.context.scene.TextureBake_Props.specials_show = d["specials_show"]
-        bpy.context.scene.TextureBake_Props.textures_show = d["textures_show"]
-        bpy.context.scene.TextureBake_Props.export_show = d["export_show"]
-        bpy.context.scene.TextureBake_Props.uv_show = d["uv_show"]
-        bpy.context.scene.TextureBake_Props.other_show = d["other_show"]
-        bpy.context.scene.TextureBake_Props.channelpacking_show = d["channelpacking_show"]
 
         #Channel packing images
         if "channel_packed_images" in d:
@@ -1031,55 +1011,6 @@ class OBJECT_OT_texture_bake_preset_delete(bpy.types.Operator):
 
         bpy.ops.object.texture_bake_preset_refresh()
 
-
-        return {'FINISHED'}
-
-
-#---------Show hide------------------------------------------
-
-class OBJECT_OT_texture_bake_show_all(bpy.types.Operator):
-    """Show all TextureBake panel items"""
-    bl_idname = "object.texture_bake_show_all"
-    bl_label = "Show all"
-
-
-    def execute(self, context):
-
-        bpy.context.scene.TextureBake_Props.showtips = True
-        bpy.context.scene.TextureBake_Props.presets_show = True
-        bpy.context.scene.TextureBake_Props.bake_objects_show = True
-        bpy.context.scene.TextureBake_Props.pbr_settings_show = True
-        bpy.context.scene.TextureBake_Props.cyclesbake_settings_show = True
-        bpy.context.scene.TextureBake_Props.specials_show = True
-        bpy.context.scene.TextureBake_Props.textures_show = True
-        bpy.context.scene.TextureBake_Props.export_show = True
-        bpy.context.scene.TextureBake_Props.uv_show = True
-        bpy.context.scene.TextureBake_Props.other_show = True
-        bpy.context.scene.TextureBake_Props.channelpacking_show = True
-
-        return {'FINISHED'}
-
-class OBJECT_OT_texture_bake_hide_all(bpy.types.Operator):
-    """Hide all TextureBake panel items"""
-    bl_idname = "object.texture_bake_hide_all"
-    bl_label = "Hide all"
-
-
-    def execute(self, context):
-
-        bpy.context.scene.TextureBake_Props.showtips = False
-        bpy.context.scene.TextureBake_Props.presets_show = False
-        bpy.context.scene.TextureBake_Props.bake_objects_show = False
-        bpy.context.scene.TextureBake_Props.pbr_settings_show = False
-        bpy.context.scene.TextureBake_Props.cyclesbake_settings_show = False
-        bpy.context.scene.TextureBake_Props.specials_show = False
-        bpy.context.scene.TextureBake_Props.textures_show = False
-        bpy.context.scene.TextureBake_Props.export_show = False
-        bpy.context.scene.TextureBake_Props.uv_show = False
-        bpy.context.scene.TextureBake_Props.other_show = False
-        bpy.context.scene.TextureBake_Props.channelpacking_show = False
-
-        functions.auto_set_bake_margin()
 
         return {'FINISHED'}
 
