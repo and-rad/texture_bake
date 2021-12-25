@@ -5,6 +5,7 @@
 ### Added
 
 ### Changed
+- Made code formatting more consistent and in line with PEP8.
 - UX is more in line with Blender core
 
 ### Removed
