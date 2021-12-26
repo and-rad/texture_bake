@@ -129,31 +129,25 @@ class TEXTUREBAKE_PT_objects(TextureBakeCategoryPanel, bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        layout.use_property_split = True
         layout.use_property_decorate = False
 
-        row = layout.row()
-        row.use_property_split = False
-        row.prop(context.scene.TextureBake_Props, "use_object_list")
-
+        layout.row().prop(context.scene.TextureBake_Props, "use_object_list")
         if context.scene.TextureBake_Props.use_object_list:
             row = layout.row()
-            row.template_list("TEXTUREBAKE_UL_object_list", "", context.scene.TextureBake_Props,
+            col = row.column()
+            col.template_list("TEXTUREBAKE_UL_object_list", "", context.scene.TextureBake_Props,
                             "object_list", context.scene.TextureBake_Props, "object_list_index")
-            row = layout.row()
-            row.operator('texture_bake.add_object', text='Add', icon="PRESET_NEW")
-            row.operator('texture_bake.remove_object', text='Remove', icon="CANCEL")
-            row.operator('texture_bake.clear_objects', text='Clear', icon="MATPLANE")
+            col = row.column()
+            col.operator('texture_bake.add_object', text="", icon="ADD")
+            col.operator('texture_bake.remove_object', text="", icon="REMOVE")
+            col.operator('texture_bake.clear_objects', text="", icon="TRASH")
+            col.separator()
+            col.operator('texture_bake.move_object', text="", icon="TRIA_UP").direction="UP"
+            col.operator('texture_bake.move_object', text="", icon="TRIA_DOWN").direction="DOWN"
 
-            row = layout.row()
-            row.operator('texture_bake.move_object', text='Up', icon="TRIA_UP").direction="UP"
-            row.operator('texture_bake.move_object', text='Down', icon="TRIA_DOWN").direction="DOWN"
-
-        row = layout.row()
-        row.use_property_split = False
-        row.prop(context.scene.TextureBake_Props, "selected_to_target")
-
+        layout.row().prop(context.scene.TextureBake_Props, "selected_to_target")
         if bpy.context.scene.TextureBake_Props.selected_to_target:
+            layout.use_property_split = True
             layout.row().prop(context.scene.TextureBake_Props, "target_object")
             layout.row().prop(context.scene.render.bake, "cage_object", text="Cage Object (Optional)")
             row = layout.row()
@@ -745,7 +739,7 @@ class TEXTUREBAKE_OT_move_object(Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.scene.TextureBake_Props.object_list
+        return len(context.scene.TextureBake_Props.object_list) > 1
 
     def execute(self, context):
         object_list = context.scene.TextureBake_Props.object_list
