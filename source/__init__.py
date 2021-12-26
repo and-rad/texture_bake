@@ -693,7 +693,6 @@ classes = [
     operators.TEXTUREBAKE_OT_pbr_select_none,
     operators.TEXTUREBAKE_OT_reset_name_format,
     operators.TEXTUREBAKE_OT_reset_aliases,
-    operators.TEXTUREBAKE_OT_bake_status,
     operators.TEXTUREBAKE_OT_bake_import,
     operators.TEXTUREBAKE_OT_bake_delete_individual,
     operators.TEXTUREBAKE_OT_bake_import_individual,

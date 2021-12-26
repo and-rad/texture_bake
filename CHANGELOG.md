@@ -2,11 +2,10 @@
 
 ## [0.9.0] - TBD
 
-### Added
-
 ### Changed
 - Made code formatting more consistent and in line with PEP8.
-- UX is more in line with Blender core
+- UX is more in line with Blender core.
+- Most operators are internal now in order to not add clutter to the search bar.
 
 ### Removed
 - The add-on no longer checks for automatic updates.

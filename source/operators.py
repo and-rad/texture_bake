@@ -38,7 +38,7 @@ from .ui import TextureBakePreferences
 class TEXTUREBAKE_OT_bake(bpy.types.Operator):
     """Start the baking process"""
     bl_idname = "texture_bake.bake"
-    bl_label = "Bake"
+    bl_label = "Bake Textures"
 
     def execute(self, context):
         def commence_bake(needed_bake_modes):
@@ -197,6 +197,7 @@ class TEXTUREBAKE_OT_pbr_select_all(bpy.types.Operator):
     """Select all PBR bake types"""
     bl_idname = "texture_bake.pbr_select_all"
     bl_label = "Select All"
+    bl_options = {'INTERNAL'}
 
     def execute(self, context):
         bpy.context.scene.TextureBake_Props.selected_col = True
@@ -219,6 +220,7 @@ class TEXTUREBAKE_OT_pbr_select_none(bpy.types.Operator):
     """Select none PBR bake types"""
     bl_idname = "texture_bake.pbr_select_none"
     bl_label = "Select None"
+    bl_options = {'INTERNAL'}
 
     def execute(self, context):
         bpy.context.scene.TextureBake_Props.selected_col = False
@@ -240,7 +242,8 @@ class TEXTUREBAKE_OT_pbr_select_none(bpy.types.Operator):
 class TEXTUREBAKE_OT_reset_name_format(bpy.types.Operator):
     """Reset the image name format string to default"""
     bl_idname = "texture_bake.reset_name_format"
-    bl_label = "Restore image string to default"
+    bl_label = "Restore Defaults"
+    bl_options = {'INTERNAL'}
 
     def execute(self, context):
         from .ui import TextureBakePreferences
@@ -251,7 +254,8 @@ class TEXTUREBAKE_OT_reset_name_format(bpy.types.Operator):
 class TEXTUREBAKE_OT_reset_aliases(bpy.types.Operator):
     """Reset the baked image name aliases"""
     bl_idname = "texture_bake.reset_aliases"
-    bl_label = "Restore all bake type aliases to default"
+    bl_label = "Restore Defaults"
+    bl_options = {'INTERNAL'}
 
     def execute(self, context):
         from .ui import TextureBakePreferences
@@ -259,41 +263,11 @@ class TEXTUREBAKE_OT_reset_aliases(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class TEXTUREBAKE_OT_bake_status(bpy.types.Operator):
-    """Check on the status of bakes running in the background"""
-    bl_idname = "texture_bake.bake_status"
-    bl_label = "Check on the status of bakes running in the background"
-
-    def execute(self, context):
-        msg_items = []
-
-        # Display remaining
-        if len(background_bake_ops.bgops_list) == 0:
-            msg_items.append("No background bakes are currently running")
-        else:
-            msg_items.append(f"--------------------------")
-            for p in background_bake_ops.bgops_list:
-
-                t = Path(tempfile.gettempdir())
-                t = t / f"TextureBake_background_bake_{str(p[0].pid)}"
-                try:
-                    with open(str(t), "r") as progfile:
-                        progress = progfile.readline()
-                except:
-                    # No file yet, as no bake operation has completed yet. Holding message
-                    progress = 0
-
-                msg_items.append(f"RUNNING: Process ID: {str(p[0].pid)} - Progress {progress}%")
-                msg_items.append(f"--------------------------")
-
-        functions.show_message_box(msg_items, "Background Bake Status(es)")
-        return {'FINISHED'}
-
-
 class TEXTUREBAKE_OT_bake_import(bpy.types.Operator):
     """Import baked objects previously baked in the background"""
     bl_idname = "texture_bake.bake_import"
     bl_label = "Import baked objects previously baked in the background"
+    bl_options = {'INTERNAL'}
 
     def execute(self, context):
         if bpy.context.mode != "OBJECT":
@@ -376,6 +350,7 @@ class TEXTUREBAKE_OT_bake_import_individual(bpy.types.Operator):
     """Import baked objects previously baked in the background"""
     bl_idname = "texture_bake.bake_import_individual"
     bl_label = "Import baked objects previously baked in the background"
+    bl_options = {'INTERNAL'}
 
     pnum: bpy.props.IntProperty()
 
@@ -464,6 +439,7 @@ class TEXTUREBAKE_OT_bake_delete(bpy.types.Operator):
     """Delete the background bakes because you don't want to import them into Blender. NOTE: If you chose to save bakes or FBX externally, these are safe and NOT deleted. This is just if you don't want to import into this Blender session"""
     bl_idname = "texture_bake.bake_delete"
     bl_label = "Delete the background bakes"
+    bl_options = {'INTERNAL'}
 
     def execute(self, context):
         savepath = Path(bpy.data.filepath).parent
@@ -484,6 +460,7 @@ class TEXTUREBAKE_OT_bake_delete_individual(bpy.types.Operator):
     """Delete this individual background bake because you don't want to import the results into Blender. NOTE: If you chose to save bakes or FBX externally, these are safe and NOT deleted. This is just if you don't want to import into this Blender session"""
     bl_idname = "texture_bake.bake_delete_individual"
     bl_label = "Delete the individual background bake"
+    bl_options = {'INTERNAL'}
 
     pnum: bpy.props.IntProperty()
 
@@ -504,6 +481,7 @@ class TEXTUREBAKE_OT_import_materials(bpy.types.Operator):
     """Import the selected specials materials if you want to edit them. Once edited, they will be used for all bakes of that type in this file"""
     bl_idname = "texture_bake.import_materials"
     bl_label = "Import specials materials"
+    bl_options = {'INTERNAL'}
 
     @classmethod
     def poll(cls,context):
@@ -522,6 +500,7 @@ class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
     """Save current TextureBake settings to preset"""
     bl_idname = "texture_bake.save_preset"
     bl_label = "Save"
+    bl_options = {'INTERNAL'}
 
     @classmethod
     def poll(cls,context):
@@ -672,6 +651,7 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
     """Load selected TextureBake preset"""
     bl_idname = "texture_bake.load_preset"
     bl_label = "Load"
+    bl_options = {'INTERNAL'}
 
     @classmethod
     def poll(cls,context):
@@ -827,6 +807,7 @@ class TEXTUREBAKE_OT_refresh_presets(bpy.types.Operator):
     """Refresh list of TextureBake presets"""
     bl_idname = "texture_bake.refresh_presets"
     bl_label = "Refresh"
+    bl_options = {'INTERNAL'}
 
     def execute(self, context):
         bpy.context.scene.TextureBake_Props.presets_list.clear()
@@ -857,6 +838,7 @@ class TEXTUREBAKE_OT_delete_preset(bpy.types.Operator):
     """Delete selected TextureBake preset"""
     bl_idname = "texture_bake.delete_preset"
     bl_label = "Delete"
+    bl_options = {'INTERNAL'}
 
     @classmethod
     def poll(cls,context):
@@ -885,6 +867,7 @@ class TEXTUREBAKE_OT_increase_bake_res(bpy.types.Operator):
     """Increase texture resolution by 1k"""
     bl_idname = "texture_bake.increase_bake_res"
     bl_label = "+1k"
+    bl_options = {'INTERNAL'}
 
     def execute(self, context):
         x = bpy.context.scene.TextureBake_Props.input_width
@@ -910,6 +893,7 @@ class TEXTUREBAKE_OT_decrease_bake_res(bpy.types.Operator):
     """Decrease texture resolution by 1k"""
     bl_idname = "texture_bake.decrease_bake_res"
     bl_label = "-1k"
+    bl_options = {'INTERNAL'}
 
     def execute(self, context):
         x = bpy.context.scene.TextureBake_Props.input_width
@@ -941,6 +925,7 @@ class TEXTUREBAKE_OT_increase_output_res(bpy.types.Operator):
     """Increase output resolution by 1k"""
     bl_idname = "texture_bake.increase_output_res"
     bl_label = "+1k"
+    bl_options = {'INTERNAL'}
 
     def execute(self, context):
         x = bpy.context.scene.TextureBake_Props.output_width
@@ -966,6 +951,7 @@ class TEXTUREBAKE_OT_decrease_output_res(bpy.types.Operator):
     """Decrease output resolution by 1k"""
     bl_idname = "texture_bake.decrease_output_res"
     bl_label = "-1k"
+    bl_options = {'INTERNAL'}
 
     def execute(self, context):
         x = bpy.context.scene.TextureBake_Props.output_width
@@ -997,6 +983,7 @@ class TEXTUREBAKE_OT_add_packed_texture(bpy.types.Operator):
     """Add a TextureBake CP Texture item"""
     bl_idname = "texture_bake.add_packed_texture"
     bl_label = "Add"
+    bl_options = {'INTERNAL'}
 
     @classmethod
     def poll(cls,context):
@@ -1030,6 +1017,7 @@ class TEXTUREBAKE_OT_delete_packed_texture(bpy.types.Operator):
     """Delete the selected channel pack texture"""
     bl_idname = "texture_bake.delete_packed_texture"
     bl_label = "Delete"
+    bl_options = {'INTERNAL'}
 
     @classmethod
     def poll(cls,context):
@@ -1049,6 +1037,7 @@ class TEXTUREBAKE_OT_reset_packed_textures(bpy.types.Operator):
     """Add some example channel pack textures"""
     bl_idname = "texture_bake.reset_packed_textures"
     bl_label = "Add examples"
+    bl_options = {'INTERNAL'}
 
     @classmethod
     def poll(cls,context):
