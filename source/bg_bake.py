@@ -28,7 +28,7 @@ class background_bake_ops():
 
 
 def remove_dead():
-    # Remove dead processes from current list
+    """Removes dead background processes from current list"""
     for p in background_bake_ops.bgops_list:
         if p[0].poll() == 0:
             background_bake_ops.bgops_list_finished.append(p)
@@ -42,5 +42,25 @@ def check_export_col_setting():
     return 1
 
 
+def clean_object_list():
+    """Removes deleted objects from the list of objects to bake"""
+    object_list = bpy.context.scene.TextureBake_Props.object_list
+    old_size = len(object_list)
+    for i in range(old_size-1, -1, -1):
+        item = object_list[i]
+        if item.obj is None or not item.obj.users_scene:
+            object_list.remove(i)
+
+    new_size = len(object_list)
+    if old_size != new_size:
+        for window in bpy.context.window_manager.windows:
+            for area in window.screen.areas:
+                if area.type == "PROPERTIES":
+                    area.tag_redraw()
+
+    return 1
+
+
 bpy.app.timers.register(remove_dead, persistent=True)
 bpy.app.timers.register(check_export_col_setting, persistent=True)
+bpy.app.timers.register(clean_object_list, persistent=True)

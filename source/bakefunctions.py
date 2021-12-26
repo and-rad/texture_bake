@@ -114,7 +114,6 @@ def common_bake_prep():
 
     # If using advanced selection mode, override the viewport selection
     if bpy.context.scene.TextureBake_Props.use_object_list:
-
         functions.print_msg("We are using advanced object selection")
         current_bake_op.bake_objects = functions.advanced_object_selection_to_list()
 

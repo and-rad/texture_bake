@@ -310,9 +310,6 @@ def check_scene(objects, bakemode):
         show_message_box(messages, "Errors occured", "ERROR")
         return False
 
-    # Refresh the list before we do anything else
-    update_advanced_object_list()
-
     # This is hacky. A better way to do this needs to be found TODO: why?
     advancedobj = bpy.context.scene.TextureBake_Props.use_object_list
     if advancedobj:
@@ -1503,39 +1500,6 @@ def advanced_object_selection_to_list():
         objs.append(li.obj_point)
 
     return objs
-
-
-def update_advanced_object_list():
-    my_list = bpy.context.scene.TextureBake_Props.object_list
-
-    gone = []
-    for li in my_list:
-        # Is it empty?
-        if li.obj_point == None:
-            gone.append(li.name)
-
-        # It it not in use anywhere else?
-        elif len(li.obj_point.users_scene) < 1:
-            gone.append(li.name)
-
-    for g in gone:
-        my_list.remove(my_list.find(g))
-        # We were the only user (presumably)
-        if g in bpy.data.objects:
-            bpy.data.objects.remove(bpy.data.objects[g])
-
-
-def deselect_all_not_mesh():
-    import bpy
-
-    for obj in bpy.context.selected_objects:
-        if obj.type != "MESH":
-             obj.select_set(False)
-
-    # Do we still have an active object?
-    if bpy.context.active_object == None:
-        # Pick arbitary
-        bpy.context.view_layer.objects.active = bpy.context.selected_objects[0]
 
 
 def fix_invalid_material_config(obj):

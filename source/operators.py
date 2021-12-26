@@ -77,9 +77,6 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
             MasterOperation.merged_bake = bpy.context.scene.TextureBake_Props.merged_bake
             MasterOperation.merged_bake_name = bpy.context.scene.TextureBake_Props.merged_bake_name
 
-            # Make sure there are no deleted items in the list
-            functions.update_advanced_object_list()
-
             # Need to know the total operations
             MasterOperation.total_bake_operations = len(needed_bake_modes)
 

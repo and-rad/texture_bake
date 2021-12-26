@@ -20,4 +20,5 @@
 ### Fixed
 - Fixed missing class unregister calls. Trying to deactivate and activate the
   add-on consecutively during the same Blender session no longer throws an error.
+- Renamed objects already in the bake list can no longer be added twice.
 - Fixed type mismatch when automatically setting bake margin.

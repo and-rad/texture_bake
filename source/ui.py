@@ -148,7 +148,6 @@ class TEXTUREBAKE_PT_objects(TextureBakeCategoryPanel, bpy.types.Panel):
             row = layout.row()
             row.operator('texture_bake.move_object', text='Up', icon="TRIA_UP").direction="UP"
             row.operator('texture_bake.move_object', text='Down', icon="TRIA_DOWN").direction="DOWN"
-            row.operator('texture_bake.refresh_objects', text='Refresh', icon="FILE_REFRESH")
 
         row = layout.row()
         row.use_property_split = False
@@ -670,24 +669,8 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
         row.operator("texture_bake.reset_aliases")
 
 
-class TextureBakeObjectListItem(PropertyGroup):
-    """Group of properties representing an item in the list."""
-
-    obj_point: PointerProperty(
-        name="Bake Object",
-        description="An object in the scene to be baked",
-        type=bpy.types.Object
-    )
-
-    name: StringProperty(
-        name="Name",
-        description="A name for this item",
-        default= "Untitled"
-    )
-
-
 class TEXTUREBAKE_UL_object_list(UIList):
-    """UIList."""
+    """List type to display objects selected for baking"""
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         # We could write some code to decide which icon to use here...
@@ -695,8 +678,7 @@ class TEXTUREBAKE_UL_object_list(UIList):
 
         # Make sure your code supports all 3 layout types
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
-            layout.label(text=item.obj_point.name, icon = custom_icon)
-
+            layout.label(text=item.obj.name, icon = custom_icon)
         elif self.layout_type in {'GRID'}:
             layout.alignment = 'CENTER'
             layout.label(text="", icon = custom_icon)
@@ -709,22 +691,17 @@ class TEXTUREBAKE_OT_add_object(Operator):
 
     @classmethod
     def poll(cls, context):
-        return len(bpy.context.selected_objects)
+        return bpy.context.selected_objects
 
     def execute(self, context):
-        # Get rid of the non-mesh objects
-        functions.deselect_all_not_mesh()
-        objs = bpy.context.selected_objects.copy()
-
-        # Add if not already in the list
-        for obj in objs:
-            r = [i.name for i in context.scene.TextureBake_Props.object_list if i.name == obj.name]
-            if len(r) == 0:
-                n = context.scene.TextureBake_Props.object_list.add()
-                n.obj_point = obj
-                n.name = obj.name
-
-        functions.update_advanced_object_list()
+        object_list = context.scene.TextureBake_Props.object_list
+        for obj in bpy.context.selected_objects:
+            if obj.type != "MESH":
+                continue
+            if [i for i in object_list if i.obj.name == obj.name]:
+                continue
+            new_item = object_list.add()
+            new_item.obj = obj
         return{'FINISHED'}
 
 
@@ -738,13 +715,10 @@ class TEXTUREBAKE_OT_remove_object(Operator):
         return context.scene.TextureBake_Props.object_list
 
     def execute(self, context):
-        my_list = context.scene.TextureBake_Props.object_list
+        object_list = context.scene.TextureBake_Props.object_list
         index = context.scene.TextureBake_Props.object_list_index
-
-        my_list.remove(index)
-        context.scene.TextureBake_Props.object_list_index = min(max(0, index - 1), len(my_list) - 1)
-
-        functions.update_advanced_object_list()
+        object_list.remove(index)
+        context.scene.TextureBake_Props.object_list_index = min(max(0, index - 1), len(object_list) - 1)
         return{'FINISHED'}
 
 
@@ -755,11 +729,10 @@ class TEXTUREBAKE_OT_clear_objects(Operator):
 
     @classmethod
     def poll(cls, context):
-        return True
+        return context.scene.TextureBake_Props.object_list
 
     def execute(self, context):
         context.scene.TextureBake_Props.object_list.clear()
-        functions.update_advanced_object_list()
         return{'FINISHED'}
 
 
@@ -774,35 +747,13 @@ class TEXTUREBAKE_OT_move_object(Operator):
     def poll(cls, context):
         return context.scene.TextureBake_Props.object_list
 
-    def move_index(self):
-        index = bpy.context.scene.TextureBake_Props.object_list_index
+    def execute(self, context):
+        object_list = context.scene.TextureBake_Props.object_list
+        old_index = context.scene.TextureBake_Props.object_list_index
+        new_index = old_index + (-1 if self.direction == 'UP' else 1)
         max_index = len(bpy.context.scene.TextureBake_Props.object_list) - 1
-        new_index = index + (-1 if self.direction == 'UP' else 1)
+        object_list.move(old_index, new_index)
         bpy.context.scene.TextureBake_Props.object_list_index = max(0, min(new_index, max_index))
-
-    def execute(self, context):
-        my_list = context.scene.TextureBake_Props.object_list
-        index = context.scene.TextureBake_Props.object_list_index
-
-        neighbor = index + (-1 if self.direction == 'UP' else 1)
-        my_list.move(neighbor, index)
-        self.move_index()
-
-        functions.update_advanced_object_list()
-        return{'FINISHED'}
-
-
-class TEXTUREBAKE_OT_refresh_objects(Operator):
-    """Refresh the list to remove objects"""
-    bl_idname = "texture_bake.refresh_objects"
-    bl_label = "Refresh the bake objects list"
-
-    @classmethod
-    def poll(cls, context):
-        return True
-
-    def execute(self, context):
-        functions.update_advanced_object_list()
         return{'FINISHED'}
 
 

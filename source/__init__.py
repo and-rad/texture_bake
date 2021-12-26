@@ -179,7 +179,17 @@ def get_selected_bakes_dropdown(self, context):
     return items
 
 
-class TextureBakePropGroup(bpy.types.PropertyGroup):
+class TextureBakeObjectProperty(bpy.types.PropertyGroup):
+    """Group of properties representing an object selected for baking."""
+
+    obj: bpy.props.PointerProperty(
+        name="Bake Object",
+        description="An object in the scene to be baked",
+        type=bpy.types.Object
+    )
+
+
+class TextureBakeProperties(bpy.types.PropertyGroup):
     """Contains per-file bake properties."""
 
     from bpy.props import (
@@ -544,7 +554,7 @@ class TextureBakePropGroup(bpy.types.PropertyGroup):
     )
 
     object_list: CollectionProperty(
-        type = ui.TextureBakeObjectListItem,
+        type = TextureBakeObjectProperty,
     )
 
     object_list_index: IntProperty(
@@ -711,25 +721,24 @@ classes = [
     ui.TEXTUREBAKE_PT_other,
     ui.TEXTUREBAKE_PT_packing,
     ui.TextureBakePreferences,
-    ui.TextureBakeObjectListItem,
     ui.TEXTUREBAKE_UL_object_list,
     ui.TEXTUREBAKE_OT_add_object,
     ui.TEXTUREBAKE_OT_remove_object,
     ui.TEXTUREBAKE_OT_move_object,
     ui.TEXTUREBAKE_OT_clear_objects,
-    ui.TEXTUREBAKE_OT_refresh_objects,
     ui.TextureBakePresetItem,
     ui.TextureBakePackedTextureItem,
     ui.TEXTUREBAKE_UL_presets,
     ui.TEXTUREBAKE_UL_packed_textures,
-    TextureBakePropGroup,
+    TextureBakeObjectProperty,
+    TextureBakeProperties,
 ]
 
 
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
-    bpy.types.Scene.TextureBake_Props = bpy.props.PointerProperty(type=TextureBakePropGroup)
+    bpy.types.Scene.TextureBake_Props = bpy.props.PointerProperty(type=TextureBakeProperties)
 
 
 def unregister():
