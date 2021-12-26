@@ -21,3 +21,6 @@
   add-on consecutively during the same Blender session no longer throws an error.
 - Renamed objects already in the bake list can no longer be added twice.
 - Fixed type mismatch when automatically setting bake margin.
+
+[1.0.0]: https://github.com/and-rad/texture_bake/compare/0.9.0..HEAD
+[0.9.0]: https://github.com/and-rad/texture_bake/compare/051f4a5..0.9.0
