@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.9.0] - TBD
+## [0.9.0] - 2021-12-26
 
 ### Changed
 - Made code formatting more consistent and in line with PEP8.
