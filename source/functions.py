@@ -1495,11 +1495,7 @@ def check_mats_valid_for_pbr(mat):
 
 
 def advanced_object_selection_to_list():
-    objs = []
-    for li in bpy.context.scene.TextureBake_Props.object_list:
-        objs.append(li.obj_point)
-
-    return objs
+    return [i.obj for i in bpy.context.scene.TextureBake_Props.object_list]
 
 
 def fix_invalid_material_config(obj):

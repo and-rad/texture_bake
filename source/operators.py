@@ -587,7 +587,7 @@ class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
         d["bake.margin"] = bpy.context.scene.render.bake.margin
 
         # Grab the objects in the advanced list (if any)
-        d["object_list"] = [o.name for o in bpy.context.scene.TextureBake_Props.object_list]
+        d["object_list"] = [i.obj.name for i in bpy.context.scene.TextureBake_Props.object_list]
         # Grab the target objects if there is one
         if bpy.context.scene.TextureBake_Props.target_object != None:
             d["target_object"] = bpy.context.scene.TextureBake_Props.target_object.name
@@ -783,15 +783,11 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
                 li.file_format = thiscpi_dict["file_format"]
 
         # And now the objects, if they are here
-        for obj_name in d["object_list"]:
-            if obj_name in bpy.data.objects:
-                # Find where name attribute of each object in the advanced selection list matches the name
-                l = [o.name for o in bpy.context.scene.TextureBake_Props.object_list if o.name == obj_name]
-                if len(l) == 0:
-                    # Not already in the list
-                    i = bpy.context.scene.TextureBake_Props.object_list.add()
-                    i.name = obj_name # Advanced object list has a name and pointers arritbute
-                    i.obj_point = bpy.data.objects[obj_name]
+        bpy.context.scene.TextureBake_Props.object_list.clear()
+        for name in d["object_list"]:
+            if name in bpy.data.objects:
+                item = bpy.context.scene.TextureBake_Props.object_list.add()
+                item.obj = bpy.data.objects[name]
 
         if d["target_object"] != None and d["target_object"] in bpy.data.objects:
             bpy.context.scene.TextureBake_Props.target_object = bpy.data.objects[d["target_object"]]
