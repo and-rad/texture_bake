@@ -51,7 +51,7 @@ class TEXTUREBAKE_PT_main(bpy.types.Panel):
         row.prop(context.scene.TextureBake_Props, "background_bake", expand = True)
 
         if bpy.context.scene.TextureBake_Props.background_bake == "bg":
-            layout.row().prop(context.scene.TextureBake_Props, "background_bake_name", text="Name: ")
+            layout.row().prop(context.scene.TextureBake_Props, "background_bake_name", text="Name")
 
         row = layout.row()
         row.scale_y = 1.5
@@ -447,54 +447,53 @@ class TEXTUREBAKE_PT_packing(TextureBakeCategoryPanel, bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
-        if(context.scene.TextureBake_Props.global_mode == "pbr_bake"):
-            if not functions.is_blend_saved():
-                row = layout.row()
-                row.label(text="Unavailable - Blend file not saved")
-            elif not bpy.context.scene.TextureBake_Props.export_textures:
-                row = layout.row()
-                row.label(text="Unavailable - You must be exporting your bakes")
-            else:
-                row = layout.row()
-                col = row.column()
-                col.template_list("TEXTUREBAKE_UL_packed_textures", "", context.scene.TextureBake_Props,
-                                  "cp_list", context.scene.TextureBake_Props, "cp_list_index")
-                col = row.column()
-                col.operator("texture_bake.delete_packed_texture", text="", icon="CANCEL")
-                col.operator("texture_bake.reset_packed_textures", text="", icon="MONKEY")
+        if context.scene.TextureBake_Props.global_mode != "pbr_bake":
+            layout.row().label(text="Unavailable - Channel packing requires PBR bake mode")
+        elif not functions.is_blend_saved():
+            layout.row().label(text="Unavailable - Blend file not saved")
+        elif not bpy.context.scene.TextureBake_Props.export_textures:
+            layout.row().label(text="Unavailable - You must be exporting your bakes")
+        else:
+            row = layout.row()
+            col = row.column()
+            col.template_list("TEXTUREBAKE_UL_packed_textures", "", context.scene.TextureBake_Props,
+                                "cp_list", context.scene.TextureBake_Props, "cp_list_index")
+            col = row.column()
+            col.operator("texture_bake.delete_packed_texture", text="", icon="CANCEL")
+            col.operator("texture_bake.reset_packed_textures", text="", icon="MONKEY")
 
-                layout.row().prop(context.scene.TextureBake_Props, "cp_name")
-                layout.row().prop(context.scene.TextureBake_Props, "cp_file_format", text="Format")
-                layout.row().prop(context.scene.TextureBake_Props, "cptex_R", text="R")
-                layout.row().prop(context.scene.TextureBake_Props, "cptex_G", text="G")
-                layout.row().prop(context.scene.TextureBake_Props, "cptex_B", text="B")
-                layout.row().prop(context.scene.TextureBake_Props, "cptex_A", text="A")
+            layout.row().prop(context.scene.TextureBake_Props, "cp_name")
+            layout.row().prop(context.scene.TextureBake_Props, "cp_file_format", text="Format")
+            layout.row().prop(context.scene.TextureBake_Props, "cptex_R", text="R")
+            layout.row().prop(context.scene.TextureBake_Props, "cptex_G", text="G")
+            layout.row().prop(context.scene.TextureBake_Props, "cptex_B", text="B")
+            layout.row().prop(context.scene.TextureBake_Props, "cptex_A", text="A")
 
-                cp_list = bpy.context.scene.TextureBake_Props.cp_list
-                current_name = bpy.context.scene.TextureBake_Props.cp_name
-                if current_name in cp_list: # Editing a cpt that is already there
-                    index = cp_list.find(current_name)
-                    cpt = cp_list[index]
+            cp_list = bpy.context.scene.TextureBake_Props.cp_list
+            current_name = bpy.context.scene.TextureBake_Props.cp_name
+            if current_name in cp_list: # Editing a cpt that is already there
+                index = cp_list.find(current_name)
+                cpt = cp_list[index]
 
-                    if (cpt.R != bpy.context.scene.TextureBake_Props.cptex_R
-                        or cpt.G != bpy.context.scene.TextureBake_Props.cptex_G
-                        or cpt.B != bpy.context.scene.TextureBake_Props.cptex_B
-                        or cpt.A != bpy.context.scene.TextureBake_Props.cptex_A
-                        or cpt.file_format != bpy.context.scene.TextureBake_Props.cp_file_format):
-                        row = layout.row()
-                        row.alert=True
-                        text = f"Update {current_name} (!!not saved!!)"
-                        row.operator("texture_bake.add_packed_texture", text=text, icon="ADD")
-                    else: # No changes, no button
-                        text = f"Editing {current_name}"
-                        row = layout.row()
-                        row.label(text=text)
-                        row.alignment = 'CENTER'
-                else: # New item
+                if (cpt.R != bpy.context.scene.TextureBake_Props.cptex_R
+                    or cpt.G != bpy.context.scene.TextureBake_Props.cptex_G
+                    or cpt.B != bpy.context.scene.TextureBake_Props.cptex_B
+                    or cpt.A != bpy.context.scene.TextureBake_Props.cptex_A
+                    or cpt.file_format != bpy.context.scene.TextureBake_Props.cp_file_format):
                     row = layout.row()
-                    text = "Add new (!!not saved!!)"
-                    row.alert = True
+                    row.alert=True
+                    text = f"Update {current_name} (!!not saved!!)"
                     row.operator("texture_bake.add_packed_texture", text=text, icon="ADD")
+                else: # No changes, no button
+                    text = f"Editing {current_name}"
+                    row = layout.row()
+                    row.label(text=text)
+                    row.alignment = 'CENTER'
+            else: # New item
+                row = layout.row()
+                text = "Add new (!!not saved!!)"
+                row.alert = True
+                row.operator("texture_bake.add_packed_texture", text=text, icon="ADD")
 
 
 class TextureBakePreferences(bpy.types.AddonPreferences):

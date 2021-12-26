@@ -657,7 +657,7 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
     )
 
     cp_name: StringProperty(
-        name = "Name: ",
+        name = "Name",
         description = "List of Channel Packed Textures", # TODO: this might not belong here
         default = "PackedTex",
         maxlen = 30,
