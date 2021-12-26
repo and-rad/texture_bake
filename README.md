@@ -28,3 +28,21 @@ several ways to do this:
 - Restart Blender
 - Main Menu > System > Reload Scripts
 - press the Search hotkey (default F3), search for and execute the `Reload Scripts` operator
+
+## Packaging
+
+Run the packaging command:
+
+```
+$ make package
+```
+
+This will create the `out` directory in the project folder. The directory
+contains a packaged ZIP file that is ready for distribution. The add-on
+can be installed like any other add-on, refer to
+[the documentation](https://docs.blender.org/manual/en/latest/editors/preferences/addons.html)
+for details.
+
+The `make package` command relies on the following software being installed on
+your computer:
+- zip
