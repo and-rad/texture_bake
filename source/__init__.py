@@ -124,7 +124,7 @@ def cp_list_index_update(self, context):
 
     # Show messages
     if len(messages)>0:
-        functions.ShowMessageBox(messages, title = "Warning", icon = "ERROR")
+        functions.show_message_box(messages, title = "Warning", icon = "ERROR")
 
 
 def get_selected_bakes_dropdown(self, context):

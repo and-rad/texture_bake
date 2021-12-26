@@ -337,7 +337,7 @@ class TEXTUREBAKE_PT_export_settings(TextureBakeCategoryPanel, bpy.types.Panel):
         layout = self.layout
         layout.use_property_decorate = False
 
-        if functions.isBlendSaved():
+        if functions.is_blend_saved():
             row = layout.row()
             row.prop(context.scene.TextureBake_Props, "export_textures")
             row.prop(context.scene.TextureBake_Props, "export_mesh")
@@ -455,7 +455,7 @@ class TEXTUREBAKE_PT_packing(TextureBakeCategoryPanel, bpy.types.Panel):
         layout = self.layout
 
         if(context.scene.TextureBake_Props.global_mode == "pbr_bake"):
-            if not functions.isBlendSaved():
+            if not functions.is_blend_saved():
                 row = layout.row()
                 row.label(text="Unavailable - Blend file not saved")
             elif not bpy.context.scene.TextureBake_Props.export_textures:

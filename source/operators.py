@@ -30,8 +30,8 @@ from math import floor
 
 from . import functions
 from . import bakefunctions
-from .bake_operation import BakeOperation, MasterOperation, BakeStatus, bakestolist, TextureBakeConstants
-from .bg_bake import bgbake_ops
+from .bake_operation import BakeOperation, MasterOperation, BakeStatus, bakes_to_list, TextureBakeConstants
+from .bg_bake import background_bake_ops
 from .ui import TextureBakePreferences
 
 
@@ -41,26 +41,23 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
     bl_label = "Bake"
 
     def execute(self, context):
-
         def commence_bake(needed_bake_modes):
-
-            #Prepare the BakeStatus tracker for progress bar
+            # Prepare the BakeStatus tracker for progress bar
             num_of_objects = 0
-            if bpy.context.scene.TextureBake_Props.advancedobjectselection:
-                num_of_objects = len(bpy.context.scene.TextureBake_Props.bakeobjs_advanced_list)
+            if bpy.context.scene.TextureBake_Props.use_object_list:
+                num_of_objects = len(bpy.context.scene.TextureBake_Props.object_list)
             else:
                 num_of_objects = len(bpy.context.selected_objects)
-
 
             total_maps = 0
             for need in needed_bake_modes:
                 if need == TextureBakeConstants.PBR:
-                    total_maps+=(bakestolist(justcount=True) * num_of_objects)
+                    total_maps+=(bakes_to_list(justcount=True) * num_of_objects)
                 if need == TextureBakeConstants.PBRS2A:
-                    total_maps+=1*bakestolist(justcount=True)
-                if need == TextureBakeConstants.CYCLESBAKE and not bpy.context.scene.TextureBake_Props.cycles_s2a:
+                    total_maps+=1*bakes_to_list(justcount=True)
+                if need == TextureBakeConstants.CYCLESBAKE and not bpy.context.scene.TextureBake_Props.selected_to_target:
                     total_maps+=1* num_of_objects
-                if need == TextureBakeConstants.CYCLESBAKE and bpy.context.scene.TextureBake_Props.cycles_s2a:
+                if need == TextureBakeConstants.CYCLESBAKE and bpy.context.scene.TextureBake_Props.selected_to_target:
                     total_maps+=1
                 if need == TextureBakeConstants.SPECIALS:
                     total_maps+=(functions.import_needed_specials_materials(justcount = True) * num_of_objects)
@@ -71,119 +68,104 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
                     if bpy.context.scene.TextureBake_Props.selected_col_mats: total_maps+=1
                     if bpy.context.scene.TextureBake_Props.selected_col_vertex: total_maps+=1
 
-
             BakeStatus.total_maps = total_maps
 
-
-            #Clear the MasterOperation stuff
+            # Clear the MasterOperation stuff
             MasterOperation.clear()
 
-            #Set master operation variables
-            MasterOperation.merged_bake = bpy.context.scene.TextureBake_Props.mergedBake
-            MasterOperation.merged_bake_name = bpy.context.scene.TextureBake_Props.mergedBakeName
+            # Set master operation variables
+            MasterOperation.merged_bake = bpy.context.scene.TextureBake_Props.merged_bake
+            MasterOperation.merged_bake_name = bpy.context.scene.TextureBake_Props.merged_bake_name
 
-            #Make sure there are no deleted items in the list
+            # Make sure there are no deleted items in the list
             functions.update_advanced_object_list()
 
-            #Need to know the total operations
+            # Need to know the total operations
             MasterOperation.total_bake_operations = len(needed_bake_modes)
 
-            #Master list of all ops
+            # Master list of all ops
             bops = []
 
             for need in needed_bake_modes:
-                #Create operation
+                # Create operation
                 bop = BakeOperation()
                 bop.bake_mode = need
 
                 bops.append(bop)
-                functions.printmsg(f"Created operation for {need}")
+                functions.print_msg(f"Created operation for {need}")
 
-            #Run queued operations
+            # Run queued operations
             for bop in bops:
                 MasterOperation.this_bake_operation_num+=1
                 MasterOperation.current_bake_operation = bop
                 if bop.bake_mode == TextureBakeConstants.PBR:
-                    functions.printmsg("Running PBR bake")
-                    bakefunctions.doBake()
+                    functions.print_msg("Running PBR bake")
+                    bakefunctions.do_bake()
                 elif bop.bake_mode == TextureBakeConstants.PBRS2A:
-                    functions.printmsg("Running PBR S2A bake")
-                    bakefunctions.doBakeS2A()
+                    functions.print_msg("Running PBR S2A bake")
+                    bakefunctions.do_bake_selected_to_target()
                 elif bop.bake_mode == TextureBakeConstants.CYCLESBAKE:
-                    functions.printmsg("Running Cycles bake")
-                    bakefunctions.cyclesBake()
+                    functions.print_msg("Running Cycles bake")
+                    bakefunctions.cycles_bake()
                 elif bop.bake_mode in [TextureBakeConstants.SPECIALS, TextureBakeConstants.SPECIALS_CYCLES_TARGET_ONLY, TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY]:
-                    functions.printmsg("Running Specials bake")
-                    bakefunctions.specialsBake()
+                    functions.print_msg("Running Specials bake")
+                    bakefunctions.specials_bake()
 
-            #Call channel packing
-            #Only possilbe if we baked some kind of PBR. At the moment, can't have non-S2A and S2A
+            # Call channel packing
+            # Only possilbe if we baked some kind of PBR. At the moment, can't have non-S2A and S2A
             if len([bop for bop in bops if bop.bake_mode == TextureBakeConstants.PBR]) > 0:
-                #Should still be active from last bake op
+                # Should still be active from last bake op
                 objects = MasterOperation.current_bake_operation.bake_objects
                 bakefunctions.channel_packing(objects)
             if len([bop for bop in bops if bop.bake_mode == TextureBakeConstants.PBRS2A]) > 0:
-                #Should still be active from last bake op
+                # Should still be active from last bake op
                 objects = [MasterOperation.current_bake_operation.sb_target_object]
                 bakefunctions.channel_packing(objects)
 
             return True
 
-
-
-        #Entry Point ----------------------------------------------------
-
-
         needed_bake_modes = []
-        if bpy.context.scene.TextureBake_Props.global_mode == "pbr_bake" and not bpy.context.scene.TextureBake_Props.selected_s2a:
+        if bpy.context.scene.TextureBake_Props.global_mode == "pbr_bake" and not bpy.context.scene.TextureBake_Props.selected_to_target:
             needed_bake_modes.append(TextureBakeConstants.PBR)
-        if bpy.context.scene.TextureBake_Props.global_mode == "pbr_bake" and bpy.context.scene.TextureBake_Props.selected_s2a:
+        if bpy.context.scene.TextureBake_Props.global_mode == "pbr_bake" and bpy.context.scene.TextureBake_Props.selected_to_target:
             needed_bake_modes.append(TextureBakeConstants.PBRS2A)
         if bpy.context.scene.TextureBake_Props.global_mode == "cycles_bake":
             needed_bake_modes.append(TextureBakeConstants.CYCLESBAKE)
 
         if functions.any_specials() and TextureBakeConstants.PBRS2A in needed_bake_modes:
             needed_bake_modes.append(TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY)
-        elif functions.any_specials() and TextureBakeConstants.CYCLESBAKE in needed_bake_modes and bpy.context.scene.TextureBake_Props.cycles_s2a:
+        elif functions.any_specials() and TextureBakeConstants.CYCLESBAKE in needed_bake_modes and bpy.context.scene.TextureBake_Props.selected_to_target:
             needed_bake_modes.append(TextureBakeConstants.SPECIALS_CYCLES_TARGET_ONLY)
         elif functions.any_specials():
             needed_bake_modes.append(TextureBakeConstants.SPECIALS)
 
-
-        #Clear the progress stuff
+        # Clear the progress stuff
         BakeStatus.current_map = 0
         BakeStatus.total_maps = 0
 
-
-        #If we have been called in background mode, just get on with it. Checks should be done.
+        # If we have been called in background mode, just get on with it. Checks should be done.
         if "--background" in sys.argv:
             if "TextureBake_Bakes" in bpy.data.collections:
-                #Remove any prior baked objects
+                # Remove any prior baked objects
                 bpy.data.collections.remove(bpy.data.collections["TextureBake_Bakes"])
 
-            #Bake
+            # Bake
             ts = datetime.now()
             commence_bake(needed_bake_modes)
             tf = datetime.now()
             s = (tf-ts).seconds
-            functions.printmsg(f"Time taken - {s} seconds ({floor(s/60)} minutes, {s%60} seconds)")
+            functions.print_msg(f"Time taken - {s} seconds ({floor(s/60)} minutes, {s%60} seconds)")
 
             self.report({"INFO"}, "Bake complete")
             return {'FINISHED'}
 
+        # We are in foreground, do usual checks
+        for mode in needed_bake_modes:
+            if not functions.check_scene(bpy.context.selected_objects, mode):
+                return {"CANCELLED"}
 
-        #We are in foreground, do usual checks
-        result = True
-        for need in needed_bake_modes:
-            if not functions.startingChecks(bpy.context.selected_objects, need):
-                result = False
-
-        if not result:
-            return {"CANCELLED"}
-
-
-        #If the user requested background mode, fire that up now and exit
-        if bpy.context.scene.TextureBake_Props.bgbake == "bg":
+        # If the user requested background mode, fire that up now and exit
+        if bpy.context.scene.TextureBake_Props.background_bake == "bg":
             bpy.ops.wm.save_mainfile()
             filepath = filepath = bpy.data.filepath
             process = subprocess.Popen(
@@ -196,20 +178,19 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
                 bpy.ops.texture_bake.bake();"],
                 shell=False)
 
-            bgbake_ops.bgops_list.append([process, bpy.context.scene.TextureBake_Props.prepmesh,
-                bpy.context.scene.TextureBake_Props.hidesourceobjects, bpy.context.scene.TextureBake_Props.bgbake_name])
+            background_bake_ops.bgops_list.append([process, bpy.context.scene.TextureBake_Props.prep_mesh,
+                bpy.context.scene.TextureBake_Props.hide_source_objects, bpy.context.scene.TextureBake_Props.background_bake_name])
 
             self.report({"INFO"}, "Background bake process started")
             return {'FINISHED'}
 
-        #If we are doing this here and now, get on with it
-
-        #Create a bake operation
+        # If we are doing this here and now, get on with it
+        # Create a bake operation
         ts = datetime.now()
         commence_bake(needed_bake_modes)
         tf = datetime.now()
         s = (tf-ts).seconds
-        functions.printmsg(f"Time taken - {s} seconds ({floor(s/60)} minutes, {s%60} seconds)")
+        functions.print_msg(f"Time taken - {s} seconds ({floor(s/60)} minutes, {s%60} seconds)")
 
         self.report({"INFO"}, "Bake complete")
         return {'FINISHED'}
@@ -267,7 +248,6 @@ class TEXTUREBAKE_OT_reset_name_format(bpy.types.Operator):
     def execute(self, context):
         from .ui import TextureBakePreferences
         TextureBakePreferences.reset_img_string()
-
         return {'FINISHED'}
 
 
@@ -279,7 +259,6 @@ class TEXTUREBAKE_OT_reset_aliases(bpy.types.Operator):
     def execute(self, context):
         from .ui import TextureBakePreferences
         TextureBakePreferences.reset_aliases()
-
         return {'FINISHED'}
 
 
@@ -291,29 +270,26 @@ class TEXTUREBAKE_OT_bake_status(bpy.types.Operator):
     def execute(self, context):
         msg_items = []
 
-
-        #Display remaining
-        if len(bgbake_ops.bgops_list) == 0:
+        # Display remaining
+        if len(background_bake_ops.bgops_list) == 0:
             msg_items.append("No background bakes are currently running")
-
         else:
             msg_items.append(f"--------------------------")
-            for p in bgbake_ops.bgops_list:
+            for p in background_bake_ops.bgops_list:
 
                 t = Path(tempfile.gettempdir())
-                t = t / f"TextureBake_Bgbake_{str(p[0].pid)}"
+                t = t / f"TextureBake_background_bake_{str(p[0].pid)}"
                 try:
                     with open(str(t), "r") as progfile:
                         progress = progfile.readline()
                 except:
-                    #No file yet, as no bake operation has completed yet. Holding message
+                    # No file yet, as no bake operation has completed yet. Holding message
                     progress = 0
 
                 msg_items.append(f"RUNNING: Process ID: {str(p[0].pid)} - Progress {progress}%")
                 msg_items.append(f"--------------------------")
 
-        functions.ShowMessageBox(msg_items, "Background Bake Status(es)")
-
+        functions.show_message_box(msg_items, "Background Bake Status(es)")
         return {'FINISHED'}
 
 
@@ -323,118 +299,78 @@ class TEXTUREBAKE_OT_bake_import(bpy.types.Operator):
     bl_label = "Import baked objects previously baked in the background"
 
     def execute(self, context):
-
         if bpy.context.mode != "OBJECT":
             self.report({"ERROR"}, "You must be in object mode")
             return {'CANCELLED'}
 
-
-
-        for p in bgbake_ops.bgops_list_finished:
-
+        for p in background_bake_ops.bgops_list_finished:
             savepath = Path(bpy.data.filepath).parent
             pid_str = str(p[0].pid)
             path = savepath / (pid_str + ".blend")
             path = str(path) + "\\Collection\\"
 
-            #Record the objects and collections before append (as append doesn't give us a reference to the new stuff)
+            # Record the objects and collections before append (as append doesn't give us a reference to the new stuff)
             functions.spot_new_items(initialise=True, item_type="objects")
             functions.spot_new_items(initialise=True, item_type="collections")
             functions.spot_new_items(initialise=True, item_type="images")
 
-
-            #Append
+            # Append
             bpy.ops.wm.append(filename="TextureBake_Bakes", directory=path, use_recursive=False, active_collection=False)
 
-            # #No idea why we have to do this, but apparently we do
-            # for img in bpy.data.images:
-                # try:
-                    # if img["SB"] != "":
-                        # img.filepath = img.filepath.replace("../../", "")
-                # except:
-                    # pass
-
-            #If we didn't actually want the objects, delete them
+            # If we didn't actually want the objects, delete them
             if not p[1]:
-                #Delete objects we just imported (leaving only textures)
-
-                # for obj in bpy.data.objects:
-                    # if not obj.name in objects_before_names:
-                        # bpy.data.objects.remove(obj)
-                # for col in bpy.data.collections:
-                    # if not col.name in cols_before_names:
-                        # bpy.data.collections.remove(col)
-
+                # Delete objects we just imported (leaving only textures)
                 for obj_name in functions.spot_new_items(initialise=False, item_type = "objects"):
                     bpy.data.objects.remove(bpy.data.objects[obj_name])
                 for col_name in functions.spot_new_items(initialise=False, item_type = "collections"):
                     bpy.data.collections.remove(bpy.data.collections[col_name])
 
-
-            #If we have to hide the source objects, do it
+            # If we have to hide the source objects, do it
             if p[2]:
-                #Get the newly introduced objects:
+                # Get the newly introduced objects:
                 objects_before_names = functions.spot_new_items(initialise=False, item_type="objects")
 
                 for obj_name in objects_before_names:
-                    #Try this in case there are issues with long object names.. better than a crash
+                    # Try this in case there are issues with long object names.. better than a crash
                     try:
                         bpy.data.objects[obj_name.replace("_Baked", "")].hide_set(True)
                     except:
                         pass
 
-
-            #Delete the temp blend file
+            # Delete the temp blend file
             try:
                 os.remove(str(savepath / pid_str) + ".blend")
                 os.remove(str(savepath / pid_str) + ".blend1")
             except:
                 pass
 
-        #Clear list for next time
-        bgbake_ops.bgops_list_finished = []
+        # Clear list for next time
+        background_bake_ops.bgops_list_finished = []
 
-
-        #Confirm back to user
+        # Confirm back to user
         self.report({"INFO"}, "Import complete")
 
         messagelist = []
-        #messagelist.append(f"{len(bpy.data.objects)-len(objects_before_names)} objects imported")
-        #messagelist.append(f"{len(bpy.data.images)-len(images_before_names)} textures imported")
-
         messagelist.append(f"{len(functions.spot_new_items(initialise=False, item_type='objects'))} objects imported")
         messagelist.append(f"{len(functions.spot_new_items(initialise=False, item_type='images'))} textures imported")
+        functions.show_message_box(messagelist, "Import complete", icon = 'INFO')
 
-        functions.ShowMessageBox(messagelist, "Import complete", icon = 'INFO')
-
-
-        #If we imported an image, and we already had an image with the same name, get rid of the original in favour of the imported
+        # If we imported an image, and we already had an image with the same name, get rid of the original in favour of the imported
         new_images_names = functions.spot_new_items(initialise=False, item_type="images")
 
-
-        # images_before_names #We have a list of the names before
-        # #Get a list of the names after
-        # images_after_names = []
-        # for img in bpy.data.images:
-            # images_after_names.append(img.name)
-
-        # #Compaure lists
-        # new_images_names = functions.diff(images_after_names, images_before_names)
-
-        #Find any .001s
+        # Find any .001s
         for imgname in new_images_names:
             try:
                 int(imgname[-3:])
 
-                #Delete the existing version
+                # Delete the existing version
                 bpy.data.images.remove(bpy.data.images[imgname[0:-4]])
 
-                #Rename our version
+                # Rename our version
                 bpy.data.images[imgname].name = imgname[0:-4]
 
             except ValueError:
                 pass
-
 
         return {'FINISHED'}
 
@@ -447,85 +383,78 @@ class TEXTUREBAKE_OT_bake_import_individual(bpy.types.Operator):
     pnum: bpy.props.IntProperty()
 
     def execute(self, context):
-
         if bpy.context.mode != "OBJECT":
             self.report({"ERROR"}, "You must be in object mode")
             return {'CANCELLED'}
 
-        #Need to get the actual SINGLE entry from the list
-        p = [p for p in bgbake_ops.bgops_list_finished if p[0].pid == self.pnum]
+        # Need to get the actual SINGLE entry from the list
+        p = [p for p in background_bake_ops.bgops_list_finished if p[0].pid == self.pnum]
         assert(len(p) == 1)
         p = p[0]
-
 
         savepath = Path(bpy.data.filepath).parent
         pid_str = str(p[0].pid)
         path = savepath / (pid_str + ".blend")
         path = str(path) + "\\Collection\\"
 
-        #Record the objects and collections before append (as append doesn't give us a reference to the new stuff)
+        # Record the objects and collections before append (as append doesn't give us a reference to the new stuff)
         functions.spot_new_items(initialise=True, item_type="objects")
         functions.spot_new_items(initialise=True, item_type="collections")
         functions.spot_new_items(initialise=True, item_type="images")
 
-        #Append
+        # Append
         bpy.ops.wm.append(filename="TextureBake_Bakes", directory=path, use_recursive=False, active_collection=False)
 
-
-        #If we didn't actually want the objects, delete them
+        # If we didn't actually want the objects, delete them
         if not p[1]:
-
             for obj_name in functions.spot_new_items(initialise=False, item_type = "objects"):
                 bpy.data.objects.remove(bpy.data.objects[obj_name])
             for col_name in functions.spot_new_items(initialise=False, item_type = "collections"):
                 bpy.data.collections.remove(bpy.data.collections[col_name])
 
-
-        #If we have to hide the source objects, do it
+        # If we have to hide the source objects, do it
         if p[2]:
-            #Get the newly introduced objects:
+            # Get the newly introduced objects:
             objects_before_names = functions.spot_new_items(initialise=False, item_type="objects")
 
             for obj_name in objects_before_names:
-                #Try this in case there are issues with long object names.. better than a crash
+                # Try this in case there are issues with long object names.. better than a crash
                 try:
                     bpy.data.objects[obj_name.replace("_Baked", "")].hide_set(True)
                 except:
                     pass
 
-
-        #Delete the temp blend file
+        # Delete the temp blend file
         try:
             os.remove(str(savepath / pid_str) + ".blend")
             os.remove(str(savepath / pid_str) + ".blend1")
         except:
             pass
 
+        # Remove this P from the list
+        background_bake_ops.bgops_list_finished = [p for p in background_bake_ops.bgops_list_finished if p[0].pid != self.pnum]
 
-        #Remove this P from the list
-        bgbake_ops.bgops_list_finished = [p for p in bgbake_ops.bgops_list_finished if p[0].pid != self.pnum]
-
-        #Confirm back to user
+        # Confirm back to user
         self.report({"INFO"}, "Import complete")
 
         messagelist = []
         messagelist.append(f"{len(functions.spot_new_items(initialise=False, item_type='objects'))} objects imported")
         messagelist.append(f"{len(functions.spot_new_items(initialise=False, item_type='images'))} textures imported")
 
-        functions.ShowMessageBox(messagelist, "Import complete", icon = 'INFO')
+        functions.show_message_box(messagelist, "Import complete", icon = 'INFO')
 
-        #If we imported an image, and we already had an image with the same name, get rid of the original in favour of the imported
+        # If we imported an image, and we already had an image with the same name, get rid of the original in favour of the imported
         new_images_names = functions.spot_new_items(initialise=False, item_type="images")
 
-        #Find any .001s
+        # Find any .001s
         for imgname in new_images_names:
             try:
                 int(imgname[-3:])
 
-                #Delete the existing version
+                # Delete the existing version
                 bpy.data.images.remove(bpy.data.images[imgname[0:-4]])
 
-                #Rename our version
+                # Rename our version
                 bpy.data.images[imgname].name = imgname[0:-4]
 
             except ValueError:
@@ -542,7 +471,7 @@ class TEXTUREBAKE_OT_bake_delete(bpy.types.Operator):
     def execute(self, context):
         savepath = Path(bpy.data.filepath).parent
 
-        for p in bgbake_ops.bgops_list_finished:
+        for p in background_bake_ops.bgops_list_finished:
             pid_str = str(p[0].pid)
             try:
                 os.remove(str(savepath / pid_str) + ".blend")
@@ -550,8 +479,7 @@ class TEXTUREBAKE_OT_bake_delete(bpy.types.Operator):
             except:
                 pass
 
-        bgbake_ops.bgops_list_finished = []
-
+        background_bake_ops.bgops_list_finished = []
         return {'FINISHED'}
 
 
@@ -571,8 +499,7 @@ class TEXTUREBAKE_OT_bake_delete_individual(bpy.types.Operator):
         except:
             pass
 
-        bgbake_ops.bgops_list_finished = [p for p in bgbake_ops.bgops_list_finished if p[0].pid != self.pnum]
-
+        background_bake_ops.bgops_list_finished = [p for p in background_bake_ops.bgops_list_finished if p[0].pid != self.pnum]
         return {'FINISHED'}
 
 
@@ -591,7 +518,6 @@ class TEXTUREBAKE_OT_import_materials(bpy.types.Operator):
     def execute(self, context):
         functions.import_needed_specials_materials()
         self.report({"INFO"}, "Materials imported into scene. Create a dummy object and edit them. They will be used for Specials bakes of this type going forwards")
-
         return {'FINISHED'}
 
 
@@ -605,23 +531,19 @@ class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
         return bpy.context.scene.TextureBake_Props.preset_name != ""
 
     def execute(self, context):
-
         d = {}
-
-        #TextureBake internal
         d["global_mode"] = bpy.context.scene.TextureBake_Props.global_mode
         d["ray_distance"] = bpy.context.scene.TextureBake_Props.ray_distance
         d["cage_extrusion"] = bpy.context.scene.TextureBake_Props.cage_extrusion
-        d["selected_s2a"] = bpy.context.scene.TextureBake_Props.selected_s2a
-        d["mergedBake"] = bpy.context.scene.TextureBake_Props.mergedBake
-        d["mergedBakeName"] = bpy.context.scene.TextureBake_Props.mergedBakeName
-        d["cycles_s2a"] = bpy.context.scene.TextureBake_Props.cycles_s2a
-        d["imgheight"] = bpy.context.scene.TextureBake_Props.imgheight
-        d["imgwidth"] = bpy.context.scene.TextureBake_Props.imgwidth
-        d["outputheight"] = bpy.context.scene.TextureBake_Props.outputheight
-        d["outputwidth"] = bpy.context.scene.TextureBake_Props.outputwidth
-        d["everything32bitfloat"] = bpy.context.scene.TextureBake_Props.everything32bitfloat
-        d["useAlpha"] = bpy.context.scene.TextureBake_Props.useAlpha
+        d["selected_to_target"] = bpy.context.scene.TextureBake_Props.selected_to_target
+        d["merged_bake"] = bpy.context.scene.TextureBake_Props.merged_bake
+        d["merged_bake_name"] = bpy.context.scene.TextureBake_Props.merged_bake_name
+        d["input_height"] = bpy.context.scene.TextureBake_Props.input_height
+        d["input_width"] = bpy.context.scene.TextureBake_Props.input_width
+        d["output_height"] = bpy.context.scene.TextureBake_Props.output_height
+        d["output_width"] = bpy.context.scene.TextureBake_Props.output_width
+        d["bake_32bit_float"] = bpy.context.scene.TextureBake_Props.bake_32bit_float
+        d["use_alpha"] = bpy.context.scene.TextureBake_Props.use_alpha
         d["rough_glossy_switch"] = bpy.context.scene.TextureBake_Props.rough_glossy_switch
         d["normal_format_switch"] = bpy.context.scene.TextureBake_Props.normal_format_switch
         d["tex_per_mat"] = bpy.context.scene.TextureBake_Props.tex_per_mat
@@ -647,38 +569,32 @@ class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
         d["lightmap_apply_colman"] = bpy.context.scene.TextureBake_Props.lightmap_apply_colman
         d["selected_lightmap_denoise"] = bpy.context.scene.TextureBake_Props.selected_lightmap_denoise
         d["prefer_existing_uvmap"] = bpy.context.scene.TextureBake_Props.prefer_existing_uvmap
-        d["restoreOrigUVmap"] = bpy.context.scene.TextureBake_Props.restoreOrigUVmap
-        d["uvpackmargin"] = bpy.context.scene.TextureBake_Props.uvpackmargin
-        d["averageUVsize"] = bpy.context.scene.TextureBake_Props.averageUVsize
+        d["restore_active_uvmap"] = bpy.context.scene.TextureBake_Props.restore_active_uvmap
         d["uv_mode"] = bpy.context.scene.TextureBake_Props.uv_mode
         d["udim_tiles"] = bpy.context.scene.TextureBake_Props.udim_tiles
-        d["unwrapmargin"] = bpy.context.scene.TextureBake_Props.unwrapmargin
-        d["channelpackfileformat"] = bpy.context.scene.TextureBake_Props.channelpackfileformat
-        d["saveExternal"] = bpy.context.scene.TextureBake_Props.saveExternal
-        d["exportFolderPerObject"] = bpy.context.scene.TextureBake_Props.exportFolderPerObject
-        d["saveObj"] = bpy.context.scene.TextureBake_Props.saveObj
-        d["fbxName"] = bpy.context.scene.TextureBake_Props.fbxName
-        d["prepmesh"] = bpy.context.scene.TextureBake_Props.prepmesh
-        d["hidesourceobjects"] = bpy.context.scene.TextureBake_Props.hidesourceobjects
+        d["cp_file_format"] = bpy.context.scene.TextureBake_Props.cp_file_format
+        d["export_textures"] = bpy.context.scene.TextureBake_Props.export_textures
+        d["export_folder_per_object"] = bpy.context.scene.TextureBake_Props.export_folder_per_object
+        d["export_mesh"] = bpy.context.scene.TextureBake_Props.export_mesh
+        d["fbx_name"] = bpy.context.scene.TextureBake_Props.fbx_name
+        d["prep_mesh"] = bpy.context.scene.TextureBake_Props.prep_mesh
+        d["hide_source_objects"] = bpy.context.scene.TextureBake_Props.hide_source_objects
         d["preserve_materials"] = bpy.context.scene.TextureBake_Props.preserve_materials
-        d["everything16bit"] = bpy.context.scene.TextureBake_Props.everything16bit
-        d["exportfileformat"] = bpy.context.scene.TextureBake_Props.exportfileformat
-        d["saveFolder"] = bpy.context.scene.TextureBake_Props.saveFolder
-        d["selected_applycolmantocol"] = bpy.context.scene.TextureBake_Props.selected_applycolmantocol
-        d["exportcyclescolspace"] = bpy.context.scene.TextureBake_Props.exportcyclescolspace
-        d["folderdatetime"] = bpy.context.scene.TextureBake_Props.folderdatetime
-        d["rundenoise"] = bpy.context.scene.TextureBake_Props.rundenoise
-        d["applymodsonmeshexport"] = bpy.context.scene.TextureBake_Props.applymodsonmeshexport
-        d["advancedobjectselection"] = bpy.context.scene.TextureBake_Props.advancedobjectselection
-        d["bakeobjs_advanced_list_index"] = bpy.context.scene.TextureBake_Props.bakeobjs_advanced_list_index
-        d["bgbake"] = bpy.context.scene.TextureBake_Props.bgbake
-        d["memLimit"] = bpy.context.scene.TextureBake_Props.memLimit
-        d["batchName"] = bpy.context.scene.TextureBake_Props.batchName
-        d["showtips"] = bpy.context.scene.TextureBake_Props.showtips
+        d["export_16bit"] = bpy.context.scene.TextureBake_Props.export_16bit
+        d["export_file_format"] = bpy.context.scene.TextureBake_Props.export_file_format
+        d["export_folder_name"] = bpy.context.scene.TextureBake_Props.export_folder_name
+        d["export_color_space"] = bpy.context.scene.TextureBake_Props.export_color_space
+        d["export_datetime"] = bpy.context.scene.TextureBake_Props.export_datetime
+        d["run_denoise"] = bpy.context.scene.TextureBake_Props.run_denoise
+        d["export_apply_modifiers"] = bpy.context.scene.TextureBake_Props.export_apply_modifiers
+        d["use_object_list"] = bpy.context.scene.TextureBake_Props.use_object_list
+        d["object_list_index"] = bpy.context.scene.TextureBake_Props.object_list_index
+        d["background_bake"] = bpy.context.scene.TextureBake_Props.background_bake
+        d["memory_limit"] = bpy.context.scene.TextureBake_Props.memory_limit
+        d["batch_name"] = bpy.context.scene.TextureBake_Props.batch_name
         d["first_texture_show"] = bpy.context.scene.TextureBake_Props.first_texture_show
-        d["bgbake_name"] = bpy.context.scene.TextureBake_Props.bgbake_name
+        d["background_bake_name"] = bpy.context.scene.TextureBake_Props.background_bake_name
 
-        #Non TextureBake settings
         d["bake_type"] = bpy.context.scene.cycles.bake_type
         d["use_pass_direct"] = bpy.context.scene.render.bake.use_pass_direct
         d["use_pass_indirect"] = bpy.context.scene.render.bake.use_pass_indirect
@@ -694,27 +610,20 @@ class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
         d["use_pass_color"] = bpy.context.scene.render.bake.use_pass_color
         d["bake.margin"] = bpy.context.scene.render.bake.margin
 
-        #Show/Hide
-        d["showtips"] = bpy.context.scene.TextureBake_Props.showtips
-
-        #Grab the objects in the advanced list (if any)
-        d["object_list"] = [o.name for o in bpy.context.scene.TextureBake_Props.bakeobjs_advanced_list]
-        #Grab the target objects if there is one
-        if bpy.context.scene.TextureBake_Props.targetobj != None:
-            d["pbr_target_obj"] =  bpy.context.scene.TextureBake_Props.targetobj.name
+        # Grab the objects in the advanced list (if any)
+        d["object_list"] = [o.name for o in bpy.context.scene.TextureBake_Props.object_list]
+        # Grab the target objects if there is one
+        if bpy.context.scene.TextureBake_Props.target_object != None:
+            d["target_object"] = bpy.context.scene.TextureBake_Props.target_object.name
         else:
-            d["pbr_target_obj"] = None
-        if bpy.context.scene.TextureBake_Props.targetobj_cycles != None:
-            d["cycles_target_obj"] = bpy.context.scene.TextureBake_Props.targetobj_cycles.name
-        else:
-            d["cycles_target_obj"] = None
-        #Cage object if there is one
+            d["target_object"] = None
+        # Cage object if there is one
         if bpy.context.scene.render.bake.cage_object != None:
             d["cage_object"] = bpy.context.scene.render.bake.cage_object.name
         else:
             d["cage_object"] = None
 
-        #Channel packed images
+        # Channel packed images
         cp_images_dict = {}
         for cpi in bpy.context.scene.TextureBake_Props.cp_list:
             thiscpi_dict = {}
@@ -729,35 +638,34 @@ class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
         if len(cp_images_dict)>0:
             d["channel_packed_images"] = cp_images_dict
 
-        #Find where we want to save
+        # Find where we want to save
         p = Path(bpy.utils.script_path_user())
         p = p.parents[1]
-        savename = functions.cleanFileName(bpy.context.scene.TextureBake_Props.preset_name)
+        savename = functions.clean_file_name(bpy.context.scene.TextureBake_Props.preset_name)
 
-        #Check for data directory
+        # Check for data directory
         if not os.path.isdir(str(p / "data")):
-            #Create it
+            # Create it
             os.mkdir(str(p / "data"))
 
         p = p / "data"
 
-        #Check for TextureBake directory
+        # Check for TextureBake directory
         if not os.path.isdir(str(p / "TextureBake")):
-            #Create it
+            # Create it
             os.mkdir(str(p / "TextureBake"))
 
         p = p / "TextureBake"
 
-        functions.printmsg(f"Saving preset to {str(p)}")
+        functions.print_msg(f"Saving preset to {str(p)}")
 
         jsonString = json.dumps(d)
         jsonFile = open(str(p / savename), "w")
         jsonFile.write(jsonString)
         jsonFile.close()
 
-        #Refreh the list
+        # Refreh the list
         bpy.ops.texture_bake.refresh_presets()
-
 
         self.report({"INFO"}, "Preset saved")
         return {'FINISHED'}
@@ -777,9 +685,8 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
             return False
 
     def execute(self, context):
-
-        #Load it
-        loadname = functions.cleanFileName(\
+        # Load it
+        loadname = functions.clean_file_name(\
             bpy.context.scene.TextureBake_Props.presets_list[\
             bpy.context.scene.TextureBake_Props.presets_list_index].name)
 
@@ -787,7 +694,7 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
         p = p.parents[1]
         p = p /  "data" / "TextureBake" / loadname
 
-        functions.printmsg(f"Loading preset from {str(p)}")
+        functions.print_msg(f"Loading preset from {str(p)}")
 
         try:
             fileObject = open(str(p), "r")
@@ -796,25 +703,21 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
             self.report({"ERROR"}, f"Preset {loadname} no longer exists")
             return {'CANCELLED'}
 
-
-
         jsonContent = fileObject.read()
         d = json.loads(jsonContent)
 
-        #TextureBake internal
         bpy.context.scene.TextureBake_Props.global_mode = d["global_mode"]
         bpy.context.scene.TextureBake_Props.ray_distance = d["ray_distance"]
         bpy.context.scene.TextureBake_Props.cage_extrusion = d["cage_extrusion"]
-        bpy.context.scene.TextureBake_Props.selected_s2a = d["selected_s2a"]
-        bpy.context.scene.TextureBake_Props.mergedBake = d["mergedBake"]
-        bpy.context.scene.TextureBake_Props.mergedBakeName = d["mergedBakeName"]
-        bpy.context.scene.TextureBake_Props.cycles_s2a = d["cycles_s2a"]
-        bpy.context.scene.TextureBake_Props.imgheight = d["imgheight"]
-        bpy.context.scene.TextureBake_Props.imgwidth = d["imgwidth"]
-        bpy.context.scene.TextureBake_Props.outputheight = d["outputheight"]
-        bpy.context.scene.TextureBake_Props.outputwidth = d["outputwidth"]
-        bpy.context.scene.TextureBake_Props.everything32bitfloat = d["everything32bitfloat"]
-        bpy.context.scene.TextureBake_Props.useAlpha = d["useAlpha"]
+        bpy.context.scene.TextureBake_Props.selected_to_target = d["selected_to_target"]
+        bpy.context.scene.TextureBake_Props.merged_bake = d["merged_bake"]
+        bpy.context.scene.TextureBake_Props.merged_bake_name = d["merged_bake_name"]
+        bpy.context.scene.TextureBake_Props.input_height = d["input_height"]
+        bpy.context.scene.TextureBake_Props.input_width = d["input_width"]
+        bpy.context.scene.TextureBake_Props.output_height = d["output_height"]
+        bpy.context.scene.TextureBake_Props.output_width = d["output_width"]
+        bpy.context.scene.TextureBake_Props.bake_32bit_float = d["bake_32bit_float"]
+        bpy.context.scene.TextureBake_Props.use_alpha = d["use_alpha"]
         bpy.context.scene.TextureBake_Props.rough_glossy_switch = d["rough_glossy_switch"]
         bpy.context.scene.TextureBake_Props.normal_format_switch = d["normal_format_switch"]
         bpy.context.scene.TextureBake_Props.tex_per_mat = d["tex_per_mat"]
@@ -839,38 +742,33 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
         bpy.context.scene.TextureBake_Props.selected_lightmap = d["selected_lightmap"]
         bpy.context.scene.TextureBake_Props.lightmap_apply_colman = d["lightmap_apply_colman"]
         bpy.context.scene.TextureBake_Props.selected_lightmap_denoise = d["selected_lightmap_denoise"]
-        bpy.context.scene.TextureBake_Props.restoreOrigUVmap = d["restoreOrigUVmap"]
-        bpy.context.scene.TextureBake_Props.uvpackmargin = d["uvpackmargin"]
-        bpy.context.scene.TextureBake_Props.averageUVsize = d["averageUVsize"]
+        bpy.context.scene.TextureBake_Props.restore_active_uvmap = d["restore_active_uvmap"]
         bpy.context.scene.TextureBake_Props.uv_mode = d["uv_mode"]
         bpy.context.scene.TextureBake_Props.udim_tiles = d["udim_tiles"]
-        bpy.context.scene.TextureBake_Props.unwrapmargin = d["unwrapmargin"]
-        bpy.context.scene.TextureBake_Props.channelpackfileformat = d["channelpackfileformat"]
-        bpy.context.scene.TextureBake_Props.saveExternal = d["saveExternal"]
-        bpy.context.scene.TextureBake_Props.exportFolderPerObject = d["exportFolderPerObject"]
-        bpy.context.scene.TextureBake_Props.saveObj = d["saveObj"]
-        bpy.context.scene.TextureBake_Props.fbxName = d["fbxName"]
-        bpy.context.scene.TextureBake_Props.prepmesh = d["prepmesh"]
-        bpy.context.scene.TextureBake_Props.hidesourceobjects = d["hidesourceobjects"]
+        bpy.context.scene.TextureBake_Props.cp_file_format = d["cp_file_format"]
+        bpy.context.scene.TextureBake_Props.export_textures = d["export_textures"]
+        bpy.context.scene.TextureBake_Props.export_folder_per_object = d["export_folder_per_object"]
+        bpy.context.scene.TextureBake_Props.export_mesh = d["export_mesh"]
+        bpy.context.scene.TextureBake_Props.fbx_name = d["fbx_name"]
+        bpy.context.scene.TextureBake_Props.prep_mesh = d["prep_mesh"]
+        bpy.context.scene.TextureBake_Props.hide_source_objects = d["hide_source_objects"]
         bpy.context.scene.TextureBake_Props.preserve_materials = d["preserve_materials"]
-        bpy.context.scene.TextureBake_Props.everything16bit = d["everything16bit"]
-        bpy.context.scene.TextureBake_Props.exportfileformat = d["exportfileformat"]
-        bpy.context.scene.TextureBake_Props.saveFolder = d["saveFolder"]
-        bpy.context.scene.TextureBake_Props.selected_applycolmantocol = d["selected_applycolmantocol"]
-        bpy.context.scene.TextureBake_Props.exportcyclescolspace = d["exportcyclescolspace"]
-        bpy.context.scene.TextureBake_Props.folderdatetime = d["folderdatetime"]
-        bpy.context.scene.TextureBake_Props.rundenoise = d["rundenoise"]
-        bpy.context.scene.TextureBake_Props.applymodsonmeshexport = d["applymodsonmeshexport"]
-        bpy.context.scene.TextureBake_Props.advancedobjectselection = d["advancedobjectselection"]
-        bpy.context.scene.TextureBake_Props.bakeobjs_advanced_list_index = d["bakeobjs_advanced_list_index"]
-        bpy.context.scene.TextureBake_Props.bgbake = d["bgbake"]
-        bpy.context.scene.TextureBake_Props.memLimit = d["memLimit"]
-        bpy.context.scene.TextureBake_Props.batchName = d["batchName"]
+        bpy.context.scene.TextureBake_Props.export_16bit = d["export_16bit"]
+        bpy.context.scene.TextureBake_Props.export_file_format = d["export_file_format"]
+        bpy.context.scene.TextureBake_Props.export_folder_name = d["export_folder_name"]
+        bpy.context.scene.TextureBake_Props.export_color_space = d["export_color_space"]
+        bpy.context.scene.TextureBake_Props.export_datetime = d["export_datetime"]
+        bpy.context.scene.TextureBake_Props.run_denoise = d["run_denoise"]
+        bpy.context.scene.TextureBake_Props.export_apply_modifiers = d["export_apply_modifiers"]
+        bpy.context.scene.TextureBake_Props.use_object_list = d["use_object_list"]
+        bpy.context.scene.TextureBake_Props.object_list_index = d["object_list_index"]
+        bpy.context.scene.TextureBake_Props.background_bake = d["background_bake"]
+        bpy.context.scene.TextureBake_Props.memory_limit = d["memory_limit"]
+        bpy.context.scene.TextureBake_Props.batch_name = d["batch_name"]
         bpy.context.scene.TextureBake_Props.first_texture_show = d["first_texture_show"]
-        bpy.context.scene.TextureBake_Props.bgbake_name = d["bgbake_name"]
+        bpy.context.scene.TextureBake_Props.background_bake_name = d["background_bake_name"]
         bpy.context.scene.TextureBake_Props.prefer_existing_uvmap = d["prefer_existing_uvmap"]
 
-        #Non-TextureBake Settings
         bpy.context.scene.cycles.bake_type = d["bake_type"]
         bpy.context.scene.render.bake.use_pass_direct = d["use_pass_direct"]
         bpy.context.scene.render.bake.use_pass_indirect = d["use_pass_indirect"]
@@ -886,10 +784,7 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
         bpy.context.scene.render.bake.use_pass_color = d["use_pass_color"]
         bpy.context.scene.render.bake.margin = d["bake.margin"]
 
-        #Show/Hide
-        bpy.context.scene.TextureBake_Props.showtips = d["showtips"]
-
-        #Channel packing images
+        # Channel packing images
         if "channel_packed_images" in d:
             channel_packed_images = d["channel_packed_images"]
 
@@ -897,42 +792,37 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
                 bpy.context.scene.TextureBake_Props.cp_list.clear()
 
             for imgname in channel_packed_images:
-
                 thiscpi_dict = channel_packed_images[imgname]
 
-                #Create the list item
+                # Create the list item
                 li = bpy.context.scene.TextureBake_Props.cp_list.add()
                 li.name = imgname
 
-                #Set the list item properies
+                # Set the list item properies
                 li.R = thiscpi_dict["R"]
                 li.G = thiscpi_dict["G"]
                 li.B = thiscpi_dict["B"]
                 li.A = thiscpi_dict["A"]
-
                 li.file_format = thiscpi_dict["file_format"]
 
-        #And now the objects, if they are here
+        # And now the objects, if they are here
         for obj_name in d["object_list"]:
             if obj_name in bpy.data.objects:
-                #Find where name attribute of each object in the advanced selection list matches the name
-                l = [o.name for o in bpy.context.scene.TextureBake_Props.bakeobjs_advanced_list if o.name == obj_name]
+                # Find where name attribute of each object in the advanced selection list matches the name
+                l = [o.name for o in bpy.context.scene.TextureBake_Props.object_list if o.name == obj_name]
                 if len(l) == 0:
-                    #Not already in the list
-                    i = bpy.context.scene.TextureBake_Props.bakeobjs_advanced_list.add()
-                    i.name = obj_name #Advanced object list has a name and pointers arritbute
+                    # Not already in the list
+                    i = bpy.context.scene.TextureBake_Props.object_list.add()
+                    i.name = obj_name # Advanced object list has a name and pointers arritbute
                     i.obj_point = bpy.data.objects[obj_name]
 
-        if d["pbr_target_obj"] != None and d["pbr_target_obj"] in bpy.data.objects:
-            bpy.context.scene.TextureBake_Props.targetobj = bpy.data.objects[d["pbr_target_obj"]]
-        if d["cycles_target_obj"] != None and d["cycles_target_obj"] in bpy.data.objects:
-            bpy.context.scene.TextureBake_Props.targetobj_cycles = bpy.data.objects[d["cycles_target_obj"]]
-        #Cage object
+        if d["target_object"] != None and d["target_object"] in bpy.data.objects:
+            bpy.context.scene.TextureBake_Props.target_object = bpy.data.objects[d["target_object"]]
+        # Cage object
         if d["cage_object"] != None and d["cage_object"] in bpy.data.objects:
             bpy.context.scene.render.bake.cage_object = bpy.data.objects[d["cage_object"]]
 
         self.report({"INFO"}, f"Preset {loadname} loaded")
-
         return {'FINISHED'}
 
 
@@ -942,7 +832,6 @@ class TEXTUREBAKE_OT_refresh_presets(bpy.types.Operator):
     bl_label = "Refresh"
 
     def execute(self, context):
-
         bpy.context.scene.TextureBake_Props.presets_list.clear()
 
         p = Path(bpy.utils.script_path_user())
@@ -959,15 +848,10 @@ class TEXTUREBAKE_OT_refresh_presets(bpy.types.Operator):
             self.report({"INFO"}, "No presets found")
             return {'CANCELLED'}
 
-
-
-
         for preset in presets:
-            #List should be clear
+            # List should be clear
             i = bpy.context.scene.TextureBake_Props.presets_list.add()
             i.name = preset
-
-
 
         return {'FINISHED'}
 
@@ -985,9 +869,7 @@ class TEXTUREBAKE_OT_delete_preset(bpy.types.Operator):
         except:
             return False
 
-
     def execute(self, context):
-
         p = Path(bpy.utils.script_path_user())
         p = p.parents[1]
         p = p /  "data" / "TextureBake"
@@ -998,11 +880,7 @@ class TEXTUREBAKE_OT_delete_preset(bpy.types.Operator):
 
         os.remove(str(p))
 
-        #Refreh the list
-
         bpy.ops.texture_bake.refresh_presets()
-
-
         return {'FINISHED'}
 
 
@@ -1011,26 +889,23 @@ class TEXTUREBAKE_OT_increase_bake_res(bpy.types.Operator):
     bl_idname = "texture_bake.increase_bake_res"
     bl_label = "+1k"
 
-
     def execute(self, context):
+        x = bpy.context.scene.TextureBake_Props.input_width
+        bpy.context.scene.TextureBake_Props.input_width = x + 1024
+        y = bpy.context.scene.TextureBake_Props.input_height
+        bpy.context.scene.TextureBake_Props.input_height = y + 1024
 
-        x = bpy.context.scene.TextureBake_Props.imgwidth
-        bpy.context.scene.TextureBake_Props.imgwidth = x + 1024
-        y = bpy.context.scene.TextureBake_Props.imgheight
-        bpy.context.scene.TextureBake_Props.imgheight = y + 1024
+        while bpy.context.scene.TextureBake_Props.input_height % 1024 != 0:
+            bpy.context.scene.TextureBake_Props.input_height -= 1
 
-        while bpy.context.scene.TextureBake_Props.imgheight % 1024 != 0:
-            bpy.context.scene.TextureBake_Props.imgheight -= 1
+        while bpy.context.scene.TextureBake_Props.input_width % 1024 != 0:
+            bpy.context.scene.TextureBake_Props.input_width -= 1
 
-        while bpy.context.scene.TextureBake_Props.imgwidth % 1024 != 0:
-            bpy.context.scene.TextureBake_Props.imgwidth -= 1
-
-        result = min(bpy.context.scene.TextureBake_Props.imgwidth, bpy.context.scene.TextureBake_Props.imgheight)
-        bpy.context.scene.TextureBake_Props.imgwidth = result
-        bpy.context.scene.TextureBake_Props.imgheight = result
+        result = min(bpy.context.scene.TextureBake_Props.input_width, bpy.context.scene.TextureBake_Props.input_height)
+        bpy.context.scene.TextureBake_Props.input_width = result
+        bpy.context.scene.TextureBake_Props.input_height = result
 
         functions.auto_set_bake_margin()
-
         return {'FINISHED'}
 
 
@@ -1039,33 +914,29 @@ class TEXTUREBAKE_OT_decrease_bake_res(bpy.types.Operator):
     bl_idname = "texture_bake.decrease_bake_res"
     bl_label = "-1k"
 
-
     def execute(self, context):
+        x = bpy.context.scene.TextureBake_Props.input_width
+        bpy.context.scene.TextureBake_Props.input_width = x - 1024
+        y = bpy.context.scene.TextureBake_Props.input_height
+        bpy.context.scene.TextureBake_Props.input_height = y - 1024
 
-        x = bpy.context.scene.TextureBake_Props.imgwidth
-        bpy.context.scene.TextureBake_Props.imgwidth = x - 1024
-        y = bpy.context.scene.TextureBake_Props.imgheight
-        bpy.context.scene.TextureBake_Props.imgheight = y - 1024
+        if bpy.context.scene.TextureBake_Props.input_height < 1:
+            bpy.context.scene.TextureBake_Props.input_height = 1024
 
-        if bpy.context.scene.TextureBake_Props.imgheight < 1:
-            bpy.context.scene.TextureBake_Props.imgheight = 1024
+        if bpy.context.scene.TextureBake_Props.input_width < 1:
+            bpy.context.scene.TextureBake_Props.input_width = 1024
 
-        if bpy.context.scene.TextureBake_Props.imgwidth < 1:
-            bpy.context.scene.TextureBake_Props.imgwidth = 1024
+        while bpy.context.scene.TextureBake_Props.input_height % 1024 != 0:
+            bpy.context.scene.TextureBake_Props.input_height += 1
 
-        while bpy.context.scene.TextureBake_Props.imgheight % 1024 != 0:
-            bpy.context.scene.TextureBake_Props.imgheight += 1
+        while bpy.context.scene.TextureBake_Props.input_width % 1024 != 0:
+            bpy.context.scene.TextureBake_Props.input_width += 1
 
-        while bpy.context.scene.TextureBake_Props.imgwidth % 1024 != 0:
-            bpy.context.scene.TextureBake_Props.imgwidth += 1
-
-        result = max(bpy.context.scene.TextureBake_Props.imgwidth, bpy.context.scene.TextureBake_Props.imgheight)
-        bpy.context.scene.TextureBake_Props.imgwidth = result
-        bpy.context.scene.TextureBake_Props.imgheight = result
-
+        result = max(bpy.context.scene.TextureBake_Props.input_width, bpy.context.scene.TextureBake_Props.input_height)
+        bpy.context.scene.TextureBake_Props.input_width = result
+        bpy.context.scene.TextureBake_Props.input_height = result
 
         functions.auto_set_bake_margin()
-
         return {'FINISHED'}
 
 
@@ -1074,26 +945,23 @@ class TEXTUREBAKE_OT_increase_output_res(bpy.types.Operator):
     bl_idname = "texture_bake.increase_output_res"
     bl_label = "+1k"
 
-
     def execute(self, context):
+        x = bpy.context.scene.TextureBake_Props.output_width
+        bpy.context.scene.TextureBake_Props.output_width = x + 1024
+        y = bpy.context.scene.TextureBake_Props.output_height
+        bpy.context.scene.TextureBake_Props.output_height = y + 1024
 
-        x = bpy.context.scene.TextureBake_Props.outputwidth
-        bpy.context.scene.TextureBake_Props.outputwidth = x + 1024
-        y = bpy.context.scene.TextureBake_Props.outputheight
-        bpy.context.scene.TextureBake_Props.outputheight = y + 1024
+        while bpy.context.scene.TextureBake_Props.output_height % 1024 != 0:
+            bpy.context.scene.TextureBake_Props.output_height -= 1
 
-        while bpy.context.scene.TextureBake_Props.outputheight % 1024 != 0:
-            bpy.context.scene.TextureBake_Props.outputheight -= 1
+        while bpy.context.scene.TextureBake_Props.output_width % 1024 != 0:
+            bpy.context.scene.TextureBake_Props.output_width -= 1
 
-        while bpy.context.scene.TextureBake_Props.outputwidth % 1024 != 0:
-            bpy.context.scene.TextureBake_Props.outputwidth -= 1
-
-        result = min(bpy.context.scene.TextureBake_Props.outputwidth, bpy.context.scene.TextureBake_Props.outputheight)
-        bpy.context.scene.TextureBake_Props.outputwidth = result
-        bpy.context.scene.TextureBake_Props.outputheight = result
+        result = min(bpy.context.scene.TextureBake_Props.output_width, bpy.context.scene.TextureBake_Props.output_height)
+        bpy.context.scene.TextureBake_Props.output_width = result
+        bpy.context.scene.TextureBake_Props.output_height = result
 
         functions.auto_set_bake_margin()
-
         return {'FINISHED'}
 
 
@@ -1102,33 +970,29 @@ class TEXTUREBAKE_OT_decrease_output_res(bpy.types.Operator):
     bl_idname = "texture_bake.decrease_output_res"
     bl_label = "-1k"
 
-
     def execute(self, context):
+        x = bpy.context.scene.TextureBake_Props.output_width
+        bpy.context.scene.TextureBake_Props.output_width = x - 1024
+        y = bpy.context.scene.TextureBake_Props.output_height
+        bpy.context.scene.TextureBake_Props.output_height = y - 1024
 
-        x = bpy.context.scene.TextureBake_Props.outputwidth
-        bpy.context.scene.TextureBake_Props.outputwidth = x - 1024
-        y = bpy.context.scene.TextureBake_Props.outputheight
-        bpy.context.scene.TextureBake_Props.outputheight = y - 1024
+        if bpy.context.scene.TextureBake_Props.output_height < 1:
+            bpy.context.scene.TextureBake_Props.output_height = 1024
 
-        if bpy.context.scene.TextureBake_Props.outputheight < 1:
-            bpy.context.scene.TextureBake_Props.outputheight = 1024
+        if bpy.context.scene.TextureBake_Props.output_width < 1:
+            bpy.context.scene.TextureBake_Props.output_width = 1024
 
-        if bpy.context.scene.TextureBake_Props.outputwidth < 1:
-            bpy.context.scene.TextureBake_Props.outputwidth = 1024
+        while bpy.context.scene.TextureBake_Props.output_height % 1024 != 0:
+            bpy.context.scene.TextureBake_Props.output_height += 1
 
+        while bpy.context.scene.TextureBake_Props.output_width % 1024 != 0:
+            bpy.context.scene.TextureBake_Props.output_width += 1
 
-        while bpy.context.scene.TextureBake_Props.outputheight % 1024 != 0:
-            bpy.context.scene.TextureBake_Props.outputheight += 1
-
-        while bpy.context.scene.TextureBake_Props.outputwidth % 1024 != 0:
-            bpy.context.scene.TextureBake_Props.outputwidth += 1
-
-        result = max(bpy.context.scene.TextureBake_Props.outputwidth, bpy.context.scene.TextureBake_Props.outputheight)
-        bpy.context.scene.TextureBake_Props.outputwidth = result
-        bpy.context.scene.TextureBake_Props.outputheight = result
+        result = max(bpy.context.scene.TextureBake_Props.output_width, bpy.context.scene.TextureBake_Props.output_height)
+        bpy.context.scene.TextureBake_Props.output_width = result
+        bpy.context.scene.TextureBake_Props.output_height = result
 
         functions.auto_set_bake_margin()
-
         return {'FINISHED'}
 
 
@@ -1143,10 +1007,10 @@ class TEXTUREBAKE_OT_add_packed_texture(bpy.types.Operator):
 
     def execute(self, context):
         cp_list = bpy.context.scene.TextureBake_Props.cp_list
-        name = functions.cleanFileName(bpy.context.scene.TextureBake_Props.cp_name)
+        name = functions.clean_file_name(bpy.context.scene.TextureBake_Props.cp_name)
 
         if name in cp_list:
-            #Delete it
+            # Delete it
             index = bpy.context.scene.TextureBake_Props.cp_list.find(name)
             bpy.context.scene.TextureBake_Props.cp_list.remove(index)
 
@@ -1157,7 +1021,7 @@ class TEXTUREBAKE_OT_add_packed_texture(bpy.types.Operator):
         li.G = bpy.context.scene.TextureBake_Props.cptex_G
         li.B = bpy.context.scene.TextureBake_Props.cptex_B
         li.A = bpy.context.scene.TextureBake_Props.cptex_A
-        li.file_format = bpy.context.scene.TextureBake_Props.channelpackfileformat
+        li.file_format = bpy.context.scene.TextureBake_Props.cp_file_format
 
         bpy.context.scene.TextureBake_Props.cp_list_index = bpy.context.scene.TextureBake_Props.cp_list.find(name)
 
@@ -1180,7 +1044,6 @@ class TEXTUREBAKE_OT_delete_packed_texture(bpy.types.Operator):
 
     def execute(self, context):
         bpy.context.scene.TextureBake_Props.cp_list.remove(bpy.context.scene.TextureBake_Props.cp_list_index)
-
         self.report({"INFO"}, "CP texture deleted")
         return {'FINISHED'}
 
@@ -1195,17 +1058,9 @@ class TEXTUREBAKE_OT_reset_packed_textures(bpy.types.Operator):
         return True
 
     def execute(self, context):
-
         cp_list = bpy.context.scene.TextureBake_Props.cp_list
 
-        # bpy.context.scene.TextureBake_Props.selected_col = True
-        # bpy.context.scene.TextureBake_Props.selected_metal = True
-        # bpy.context.scene.TextureBake_Props.selected_rough = True
-        # bpy.context.scene.TextureBake_Props.selected_ao = True
-        # bpy.context.scene.TextureBake_Props.selected_alpha = True
-        # bpy.context.scene.TextureBake_Props.selected_specular = True
-
-        #Unity Lit shader. R=metalness, G=AO, B=N/A, A=Glossy.
+        # Unity Lit shader. R=metalness, G=AO, B=N/A, A=Glossy.
         li = cp_list.add()
         li.name = "Unity Lit Shader"
         li.file_format = "OPEN_EXR"
@@ -1214,7 +1069,7 @@ class TEXTUREBAKE_OT_reset_packed_textures(bpy.types.Operator):
         li.B = "none"
         li.A = "glossy"
 
-        #Unity Legacy Standard Diffuse. RGB=diffuse, A=alpha.
+        # Unity Legacy Standard Diffuse. RGB=diffuse, A=alpha.
         li = cp_list.add()
         li.name = "Unity Legacy Shader"
         li.file_format = "OPEN_EXR"
@@ -1223,7 +1078,7 @@ class TEXTUREBAKE_OT_reset_packed_textures(bpy.types.Operator):
         li.B = "diffuse"
         li.A = "alpha"
 
-        #ORM format. R=AO, G=Roughness, B=Metalness, A=N/A.
+        # ORM format. R=AO, G=Roughness, B=Metalness, A=N/A.
         li = cp_list.add()
         li.name = "ORM"
         li.file_format = "OPEN_EXR"
@@ -1232,7 +1087,7 @@ class TEXTUREBAKE_OT_reset_packed_textures(bpy.types.Operator):
         li.B = "metalness"
         li.A = "none"
 
-        #diffuse plus specular in the alpha channel.
+        # diffuse plus specular in the alpha channel.
         li = cp_list.add()
         li.name = "Diffuse and Spec in alpha"
         li.file_format = "OPEN_EXR"
@@ -1240,7 +1095,6 @@ class TEXTUREBAKE_OT_reset_packed_textures(bpy.types.Operator):
         li.G = "diffuse"
         li.B = "diffuse"
         li.A = "specular"
-
 
         self.report({"INFO"}, "Default textures added")
         return {'FINISHED'}
