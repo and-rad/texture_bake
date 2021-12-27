@@ -54,27 +54,15 @@ def does_object_have_bakes(obj):
         return "SB_objname" in img # SB_objname is always set. Even for merged_bake
 
 
-def gen_image_name(obj_name, baketype, demo=False):
-    print(baketype)
-
-    if not demo:
-        current_bake_op = MasterOperation.current_bake_operation
-
-    # First, let's get the format string we are working with
+def gen_image_name(obj_name, baketype):
+    current_bake_op = MasterOperation.current_bake_operation
     prefs = bpy.context.preferences.addons[__package__].preferences
     image_name = prefs.img_name_format
-
-    # "%OBJ%_%BATCH%_%BAKETYPE%"
 
     # The easy ones
     image_name = image_name.replace("%OBJ%", obj_name)
     image_name = image_name.replace("%BATCH%", bpy.context.scene.TextureBake_Props.batch_name)
-
-    # Bake mode
-    if not demo:
-        image_name = image_name.replace("%BAKEMODE%", current_bake_op.bake_mode)
-    else:
-        image_name = image_name.replace("%BAKEMODE%", "pbr")
+    image_name = image_name.replace("%BAKEMODE%", current_bake_op.bake_mode)
 
     # The hard ones
     if baketype == "diffuse":
@@ -103,7 +91,7 @@ def gen_image_name(obj_name, baketype, demo=False):
         image_name = image_name.replace("%BAKETYPE%", prefs.ao_alias)
     elif baketype == TextureBakeConstants.LIGHTMAP:
         image_name = image_name.replace("%BAKETYPE%", prefs.lightmap_alias)
-    elif baketype == TextureBakeConstants.COLOURID:
+    elif baketype == TextureBakeConstants.COLORID:
         image_name = image_name.replace("%BAKETYPE%", prefs.colid_alias)
     elif baketype == TextureBakeConstants.CURVATURE:
         image_name = image_name.replace("%BAKETYPE%", prefs.curvature_alias)
@@ -322,7 +310,7 @@ def check_scene(objects, bakemode):
         if bpy.context.scene.TextureBake_Props.rough_glossy_switch == "glossy":
             pbr_bakes = ["glossy" if bake == "roughness" else bake for bake in pbr_bakes]
         special_bakes = []
-        special_bakes.append(TextureBakeConstants.COLOURID) if bpy.context.scene.TextureBake_Props.selected_col_mats else False
+        special_bakes.append(TextureBakeConstants.COLORID) if bpy.context.scene.TextureBake_Props.selected_col_mats else False
         special_bakes.append(TextureBakeConstants.VERTEXCOL) if bpy.context.scene.TextureBake_Props.selected_col_vertex else False
         special_bakes.append(TextureBakeConstants.AO) if bpy.context.scene.TextureBake_Props.selected_ao else False
         special_bakes.append(TextureBakeConstants.THICKNESS) if bpy.context.scene.TextureBake_Props.selected_thickness else False

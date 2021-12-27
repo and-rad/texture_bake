@@ -52,7 +52,7 @@ def tex_per_mat_update(self, context):
 def prep_mesh_update(self, context):
     if context.scene.TextureBake_Props.prep_mesh == False:
         context.scene.TextureBake_Props.hide_source_objects = False
-        bpy.context.scene.TextureBake_Props.create_gltf_node = False
+        context.scene.TextureBake_Props.create_gltf_node = False
     else:
         context.scene.TextureBake_Props.hide_source_objects = True
 
@@ -63,20 +63,20 @@ def export_file_format_update(self,context):
 
 
 def export_textures_update(self, context):
-    if bpy.context.scene.TextureBake_Props.export_textures == False:
-        bpy.context.scene.TextureBake_Props.export_16bit = False
-        bpy.context.scene.TextureBake_Props.run_denoise = False
-        bpy.context.scene.TextureBake_Props.selected_lightmap_denoise = False
-        bpy.context.scene.TextureBake_Props.export_folder_per_object = False
-        bpy.context.scene.TextureBake_Props.uv_mode = "normal"
+    if context.scene.TextureBake_Props.export_textures == False:
+        context.scene.TextureBake_Props.export_16bit = False
+        context.scene.TextureBake_Props.run_denoise = False
+        context.scene.TextureBake_Props.selected_lightmap_denoise = False
+        context.scene.TextureBake_Props.export_folder_per_object = False
+        context.scene.TextureBake_Props.uv_mode = "normal"
 
 
 def global_mode_update(self, context):
-    if not bpy.context.scene.TextureBake_Props.global_mode == "cycles_bake":
-        bpy.context.scene.TextureBake_Props.tex_per_mat = False
+    if not context.scene.TextureBake_Props.global_mode == "cycles_bake":
+        context.scene.TextureBake_Props.tex_per_mat = False
 
-    if not bpy.context.scene.TextureBake_Props.global_mode == "pbr_bake":
-        bpy.context.scene.TextureBake_Props.selected_lightmap_denoise = False
+    if not context.scene.TextureBake_Props.global_mode == "pbr_bake":
+        context.scene.TextureBake_Props.selected_lightmap_denoise = False
 
 
 def presets_list_update(self,context):
@@ -86,41 +86,41 @@ def presets_list_update(self,context):
 
 
 def input_height_update(self,context):
-    bpy.context.scene.TextureBake_Props.output_height = bpy.context.scene.TextureBake_Props.input_height
+    context.scene.TextureBake_Props.output_height = context.scene.TextureBake_Props.input_height
 
 
 def input_width_update(self,context):
-    bpy.context.scene.TextureBake_Props.output_width = bpy.context.scene.TextureBake_Props.input_width
+    context.scene.TextureBake_Props.output_width = context.scene.TextureBake_Props.input_width
 
 
 def cp_list_index_update(self, context):
-    index = bpy.context.scene.TextureBake_Props.cp_list_index
-    cpt = bpy.context.scene.TextureBake_Props.cp_list[index]
+    index = context.scene.TextureBake_Props.cp_list_index
+    cpt = context.scene.TextureBake_Props.cp_list[index]
 
     messages = []
-    bpy.context.scene.TextureBake_Props.cp_file_format = cpt.file_format
+    context.scene.TextureBake_Props.cp_file_format = cpt.file_format
     try:
-        bpy.context.scene.TextureBake_Props.cptex_R = cpt.R
+        context.scene.TextureBake_Props.cptex_R = cpt.R
     except:
         messages.append(f"WARNING: {cpt.name} depends on {cpt.R} for the Red channel, but you are not baking it")
         messages.append("You can enable the required bake, or change the bake for that channel")
     try:
-        bpy.context.scene.TextureBake_Props.cptex_G = cpt.G
+        context.scene.TextureBake_Props.cptex_G = cpt.G
     except:
         messages.append(f"WARNING: {cpt.name} depends on {cpt.G} for the Green channel, but you are not baking it")
         messages.append("You can enable the required bake, or change the bake for that channel")
     try:
-        bpy.context.scene.TextureBake_Props.cptex_B = cpt.B
+        context.scene.TextureBake_Props.cptex_B = cpt.B
     except:
         messages.append(f"WARNING: {cpt.name} depends on {cpt.B} for the Blue channel, but you are not baking it")
         messages.append("You can enable the required bake, or change the bake for that channel")
     try:
-        bpy.context.scene.TextureBake_Props.cptex_A = cpt.A
+        context.scene.TextureBake_Props.cptex_A = cpt.A
     except:
         messages.append(f"WARNING: {cpt.name} depends on {cpt.A} for the Alpha channel, but you are not baking it")
         messages.append("You can enable the required bake, or change the bake for that channel")
 
-    bpy.context.scene.TextureBake_Props.cp_name = cpt.name
+    context.scene.TextureBake_Props.cp_name = cpt.name
 
     # Show messages
     if len(messages)>0:
@@ -130,50 +130,50 @@ def cp_list_index_update(self, context):
 def get_selected_bakes_dropdown(self, context):
     items = [("none", "None","")]
 
-    if bpy.context.scene.TextureBake_Props.selected_col:
+    if context.scene.TextureBake_Props.selected_col:
         items.append(("diffuse", "Diffuse",""))
-    if bpy.context.scene.TextureBake_Props.selected_metal:
+    if context.scene.TextureBake_Props.selected_metal:
         items.append(("metalness", "Metal",""))
 
-    if bpy.context.scene.TextureBake_Props.selected_sss:
+    if context.scene.TextureBake_Props.selected_sss:
         items.append(("sss", "SSS",""))
-    if bpy.context.scene.TextureBake_Props.selected_ssscol:
+    if context.scene.TextureBake_Props.selected_ssscol:
         items.append(("ssscol", "SSS Color",""))
 
-    if bpy.context.scene.TextureBake_Props.selected_rough:
-        if bpy.context.scene.TextureBake_Props.rough_glossy_switch == "glossy":
+    if context.scene.TextureBake_Props.selected_rough:
+        if context.scene.TextureBake_Props.rough_glossy_switch == "glossy":
             items.append(("glossy", "Glossy",""))
         else:
             items.append(("roughness", "Rouchness",""))
 
-    if bpy.context.scene.TextureBake_Props.selected_normal:
+    if context.scene.TextureBake_Props.selected_normal:
         items.append(("normal", "Normal",""))
-    if bpy.context.scene.TextureBake_Props.selected_trans:
+    if context.scene.TextureBake_Props.selected_trans:
         items.append(("transparency", "Transmission",""))
-    if bpy.context.scene.TextureBake_Props.selected_transrough:
+    if context.scene.TextureBake_Props.selected_transrough:
         items.append(("transparencyroughness", "Transmission Rough",""))
-    if bpy.context.scene.TextureBake_Props.selected_clearcoat:
+    if context.scene.TextureBake_Props.selected_clearcoat:
         items.append(("clearcoat", "Clearcoat",""))
-    if bpy.context.scene.TextureBake_Props.selected_clearcoat_rough:
+    if context.scene.TextureBake_Props.selected_clearcoat_rough:
         items.append(("clearcoatroughness", "ClearcoatRough",""))
-    if bpy.context.scene.TextureBake_Props.selected_emission:
+    if context.scene.TextureBake_Props.selected_emission:
         items.append(("emission", "Emission",""))
-    if bpy.context.scene.TextureBake_Props.selected_specular:
+    if context.scene.TextureBake_Props.selected_specular:
         items.append(("specular", "Specular",""))
-    if bpy.context.scene.TextureBake_Props.selected_alpha:
+    if context.scene.TextureBake_Props.selected_alpha:
         items.append(("alpha", "Alpha",""))
 
-    if bpy.context.scene.TextureBake_Props.selected_col_mats:
-        items.append((TextureBakeConstants.COLOURID, TextureBakeConstants.COLOURID,""))
-    if bpy.context.scene.TextureBake_Props.selected_col_vertex:
+    if context.scene.TextureBake_Props.selected_col_mats:
+        items.append((TextureBakeConstants.COLORID, TextureBakeConstants.COLORID,""))
+    if context.scene.TextureBake_Props.selected_col_vertex:
         items.append((TextureBakeConstants.VERTEXCOL, TextureBakeConstants.VERTEXCOL,""))
-    if bpy.context.scene.TextureBake_Props.selected_ao:
+    if context.scene.TextureBake_Props.selected_ao:
         items.append((TextureBakeConstants.AO, TextureBakeConstants.AO,""))
-    if bpy.context.scene.TextureBake_Props.selected_thickness:
+    if context.scene.TextureBake_Props.selected_thickness:
         items.append((TextureBakeConstants.THICKNESS, TextureBakeConstants.THICKNESS,""))
-    if bpy.context.scene.TextureBake_Props.selected_curvature:
+    if context.scene.TextureBake_Props.selected_curvature:
         items.append((TextureBakeConstants.CURVATURE, TextureBakeConstants.CURVATURE,""))
-    if bpy.context.scene.TextureBake_Props.selected_lightmap:
+    if context.scene.TextureBake_Props.selected_lightmap:
         items.append((TextureBakeConstants.LIGHTMAP, TextureBakeConstants.LIGHTMAP,""))
 
     return items
@@ -379,7 +379,7 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
     )
 
     selected_col_mats: BoolProperty(
-        name = TextureBakeConstants.COLOURID,
+        name = TextureBakeConstants.COLORID,
         description = "ColorID Map based on random color per material",
     )
 
@@ -686,6 +686,127 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
     )
 
 
+class TextureBakePreferences(bpy.types.AddonPreferences):
+    bl_idname = __package__
+
+    img_name_format: bpy.props.StringProperty(name="Image format string",
+        default="%OBJ%_%BATCH%_%BAKEMODE%_%BAKETYPE%")
+
+    # Aliases
+    diffuse_alias: bpy.props.StringProperty(name="Diffuse", default="diffuse")
+    metal_alias: bpy.props.StringProperty(name="Metal", default="metalness")
+    roughness_alias: bpy.props.StringProperty(name="Roughness", default="roughness")
+    glossy_alias: bpy.props.StringProperty(name="Glossy", default="glossy")
+    normal_alias: bpy.props.StringProperty(name="Normal", default="normal")
+    transmission_alias: bpy.props.StringProperty(name="Transmission", default="transparency")
+    transmissionrough_alias: bpy.props.StringProperty(name="Transmission Roughness", default="transparencyroughness")
+    clearcoat_alias: bpy.props.StringProperty(name="Clearcost", default="clearcoat")
+    clearcoatrough_alias: bpy.props.StringProperty(name="Clearcoat Roughness", default="clearcoatroughness")
+    emission_alias: bpy.props.StringProperty(name="Emission", default="emission")
+    specular_alias: bpy.props.StringProperty(name="Specular", default="specular")
+    alpha_alias: bpy.props.StringProperty(name="Alpha", default="alpha")
+    sss_alias: bpy.props.StringProperty(name="SSS", default="sss")
+    ssscol_alias: bpy.props.StringProperty(name="SSS Color", default="ssscol")
+
+    ao_alias: bpy.props.StringProperty(name=TextureBakeConstants.AO, default="ao")
+    curvature_alias: bpy.props.StringProperty(name=TextureBakeConstants.CURVATURE, default="curvature")
+    thickness_alias: bpy.props.StringProperty(name=TextureBakeConstants.THICKNESS, default="thickness")
+    vertexcol_alias: bpy.props.StringProperty(name=TextureBakeConstants.VERTEXCOL, default="vertexcol")
+    colid_alias: bpy.props.StringProperty(name=TextureBakeConstants.COLORID, default="colid")
+    lightmap_alias: bpy.props.StringProperty(name=TextureBakeConstants.LIGHTMAP, default="lightmap")
+
+    @classmethod
+    def reset_img_string(self):
+        prefs = bpy.context.preferences.addons[__package__].preferences
+        prefs.property_unset("img_name_format")
+        bpy.ops.wm.save_userpref()
+
+    @classmethod
+    def reset_aliases(self):
+        prefs = bpy.context.preferences.addons[__package__].preferences
+        prefs.property_unset("diffuse_alias")
+        prefs.property_unset("metal_alias")
+        prefs.property_unset("roughness_alias")
+        prefs.property_unset("normal_alias")
+        prefs.property_unset("transmission_alias")
+        prefs.property_unset("transmissionrough_alias")
+        prefs.property_unset("clearcoat_alias")
+        prefs.property_unset("clearcoatrough_alias")
+        prefs.property_unset("emission_alias")
+        prefs.property_unset("specular_alias")
+        prefs.property_unset("alpha_alias")
+        prefs.property_unset("sss_alias")
+        prefs.property_unset("ssscol_alias")
+        prefs.property_unset("ao_alias")
+        prefs.property_unset("curvature_alias")
+        prefs.property_unset("thickness_alias")
+        prefs.property_unset("vertexcol_alias")
+        prefs.property_unset("colid_alias")
+        prefs.property_unset("lightmap_alias")
+        bpy.ops.wm.save_userpref()
+
+    def draw(self, context):
+        layout = self.layout
+
+        box = layout.box()
+        box.row().label(text="Image Name Format")
+        box.row().label(text="These placeholders are available to generate image file names:")
+        col = box.column()
+        row = col.split(factor=0.25)
+        row.label(text="%OBJ%")
+        row.label(text="Object name or 'merged_bake' for multiple objects")
+        row = col.split(factor=0.25)
+        row.label(text="%BATCH%")
+        row.label(text="Batch name as defined in the Properties panel")
+        row = col.split(factor=0.25)
+        row.label(text="%BAKEMODE%")
+        row.label(text="PBR or Cycles")
+        row = col.split(factor=0.25)
+        row.label(text="%BAKETYPE%")
+        row.label(text="Diffuse, emission, AO, etc.")
+
+        box.separator()
+        example = self.img_name_format
+        for k, v in ({"%OBJ%": "Cube", "%BATCH%": "Bake1", "%BAKEMODE%": "pbr", "%BAKETYPE%": "diffuse"}).items():
+            example = example.replace(k, v)
+        box.row().label(text=f"Example: {example}")
+        box.row().prop(self, "img_name_format", text="")
+        box.row().operator("texture_bake.reset_name_format")
+
+        # PBR Aliases
+        box = layout.box()
+        box.row().label(text="Aliases for PBR bake types")
+
+        box.row().prop(self, "diffuse_alias")
+        box.row().prop(self, "metal_alias")
+        box.row().prop(self, "sss_alias")
+        box.row().prop(self, "ssscol_alias")
+        box.row().prop(self, "roughness_alias")
+        box.row().prop(self, "glossy_alias")
+        box.row().prop(self, "transmission_alias")
+        box.row().prop(self, "transmissionrough_alias")
+        box.row().prop(self, "clearcoat_alias")
+        box.row().prop(self, "clearcoatrough_alias")
+        box.row().prop(self, "emission_alias")
+        box.row().prop(self, "specular_alias")
+        box.row().prop(self, "alpha_alias")
+        box.row().prop(self, "normal_alias")
+
+        # Specials Aliases
+        box = layout.box()
+        box.row().label(text="Aliases for special bake types")
+        box.row().prop(self, "ao_alias")
+        box.row().prop(self, "curvature_alias")
+        box.row().prop(self, "thickness_alias")
+        box.row().prop(self, "vertexcol_alias")
+        box.row().prop(self, "colid_alias")
+        box.row().prop(self, "lightmap_alias")
+
+        # Reset button
+        box = layout.box()
+        box.row().operator("texture_bake.reset_aliases")
+
+
 # List of all classes that will be registered
 classes = [
     operators.TEXTUREBAKE_OT_bake,
@@ -719,7 +840,6 @@ classes = [
     ui.TEXTUREBAKE_PT_uv,
     ui.TEXTUREBAKE_PT_other,
     ui.TEXTUREBAKE_PT_packing,
-    ui.TextureBakePreferences,
     ui.TEXTUREBAKE_UL_object_list,
     ui.TEXTUREBAKE_OT_add_object,
     ui.TEXTUREBAKE_OT_remove_object,
@@ -731,6 +851,7 @@ classes = [
     ui.TEXTUREBAKE_UL_packed_textures,
     TextureBakeObjectProperty,
     TextureBakeProperties,
+    TextureBakePreferences,
 ]
 
 

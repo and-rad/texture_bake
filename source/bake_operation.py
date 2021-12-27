@@ -66,7 +66,7 @@ class TextureBakeConstants:
     THICKNESS = "Thickness"
     AO = "Ambient Occlusion"
     CURVATURE = "Curvature"
-    COLOURID = "Color ID"
+    COLORID = "Color ID"
     VERTEXCOL = "Vertex Color"
     LIGHTMAP = "Lightmap"
 

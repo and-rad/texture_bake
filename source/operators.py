@@ -32,7 +32,6 @@ from . import functions
 from . import bakefunctions
 from .bake_operation import BakeOperation, MasterOperation, BakeStatus, bakes_to_list, TextureBakeConstants
 from .bg_bake import background_bake_ops
-from .ui import TextureBakePreferences
 
 
 class TEXTUREBAKE_OT_bake(bpy.types.Operator):
@@ -246,8 +245,7 @@ class TEXTUREBAKE_OT_reset_name_format(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def execute(self, context):
-        from .ui import TextureBakePreferences
-        TextureBakePreferences.reset_img_string()
+        bpy.context.preferences.addons[__package__].preferences.reset_img_string()
         return {'FINISHED'}
 
 
@@ -258,8 +256,7 @@ class TEXTUREBAKE_OT_reset_aliases(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def execute(self, context):
-        from .ui import TextureBakePreferences
-        TextureBakePreferences.reset_aliases()
+        bpy.context.preferences.addons[__package__].preferences.reset_aliases()
         return {'FINISHED'}
 
 

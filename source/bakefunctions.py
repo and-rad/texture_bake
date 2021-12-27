@@ -710,7 +710,7 @@ def specials_bake():
 
     # Firstly, let's bake the coldid maps if they have been asked for
     if bpy.context.scene.TextureBake_Props.selected_col_mats:
-        col_id_map(input_width, input_height, objects, TextureBakeConstants.COLOURID)
+        col_id_map(input_width, input_height, objects, TextureBakeConstants.COLORID)
     if bpy.context.scene.TextureBake_Props.selected_col_vertex:
         col_id_map(input_width, input_height, objects, TextureBakeConstants.VERTEXCOL)
 
@@ -885,8 +885,8 @@ def col_id_map(input_width, input_height, objects, mode="random"):
             if current_bake_op.uv_mode == "udims":
                 IMGNAME = IMGNAME+f".{udim_counter}"
 
-            if mode == TextureBakeConstants.COLOURID:
-                functions.create_images(IMGNAME, TextureBakeConstants.COLOURID, bpy.context.scene.TextureBake_Props.merged_bake_name)
+            if mode == TextureBakeConstants.COLORID:
+                functions.create_images(IMGNAME, TextureBakeConstants.COLORID, bpy.context.scene.TextureBake_Props.merged_bake_name)
             else:
                 functions.create_images(IMGNAME, TextureBakeConstants.VERTEXCOL, bpy.context.scene.TextureBake_Props.merged_bake_name)
 
@@ -896,8 +896,8 @@ def col_id_map(input_width, input_height, objects, mode="random"):
 
             if(not merged_bake):
                 # Create the image we need for this bake (Delete if exists)
-                if mode == TextureBakeConstants.COLOURID:
-                    IMGNAME = functions.gen_image_name(OBJNAME, TextureBakeConstants.COLOURID)
+                if mode == TextureBakeConstants.COLORID:
+                    IMGNAME = functions.gen_image_name(OBJNAME, TextureBakeConstants.COLORID)
                      # UDIMs
                     if current_bake_op.uv_mode == "udims":
                         IMGNAME = IMGNAME+f".{udim_counter}"
@@ -907,8 +907,8 @@ def col_id_map(input_width, input_height, objects, mode="random"):
                     if current_bake_op.uv_mode == "udims":
                         IMGNAME = IMGNAME+f".{udim_counter}"
 
-                if mode == TextureBakeConstants.COLOURID:
-                    functions.create_images(IMGNAME, TextureBakeConstants.COLOURID, obj.name)
+                if mode == TextureBakeConstants.COLORID:
+                    functions.create_images(IMGNAME, TextureBakeConstants.COLORID, obj.name)
                 else:
                     functions.create_images(IMGNAME, TextureBakeConstants.VERTEXCOL, obj.name)
 
@@ -942,7 +942,7 @@ def col_id_map(input_width, input_height, objects, mode="random"):
                 tosocket = m_output_node.inputs[0]
                 nodetree.links.new(fromsocket, tosocket)
 
-                if mode == TextureBakeConstants.COLOURID:
+                if mode == TextureBakeConstants.COLORID:
                     # Have we already generated a color for this mat?
                     if mat.name in current_bake_op.mat_col_dict:
                         col = current_bake_op.mat_col_dict[mat.name]
