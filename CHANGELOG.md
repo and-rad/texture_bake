@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.0] - TBD
+
+### Changed
+- Setting the input texture size no longer overrides output teture size. The
+  previous behavior was inconvenient and would cause users to re-apply values
+  constantly by hand.
+
 ## [0.9.0] - 2021-12-26
 
 ### Changed

@@ -85,14 +85,6 @@ def presets_list_update(self,context):
     context.scene.TextureBake_Props.preset_name = item.name
 
 
-def input_height_update(self,context):
-    context.scene.TextureBake_Props.output_height = context.scene.TextureBake_Props.input_height
-
-
-def input_width_update(self,context):
-    context.scene.TextureBake_Props.output_width = context.scene.TextureBake_Props.input_width
-
-
 def cp_list_index_update(self, context):
     index = context.scene.TextureBake_Props.cp_list_index
     cpt = context.scene.TextureBake_Props.cp_list[index]
@@ -252,14 +244,12 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
         name = "Bake height",
         default = 1024,
         description = "Set the height of the baked image that will be produced",
-        update = input_height_update,
     )
 
     input_width: IntProperty(
         name = "Bake width",
         description = "Set the width of the baked image that will be produced",
         default = 1024,
-        update = input_width_update,
     )
 
     output_height: IntProperty(
