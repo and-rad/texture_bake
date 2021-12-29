@@ -33,13 +33,27 @@ bl_info = {
 import bpy
 import os
 import signal
+
 from pathlib import Path
 from bpy.types import PropertyGroup
-from . import bakefunctions
-from . import functions
-from . import bg_bake
-from . import operators
-from . import ui
+
+from bpy.props import (
+    FloatProperty,
+    StringProperty,
+    BoolProperty,
+    EnumProperty,
+    PointerProperty,
+    IntProperty,
+    CollectionProperty,
+)
+
+from . import (
+    bg_bake,
+    functions,
+    operators,
+    ui,
+)
+
 from .bake_operation import TextureBakeConstants
 
 
@@ -174,7 +188,7 @@ def get_selected_bakes_dropdown(self, context):
 class TextureBakeObjectProperty(bpy.types.PropertyGroup):
     """Group of properties representing an object selected for baking."""
 
-    obj: bpy.props.PointerProperty(
+    obj: PointerProperty(
         name="Bake Object",
         description="An object in the scene to be baked",
         type=bpy.types.Object
@@ -183,16 +197,6 @@ class TextureBakeObjectProperty(bpy.types.PropertyGroup):
 
 class TextureBakeProperties(bpy.types.PropertyGroup):
     """Contains per-file bake properties."""
-
-    from bpy.props import (
-        FloatProperty,
-        StringProperty,
-        BoolProperty,
-        EnumProperty,
-        PointerProperty,
-        IntProperty,
-        CollectionProperty,
-    )
 
     global_mode: EnumProperty(
         name = "Bake Mode",
@@ -676,40 +680,55 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
     )
 
 
+class TextureBakeExportPreset(bpy.types.PropertyGroup):
+    """Group of properties representing an export preset."""
+
+    name: StringProperty(
+        name = "Name",
+        description = "The preset's name. Has to be unique",
+    )
+
+
 class TextureBakePreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
-    img_name_format: bpy.props.StringProperty(name="Image format string",
-        default="%OBJ%_%BATCH%_%BAKEMODE%_%BAKETYPE%")
+    # Export presets
+    export_presets: CollectionProperty(
+        type = TextureBakeExportPreset,
+    )
+
+    export_presets_index: IntProperty(
+        description = "The active export preset index",
+        default = 0,
+    )
+
+    img_name_format: StringProperty(
+        name="Image format string",
+        default="%OBJ%_%BATCH%_%BAKEMODE%_%BAKETYPE%",
+    )
 
     # Aliases
-    diffuse_alias: bpy.props.StringProperty(name="Diffuse", default="diffuse")
-    metal_alias: bpy.props.StringProperty(name="Metal", default="metalness")
-    roughness_alias: bpy.props.StringProperty(name="Roughness", default="roughness")
-    glossy_alias: bpy.props.StringProperty(name="Glossy", default="glossy")
-    normal_alias: bpy.props.StringProperty(name="Normal", default="normal")
-    transmission_alias: bpy.props.StringProperty(name="Transmission", default="transparency")
-    transmissionrough_alias: bpy.props.StringProperty(name="Transmission Roughness", default="transparencyroughness")
-    clearcoat_alias: bpy.props.StringProperty(name="Clearcost", default="clearcoat")
-    clearcoatrough_alias: bpy.props.StringProperty(name="Clearcoat Roughness", default="clearcoatroughness")
-    emission_alias: bpy.props.StringProperty(name="Emission", default="emission")
-    specular_alias: bpy.props.StringProperty(name="Specular", default="specular")
-    alpha_alias: bpy.props.StringProperty(name="Alpha", default="alpha")
-    sss_alias: bpy.props.StringProperty(name="SSS", default="sss")
-    ssscol_alias: bpy.props.StringProperty(name="SSS Color", default="ssscol")
+    diffuse_alias: StringProperty(name="Diffuse", default="diffuse")
+    metal_alias: StringProperty(name="Metal", default="metalness")
+    roughness_alias: StringProperty(name="Roughness", default="roughness")
+    glossy_alias: StringProperty(name="Glossy", default="glossy")
+    normal_alias: StringProperty(name="Normal", default="normal")
+    transmission_alias: StringProperty(name="Transmission", default="transparency")
+    transmissionrough_alias: StringProperty(name="Transmission Roughness", default="transparencyroughness")
+    clearcoat_alias: StringProperty(name="Clearcost", default="clearcoat")
+    clearcoatrough_alias: StringProperty(name="Clearcoat Roughness", default="clearcoatroughness")
+    emission_alias: StringProperty(name="Emission", default="emission")
+    specular_alias: StringProperty(name="Specular", default="specular")
+    alpha_alias: StringProperty(name="Alpha", default="alpha")
+    sss_alias: StringProperty(name="SSS", default="sss")
+    ssscol_alias: StringProperty(name="SSS Color", default="ssscol")
 
-    ao_alias: bpy.props.StringProperty(name=TextureBakeConstants.AO, default="ao")
-    curvature_alias: bpy.props.StringProperty(name=TextureBakeConstants.CURVATURE, default="curvature")
-    thickness_alias: bpy.props.StringProperty(name=TextureBakeConstants.THICKNESS, default="thickness")
-    vertexcol_alias: bpy.props.StringProperty(name=TextureBakeConstants.VERTEXCOL, default="vertexcol")
-    colid_alias: bpy.props.StringProperty(name=TextureBakeConstants.COLORID, default="colid")
-    lightmap_alias: bpy.props.StringProperty(name=TextureBakeConstants.LIGHTMAP, default="lightmap")
-
-    @classmethod
-    def reset_img_string(self):
-        prefs = bpy.context.preferences.addons[__package__].preferences
-        prefs.property_unset("img_name_format")
-        bpy.ops.wm.save_userpref()
+    ao_alias: StringProperty(name=TextureBakeConstants.AO, default="ao")
+    curvature_alias: StringProperty(name=TextureBakeConstants.CURVATURE, default="curvature")
+    thickness_alias: StringProperty(name=TextureBakeConstants.THICKNESS, default="thickness")
+    vertexcol_alias: StringProperty(name=TextureBakeConstants.VERTEXCOL, default="vertexcol")
+    colid_alias: StringProperty(name=TextureBakeConstants.COLORID, default="colid")
+    lightmap_alias: StringProperty(name=TextureBakeConstants.LIGHTMAP, default="lightmap")
 
     @classmethod
     def reset_aliases(self):
@@ -737,6 +756,16 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
 
     def draw(self, context):
         layout = self.layout
+
+        box = layout.box()
+        box.row().label(text="Export Presets")
+        row = box.row()
+        row.template_list("UI_UL_list", "Export Presets", self, "export_presets", self, "export_presets_index")
+        col = row.column()
+        col.operator("texture_bake.add_export_preset", text="", icon='ADD')
+        col.operator("texture_bake.delete_export_preset", text="", icon='REMOVE')
+        col.separator()
+        col.operator("texture_bake.reset_export_presets", text="", icon='FILE_REFRESH')
 
         box = layout.box()
         box.row().label(text="Image Name Format")
@@ -820,6 +849,9 @@ classes = [
     operators.TEXTUREBAKE_OT_add_packed_texture,
     operators.TEXTUREBAKE_OT_delete_packed_texture,
     operators.TEXTUREBAKE_OT_reset_packed_textures,
+    operators.TEXTUREBAKE_OT_add_export_preset,
+    operators.TEXTUREBAKE_OT_delete_export_preset,
+    operators.TEXTUREBAKE_OT_reset_export_presets,
     ui.TEXTUREBAKE_PT_main,
     ui.TEXTUREBAKE_PT_presets,
     ui.TEXTUREBAKE_PT_objects,
@@ -840,6 +872,7 @@ classes = [
     ui.TEXTUREBAKE_UL_presets,
     ui.TEXTUREBAKE_UL_packed_textures,
     TextureBakeObjectProperty,
+    TextureBakeExportPreset,
     TextureBakeProperties,
     TextureBakePreferences,
 ]
@@ -848,7 +881,11 @@ classes = [
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
-    bpy.types.Scene.TextureBake_Props = bpy.props.PointerProperty(type=TextureBakeProperties)
+    bpy.types.Scene.TextureBake_Props = PointerProperty(type=TextureBakeProperties)
+
+    prefs = bpy.context.preferences.addons[__package__].preferences
+    if not prefs.export_presets:
+        bpy.ops.texture_bake.reset_export_presets
 
 
 def unregister():

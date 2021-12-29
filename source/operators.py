@@ -245,7 +245,8 @@ class TEXTUREBAKE_OT_reset_name_format(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def execute(self, context):
-        bpy.context.preferences.addons[__package__].preferences.reset_img_string()
+        bpy.context.preferences.addons[__package__].preferences.property_unset("img_name_format")
+        bpy.ops.wm.save_userpref()
         return {'FINISHED'}
 
 
@@ -1076,4 +1077,39 @@ class TEXTUREBAKE_OT_reset_packed_textures(bpy.types.Operator):
         li.A = "specular"
 
         self.report({"INFO"}, "Default textures added")
+        return {'FINISHED'}
+
+
+class TEXTUREBAKE_OT_add_export_preset(bpy.types.Operator):
+    """Adds a new global export preset"""
+    bl_idname = "texture_bake.add_export_preset"
+    bl_label = "Add Export Presets"
+    bl_options = {'INTERNAL'}
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+
+class TEXTUREBAKE_OT_delete_export_preset(bpy.types.Operator):
+    """Deletes the selected export preset"""
+    bl_idname = "texture_bake.delete_export_preset"
+    bl_label = "Delete Export Presets"
+    bl_options = {'INTERNAL'}
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+
+class TEXTUREBAKE_OT_reset_export_presets(bpy.types.Operator):
+    """Resets export presets to their default values. This deletes all custom presets"""
+    bl_idname = "texture_bake.reset_export_presets"
+    bl_label = "Reset Export Presets"
+    bl_options = {'INTERNAL'}
+
+    def execute(self, context):
+        prefs = bpy.context.preferences.addons[__package__].preferences
+        presets = prefs.export_presets
+        presets.clear()
+        item = presets.add()
+        item.name = "Dope Shit"
         return {'FINISHED'}
