@@ -1087,6 +1087,11 @@ class TEXTUREBAKE_OT_add_export_preset(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def execute(self, context):
+        prefs = context.preferences.addons[__package__].preferences
+        presets = prefs.export_presets
+        preset = presets.add()
+        preset.name = "New Preset"
+        bpy.ops.wm.save_userpref()
         return {'FINISHED'}
 
 
@@ -1096,7 +1101,18 @@ class TEXTUREBAKE_OT_delete_export_preset(bpy.types.Operator):
     bl_label = "Delete Export Presets"
     bl_options = {'INTERNAL'}
 
+    @classmethod
+    def poll(cls,context):
+        prefs = context.preferences.addons[__package__].preferences
+        return prefs.export_presets
+
     def execute(self, context):
+        prefs = context.preferences.addons[__package__].preferences
+        presets = prefs.export_presets
+        index = prefs.export_presets_index
+        presets.remove(index)
+        prefs.export_presets_index = min(index, len(presets))
+        bpy.ops.wm.save_userpref()
         return {'FINISHED'}
 
 
@@ -1107,9 +1123,10 @@ class TEXTUREBAKE_OT_reset_export_presets(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def execute(self, context):
-        prefs = bpy.context.preferences.addons[__package__].preferences
+        prefs = context.preferences.addons[__package__].preferences
         presets = prefs.export_presets
         presets.clear()
         item = presets.add()
-        item.name = "Dope Shit"
+        item.name = "Default Preset"
+        bpy.ops.wm.save_userpref()
         return {'FINISHED'}

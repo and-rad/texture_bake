@@ -32,6 +32,7 @@ bl_info = {
 
 import bpy
 import os
+import re
 import signal
 
 from pathlib import Path
@@ -183,6 +184,17 @@ def get_selected_bakes_dropdown(self, context):
         items.append((TextureBakeConstants.LIGHTMAP, TextureBakeConstants.LIGHTMAP,""))
 
     return items
+
+
+def export_preset_name_update(self, context):
+    prefs = bpy.context.preferences.addons[__package__].preferences
+    presets = prefs.export_presets
+    if [p for p in presets if p != self and p.name == self.name]:
+        if re.match("^.*\.\d\d\d$", self.name):
+            self.name = self.name[:-3] + f"{(int(self.name[-3:]) + 1):03d}"
+        else:
+            self.name += ".001"
+        bpy.ops.wm.save_userpref()
 
 
 class TextureBakeObjectProperty(bpy.types.PropertyGroup):
@@ -686,6 +698,8 @@ class TextureBakeExportPreset(bpy.types.PropertyGroup):
     name: StringProperty(
         name = "Name",
         description = "The preset's name. Has to be unique",
+        default = "New Preset",
+        update = export_preset_name_update,
     )
 
 
@@ -760,7 +774,7 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
         box = layout.box()
         box.row().label(text="Export Presets")
         row = box.row()
-        row.template_list("UI_UL_list", "Export Presets", self, "export_presets", self, "export_presets_index")
+        row.template_list("TEXTUREBAKE_UL_export_presets", "", self, "export_presets", self, "export_presets_index")
         col = row.column()
         col.operator("texture_bake.add_export_preset", text="", icon='ADD')
         col.operator("texture_bake.delete_export_preset", text="", icon='REMOVE')
@@ -871,6 +885,7 @@ classes = [
     ui.TextureBakePackedTextureItem,
     ui.TEXTUREBAKE_UL_presets,
     ui.TEXTUREBAKE_UL_packed_textures,
+    ui.TEXTUREBAKE_UL_export_presets,
     TextureBakeObjectProperty,
     TextureBakeExportPreset,
     TextureBakeProperties,
@@ -884,6 +899,7 @@ def register():
     bpy.types.Scene.TextureBake_Props = PointerProperty(type=TextureBakeProperties)
 
     prefs = bpy.context.preferences.addons[__package__].preferences
+    prefs.export_presets_index = 0
     if not prefs.export_presets:
         bpy.ops.texture_bake.reset_export_presets
 

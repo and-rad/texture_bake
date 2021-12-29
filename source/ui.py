@@ -658,3 +658,11 @@ class TextureBakePackedTextureItem(PropertyGroup):
         name="File Format",
         description="File format for CP texture"
     )
+
+
+class TEXTUREBAKE_UL_export_presets(UIList):
+    """List of existing export presets."""
+
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        custom_icon = 'IMAGE_PLANE'
+        layout.prop(item, "name", text="", emboss=False, icon=custom_icon)
