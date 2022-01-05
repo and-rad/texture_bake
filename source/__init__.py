@@ -908,6 +908,8 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
             col = row.column()
             col.operator("texture_bake.add_export_texture", text="", icon='ADD')
             col.operator("texture_bake.delete_export_texture", text="", icon='REMOVE')
+            col.separator()
+            col.operator("texture_bake.format_info", text="", icon='INFO')
 
             if 0 <= preset.textures_index and preset.textures_index < len(preset.textures):
                 texture = preset.textures[preset.textures_index]
@@ -1024,6 +1026,7 @@ classes = [
     operators.TEXTUREBAKE_OT_reset_export_presets,
     operators.TEXTUREBAKE_OT_add_export_texture,
     operators.TEXTUREBAKE_OT_delete_export_texture,
+    operators.TEXTUREBAKE_OT_format_info,
     ui.TEXTUREBAKE_PT_main,
     ui.TEXTUREBAKE_PT_presets,
     ui.TEXTUREBAKE_PT_objects,

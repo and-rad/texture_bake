@@ -1171,3 +1171,33 @@ class TEXTUREBAKE_OT_delete_export_texture(bpy.types.Operator):
             preset.textures_index = min(index, len(preset.textures))
             bpy.ops.wm.save_userpref()
         return {'FINISHED'}
+
+
+class TEXTUREBAKE_OT_format_info(bpy.types.Operator):
+    """Displays information about available format strings for naming textures"""
+    bl_idname = "texture_bake.format_info"
+    bl_label = "Formatting Options"
+    bl_options = {'INTERNAL'}
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width = 500)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.row().label(text="These placeholders are available to generate image file names:")
+        col = layout.column()
+        row = col.split(factor=0.25)
+        row.label(text="%OBJ%")
+        row.label(text="Object name or 'merged_bake' for multiple objects")
+        row = col.split(factor=0.25)
+        row.label(text="%BATCH%")
+        row.label(text="Batch name as defined in the Properties panel")
+        row = col.split(factor=0.25)
+        row.label(text="%BAKEMODE%")
+        row.label(text="PBR or Cycles")
+        row = col.split(factor=0.25)
+        row.label(text="%BAKETYPE%")
+        row.label(text="Diffuse, emission, AO, etc.")
