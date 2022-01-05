@@ -2,6 +2,8 @@
 
 ## [1.0.0] - TBD
 
+### Added
+- Export presets
 ### Changed
 - Setting the input texture size no longer overrides output teture size. The
   previous behavior was inconvenient and would cause users to re-apply values

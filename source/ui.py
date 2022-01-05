@@ -664,5 +664,12 @@ class TEXTUREBAKE_UL_export_presets(UIList):
     """List of existing export presets."""
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        custom_icon = 'IMAGE_PLANE'
+        custom_icon = 'RENDERLAYERS'
+        layout.prop(item, "name", text="", emboss=False, icon=custom_icon)
+
+class TEXTUREBAKE_UL_export_preset_textures(UIList):
+    """List of existing export presets."""
+
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        custom_icon = 'IMAGE_DATA'
         layout.prop(item, "name", text="", emboss=False, icon=custom_icon)

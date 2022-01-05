@@ -1130,3 +1130,44 @@ class TEXTUREBAKE_OT_reset_export_presets(bpy.types.Operator):
         item.name = "Default Preset"
         bpy.ops.wm.save_userpref()
         return {'FINISHED'}
+
+
+class TEXTUREBAKE_OT_add_export_texture(bpy.types.Operator):
+    """Adds a new texture to the selected export preset"""
+    bl_idname = "texture_bake.add_export_texture"
+    bl_label = "Add Texture"
+    bl_options = {'INTERNAL'}
+
+    def execute(self, context):
+        prefs = context.preferences.addons[__package__].preferences
+        preset = prefs.export_presets[prefs.export_presets_index]
+        tex = preset.textures.add()
+        tex.name = "%OBJ%_%BATCH%_Texture"
+        bpy.ops.wm.save_userpref()
+        return {'FINISHED'}
+
+
+class TEXTUREBAKE_OT_delete_export_texture(bpy.types.Operator):
+    """Deletes the selected texture from the export preset"""
+    bl_idname = "texture_bake.delete_export_texture"
+    bl_label = "Delete Texture"
+    bl_options = {'INTERNAL'}
+
+    @classmethod
+    def poll(cls,context):
+        prefs = context.preferences.addons[__package__].preferences
+        if prefs.export_presets:
+            preset = prefs.export_presets[prefs.export_presets_index]
+            return preset.textures
+        return False
+
+    def execute(self, context):
+        prefs = context.preferences.addons[__package__].preferences
+        presets = prefs.export_presets
+        if presets:
+            preset = presets[prefs.export_presets_index]
+            index = preset.textures_index
+            preset.textures.remove(index)
+            preset.textures_index = min(index, len(preset.textures))
+            bpy.ops.wm.save_userpref()
+        return {'FINISHED'}

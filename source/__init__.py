@@ -197,6 +197,21 @@ def export_preset_name_update(self, context):
         bpy.ops.wm.save_userpref()
 
 
+def export_texture_name_update(self, context):
+    prefs = bpy.context.preferences.addons[__package__].preferences
+    textures = prefs.export_presets[prefs.export_presets_index].textures
+    if [t for t in textures if t != self and t.name == self.name]:
+        if re.match("^.*\.\d\d\d$", self.name):
+            self.name = self.name[:-3] + f"{(int(self.name[-3:]) + 1):03d}"
+        else:
+            self.name += ".001"
+    bpy.ops.wm.save_userpref()
+
+
+def export_texture_update(self, context):
+    bpy.ops.wm.save_userpref()
+
+
 class TextureBakeObjectProperty(bpy.types.PropertyGroup):
     """Group of properties representing an object selected for baking."""
 
@@ -692,6 +707,100 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
     )
 
 
+class TextureBakeTextureChannel(PropertyGroup):
+    """Group of properties representing a texture channel."""
+
+    info: EnumProperty(
+        name="Info",
+        description="The type of information to be stored in this channel",
+        default = 'NONE',
+        items = [
+            ('NONE', "None", "Do not store anything in this channel"),
+            ('AO', "Ambient Occlusion", ""),
+            ('DIFFUSE', "Diffuse", ""),
+            ('EMISSION', "Emission", ""),
+            ('METAL', "Metalness", ""),
+            ('NORMAL_OPENGL', "Normal (DirectX)", ""),
+            ('NORMAL_DIRECTX', "Normal (OpenGL)", ""),
+            ('OPACITY', "Opacity", ""),
+            ('ROUGH', "Roughness", ""),
+        ],
+        update = export_texture_update,
+    )
+
+    space: EnumProperty(
+        name = "Color Space",
+        description = "The color space for this channel",
+        default = 'SRGB',
+        items = [
+            ('SRGB', "sRGB", ""),
+            ('LINEAR', "Linear", ""),
+            ('NON_COLOR', "Non-Color", ""),
+            ('RAW', "Raw", ""),
+        ],
+        update = export_texture_update,
+    )
+
+
+class TextureBakePackedTexture(PropertyGroup):
+    """Group of properties representing a packed RGBA texture."""
+
+    name: StringProperty(
+        name = "Name",
+        description = "The name of this texture. See below for available placeholders",
+        default = "%OBJ%_%BATCH%_Texture",
+        update = export_texture_name_update,
+    )
+
+    file_format: EnumProperty(
+        name = "File Format",
+        description = "The file format to save this texture at",
+        default = 'PNG',
+        items = [
+            ('JPG', "JPEG", "Supports 8-bit color depth"),
+            ('EXR', "OpenEXR", "Always uses 32-bit color depth"),
+            ('PNG', "PNG", "Supports 8-bit and 16-bit color depth"),
+            ('TGA', "Targa", "Supports 8-bit color depth"),
+        ],
+        update = export_texture_update,
+    )
+
+    depth: EnumProperty(
+        name = "Bit Depth",
+        description = "The amount of bits to use to encode each color channel. Not every file format supports every bit depth",
+        default = '8',
+        items = [
+            ('8', "8-bit", ""),
+            ('16', "16-bit", ""),
+        ],
+        update = export_texture_update,
+    )
+
+    red: PointerProperty(
+        name = "R",
+        description = "The texture's red channel",
+        type = TextureBakeTextureChannel,
+    )
+
+    green: PointerProperty(
+        name = "G",
+        description = "The texture's green channel",
+        type = TextureBakeTextureChannel,
+    )
+
+    blue: PointerProperty(
+        name = "B",
+        description = "The texture's blue channel",
+        type = TextureBakeTextureChannel,
+    )
+
+    alpha: PointerProperty(
+        name = "A",
+        description = "The texture's alpha channel",
+        type = TextureBakeTextureChannel,
+    )
+
+
 class TextureBakeExportPreset(bpy.types.PropertyGroup):
     """Group of properties representing an export preset."""
 
@@ -700,6 +809,17 @@ class TextureBakeExportPreset(bpy.types.PropertyGroup):
         description = "The preset's name. Has to be unique",
         default = "New Preset",
         update = export_preset_name_update,
+    )
+
+    textures: CollectionProperty(
+        name = "Textures",
+        description = "The texture maps to bake out for this preset",
+        type = TextureBakePackedTexture,
+    )
+
+    textures_index: IntProperty(
+        description = "The active texture index",
+        default = 0,
     )
 
 
@@ -780,6 +900,42 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
         col.operator("texture_bake.delete_export_preset", text="", icon='REMOVE')
         col.separator()
         col.operator("texture_bake.reset_export_presets", text="", icon='FILE_REFRESH')
+
+        if 0 <= self.export_presets_index and self.export_presets_index < len(self.export_presets):
+            preset = self.export_presets[self.export_presets_index]
+            row = box.row()
+            row.template_list("TEXTUREBAKE_UL_export_preset_textures", "", preset, "textures", preset, "textures_index")
+            col = row.column()
+            col.operator("texture_bake.add_export_texture", text="", icon='ADD')
+            col.operator("texture_bake.delete_export_texture", text="", icon='REMOVE')
+
+            if 0 <= preset.textures_index and preset.textures_index < len(preset.textures):
+                texture = preset.textures[preset.textures_index]
+                row = box.row()
+                row.prop(texture, "file_format", text="")
+                row.prop(texture, "depth", text="")
+                col = box.column()
+                row = col.split(factor=0.1)
+                row.label(text="R:")
+                row = row.split(factor=0.7)
+                row.prop(texture.red, "info", text="")
+                row.prop(texture.red, "space", text="")
+                row = col.split(factor=0.1)
+                row.label(text="G:")
+                row = row.split(factor=0.7)
+                row.prop(texture.green, "info", text="")
+                row.prop(texture.green, "space", text="")
+                row = col.split(factor=0.1)
+                row.label(text="B:")
+                row = row.split(factor=0.7)
+                row.prop(texture.blue, "info", text="")
+                row.prop(texture.blue, "space", text="")
+                row = col.split(factor=0.1)
+                row.enabled = texture.file_format != 'JPG'
+                row.label(text="A:")
+                row = row.split(factor=0.7)
+                row.prop(texture.alpha, "info", text="")
+                row.prop(texture.alpha, "space", text="")
 
         box = layout.box()
         box.row().label(text="Image Name Format")
@@ -866,6 +1022,8 @@ classes = [
     operators.TEXTUREBAKE_OT_add_export_preset,
     operators.TEXTUREBAKE_OT_delete_export_preset,
     operators.TEXTUREBAKE_OT_reset_export_presets,
+    operators.TEXTUREBAKE_OT_add_export_texture,
+    operators.TEXTUREBAKE_OT_delete_export_texture,
     ui.TEXTUREBAKE_PT_main,
     ui.TEXTUREBAKE_PT_presets,
     ui.TEXTUREBAKE_PT_objects,
@@ -886,7 +1044,10 @@ classes = [
     ui.TEXTUREBAKE_UL_presets,
     ui.TEXTUREBAKE_UL_packed_textures,
     ui.TEXTUREBAKE_UL_export_presets,
+    ui.TEXTUREBAKE_UL_export_preset_textures,
     TextureBakeObjectProperty,
+    TextureBakeTextureChannel,
+    TextureBakePackedTexture,
     TextureBakeExportPreset,
     TextureBakeProperties,
     TextureBakePreferences,
