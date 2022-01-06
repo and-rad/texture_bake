@@ -186,6 +186,14 @@ def get_selected_bakes_dropdown(self, context):
     return items
 
 
+def get_export_presets_enum(self, context):
+    items = [('NONE', "None", "")]
+    prefs = context.preferences.addons[__package__].preferences
+    for idx, pr in enumerate(prefs.export_presets):
+        items.append((str(idx), pr.name, ""))
+    return items
+
+
 def export_preset_name_update(self, context):
     prefs = bpy.context.preferences.addons[__package__].preferences
     presets = prefs.export_presets
@@ -224,6 +232,12 @@ class TextureBakeObjectProperty(bpy.types.PropertyGroup):
 
 class TextureBakeProperties(bpy.types.PropertyGroup):
     """Contains per-file bake properties."""
+
+    export_preset: EnumProperty(
+        name = "Export Preset",
+        description = "The export preset to use when baking textures",
+        items = get_export_presets_enum,
+    )
 
     global_mode: EnumProperty(
         name = "Bake Mode",

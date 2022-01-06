@@ -331,6 +331,7 @@ class TEXTUREBAKE_PT_export_settings(TextureBakeCategoryPanel, bpy.types.Panel):
         layout.use_property_decorate = False
 
         if functions.is_blend_saved():
+            layout.row().prop(context.scene.TextureBake_Props, "export_preset", text="Preset")
             row = layout.row()
             row.prop(context.scene.TextureBake_Props, "export_textures")
             row.prop(context.scene.TextureBake_Props, "export_mesh")

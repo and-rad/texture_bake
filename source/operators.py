@@ -506,6 +506,7 @@ class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
 
     def execute(self, context):
         d = {}
+        d["export_preset"] = context.scene.TextureBake_Props.export_preset
         d["global_mode"] = bpy.context.scene.TextureBake_Props.global_mode
         d["ray_distance"] = bpy.context.scene.TextureBake_Props.ray_distance
         d["cage_extrusion"] = bpy.context.scene.TextureBake_Props.cage_extrusion
@@ -681,6 +682,7 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
         jsonContent = fileObject.read()
         d = json.loads(jsonContent)
 
+        context.scene.TextureBake_Props.export_preset = d["export_preset"]
         bpy.context.scene.TextureBake_Props.global_mode = d["global_mode"]
         bpy.context.scene.TextureBake_Props.ray_distance = d["ray_distance"]
         bpy.context.scene.TextureBake_Props.cage_extrusion = d["cage_extrusion"]
