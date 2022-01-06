@@ -39,6 +39,14 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
     bl_idname = "texture_bake.bake"
     bl_label = "Bake Textures"
 
+    @classmethod
+    def poll(cls,context):
+        preset = context.scene.TextureBake_Props.export_preset
+        if preset == 'NONE':
+            return False
+        prefs = context.preferences.addons[__package__].preferences
+        return int(preset) < len(prefs.export_presets)
+
     def execute(self, context):
         def commence_bake(needed_bake_modes):
             # Prepare the BakeStatus tracker for progress bar
