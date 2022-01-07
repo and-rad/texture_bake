@@ -38,6 +38,86 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
     bl_idname = "texture_bake.bake"
     bl_label = "Bake Textures"
 
+    def commence_bake(self, context, needed_bake_modes):
+        # Prepare the BakeStatus tracker for progress bar
+        num_of_objects = 0
+        if context.scene.TextureBake_Props.use_object_list:
+            num_of_objects = len(context.scene.TextureBake_Props.object_list)
+        else:
+            num_of_objects = len(context.selected_objects)
+
+        total_maps = 0
+        for need in needed_bake_modes:
+            if need == TextureBakeConstants.PBR:
+                total_maps+=(bakes_to_list(justcount=True) * num_of_objects)
+            if need == TextureBakeConstants.PBRS2A:
+                total_maps+=1*bakes_to_list(justcount=True)
+            if need == TextureBakeConstants.CYCLESBAKE and not context.scene.TextureBake_Props.selected_to_target:
+                total_maps+=1* num_of_objects
+            if need == TextureBakeConstants.CYCLESBAKE and context.scene.TextureBake_Props.selected_to_target:
+                total_maps+=1
+            if need == TextureBakeConstants.SPECIALS:
+                total_maps+=(functions.import_needed_specials_materials(justcount = True) * num_of_objects)
+                if context.scene.TextureBake_Props.selected_col_mats: total_maps+=1*num_of_objects
+                if context.scene.TextureBake_Props.selected_col_vertex: total_maps+=1*num_of_objects
+            if need in [TextureBakeConstants.SPECIALS_CYCLES_TARGET_ONLY, TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY]:
+                total_maps+=(functions.import_needed_specials_materials(justcount = True))
+                if context.scene.TextureBake_Props.selected_col_mats: total_maps+=1
+                if context.scene.TextureBake_Props.selected_col_vertex: total_maps+=1
+
+        BakeStatus.total_maps = total_maps
+
+        # Clear the MasterOperation stuff
+        MasterOperation.clear()
+
+        # Set master operation variables
+        MasterOperation.merged_bake = context.scene.TextureBake_Props.merged_bake
+        MasterOperation.merged_bake_name = context.scene.TextureBake_Props.merged_bake_name
+
+        # Need to know the total operations
+        MasterOperation.total_bake_operations = len(needed_bake_modes)
+
+        # Master list of all ops
+        bops = []
+
+        for need in needed_bake_modes:
+            # Create operation
+            bop = BakeOperation()
+            bop.bake_mode = need
+
+            bops.append(bop)
+            functions.print_msg(f"Created operation for {need}")
+
+        # Run queued operations
+        for bop in bops:
+            MasterOperation.this_bake_operation_num+=1
+            MasterOperation.current_bake_operation = bop
+            if bop.bake_mode == TextureBakeConstants.PBR:
+                functions.print_msg("Running PBR bake")
+                bakefunctions.do_bake()
+            elif bop.bake_mode == TextureBakeConstants.PBRS2A:
+                functions.print_msg("Running PBR S2A bake")
+                bakefunctions.do_bake_selected_to_target()
+            elif bop.bake_mode == TextureBakeConstants.CYCLESBAKE:
+                functions.print_msg("Running Cycles bake")
+                bakefunctions.cycles_bake()
+            elif bop.bake_mode in [TextureBakeConstants.SPECIALS, TextureBakeConstants.SPECIALS_CYCLES_TARGET_ONLY, TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY]:
+                functions.print_msg("Running Specials bake")
+                bakefunctions.specials_bake()
+
+        # Call channel packing
+        # Only possilbe if we baked some kind of PBR. At the moment, can't have non-S2A and S2A
+        if len([bop for bop in bops if bop.bake_mode == TextureBakeConstants.PBR]) > 0:
+            # Should still be active from last bake op
+            objects = MasterOperation.current_bake_operation.bake_objects
+            bakefunctions.channel_packing(objects)
+        if len([bop for bop in bops if bop.bake_mode == TextureBakeConstants.PBRS2A]) > 0:
+            # Should still be active from last bake op
+            objects = [MasterOperation.current_bake_operation.sb_target_object]
+            bakefunctions.channel_packing(objects)
+
+        return True
+
     @classmethod
     def poll(cls,context):
         preset = context.scene.TextureBake_Props.export_preset
@@ -47,97 +127,17 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
         return int(preset) < len(prefs.export_presets)
 
     def execute(self, context):
-        def commence_bake(needed_bake_modes):
-            # Prepare the BakeStatus tracker for progress bar
-            num_of_objects = 0
-            if bpy.context.scene.TextureBake_Props.use_object_list:
-                num_of_objects = len(bpy.context.scene.TextureBake_Props.object_list)
-            else:
-                num_of_objects = len(bpy.context.selected_objects)
-
-            total_maps = 0
-            for need in needed_bake_modes:
-                if need == TextureBakeConstants.PBR:
-                    total_maps+=(bakes_to_list(justcount=True) * num_of_objects)
-                if need == TextureBakeConstants.PBRS2A:
-                    total_maps+=1*bakes_to_list(justcount=True)
-                if need == TextureBakeConstants.CYCLESBAKE and not bpy.context.scene.TextureBake_Props.selected_to_target:
-                    total_maps+=1* num_of_objects
-                if need == TextureBakeConstants.CYCLESBAKE and bpy.context.scene.TextureBake_Props.selected_to_target:
-                    total_maps+=1
-                if need == TextureBakeConstants.SPECIALS:
-                    total_maps+=(functions.import_needed_specials_materials(justcount = True) * num_of_objects)
-                    if bpy.context.scene.TextureBake_Props.selected_col_mats: total_maps+=1*num_of_objects
-                    if bpy.context.scene.TextureBake_Props.selected_col_vertex: total_maps+=1*num_of_objects
-                if need in [TextureBakeConstants.SPECIALS_CYCLES_TARGET_ONLY, TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY]:
-                    total_maps+=(functions.import_needed_specials_materials(justcount = True))
-                    if bpy.context.scene.TextureBake_Props.selected_col_mats: total_maps+=1
-                    if bpy.context.scene.TextureBake_Props.selected_col_vertex: total_maps+=1
-
-            BakeStatus.total_maps = total_maps
-
-            # Clear the MasterOperation stuff
-            MasterOperation.clear()
-
-            # Set master operation variables
-            MasterOperation.merged_bake = bpy.context.scene.TextureBake_Props.merged_bake
-            MasterOperation.merged_bake_name = bpy.context.scene.TextureBake_Props.merged_bake_name
-
-            # Need to know the total operations
-            MasterOperation.total_bake_operations = len(needed_bake_modes)
-
-            # Master list of all ops
-            bops = []
-
-            for need in needed_bake_modes:
-                # Create operation
-                bop = BakeOperation()
-                bop.bake_mode = need
-
-                bops.append(bop)
-                functions.print_msg(f"Created operation for {need}")
-
-            # Run queued operations
-            for bop in bops:
-                MasterOperation.this_bake_operation_num+=1
-                MasterOperation.current_bake_operation = bop
-                if bop.bake_mode == TextureBakeConstants.PBR:
-                    functions.print_msg("Running PBR bake")
-                    bakefunctions.do_bake()
-                elif bop.bake_mode == TextureBakeConstants.PBRS2A:
-                    functions.print_msg("Running PBR S2A bake")
-                    bakefunctions.do_bake_selected_to_target()
-                elif bop.bake_mode == TextureBakeConstants.CYCLESBAKE:
-                    functions.print_msg("Running Cycles bake")
-                    bakefunctions.cycles_bake()
-                elif bop.bake_mode in [TextureBakeConstants.SPECIALS, TextureBakeConstants.SPECIALS_CYCLES_TARGET_ONLY, TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY]:
-                    functions.print_msg("Running Specials bake")
-                    bakefunctions.specials_bake()
-
-            # Call channel packing
-            # Only possilbe if we baked some kind of PBR. At the moment, can't have non-S2A and S2A
-            if len([bop for bop in bops if bop.bake_mode == TextureBakeConstants.PBR]) > 0:
-                # Should still be active from last bake op
-                objects = MasterOperation.current_bake_operation.bake_objects
-                bakefunctions.channel_packing(objects)
-            if len([bop for bop in bops if bop.bake_mode == TextureBakeConstants.PBRS2A]) > 0:
-                # Should still be active from last bake op
-                objects = [MasterOperation.current_bake_operation.sb_target_object]
-                bakefunctions.channel_packing(objects)
-
-            return True
-
         needed_bake_modes = []
-        if bpy.context.scene.TextureBake_Props.global_mode == "pbr_bake" and not bpy.context.scene.TextureBake_Props.selected_to_target:
+        if context.scene.TextureBake_Props.global_mode == "pbr_bake" and not context.scene.TextureBake_Props.selected_to_target:
             needed_bake_modes.append(TextureBakeConstants.PBR)
-        if bpy.context.scene.TextureBake_Props.global_mode == "pbr_bake" and bpy.context.scene.TextureBake_Props.selected_to_target:
+        if context.scene.TextureBake_Props.global_mode == "pbr_bake" and context.scene.TextureBake_Props.selected_to_target:
             needed_bake_modes.append(TextureBakeConstants.PBRS2A)
-        if bpy.context.scene.TextureBake_Props.global_mode == "cycles_bake":
+        if context.scene.TextureBake_Props.global_mode == "cycles_bake":
             needed_bake_modes.append(TextureBakeConstants.CYCLESBAKE)
 
         if functions.any_specials() and TextureBakeConstants.PBRS2A in needed_bake_modes:
             needed_bake_modes.append(TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY)
-        elif functions.any_specials() and TextureBakeConstants.CYCLESBAKE in needed_bake_modes and bpy.context.scene.TextureBake_Props.selected_to_target:
+        elif functions.any_specials() and TextureBakeConstants.CYCLESBAKE in needed_bake_modes and context.scene.TextureBake_Props.selected_to_target:
             needed_bake_modes.append(TextureBakeConstants.SPECIALS_CYCLES_TARGET_ONLY)
         elif functions.any_specials():
             needed_bake_modes.append(TextureBakeConstants.SPECIALS)
@@ -151,24 +151,20 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
             if "TextureBake_Bakes" in bpy.data.collections:
                 # Remove any prior baked objects
                 bpy.data.collections.remove(bpy.data.collections["TextureBake_Bakes"])
-
-            # Bake
             ts = datetime.now()
-            commence_bake(needed_bake_modes)
+            self.commence_bake(context, needed_bake_modes)
             tf = datetime.now()
             s = (tf-ts).seconds
-            functions.print_msg(f"Time taken - {s} seconds ({floor(s/60)} minutes, {s%60} seconds)")
-
-            self.report({"INFO"}, "Bake complete")
+            functions.print_msg(f"Bake complete, took {s} seconds ({floor(s/60)} minutes, {s%60} seconds)")
             return {'FINISHED'}
 
         # We are in foreground, do usual checks
         for mode in needed_bake_modes:
-            if not functions.check_scene(bpy.context.selected_objects, mode):
+            if not functions.check_scene(context.selected_objects, mode):
                 return {"CANCELLED"}
 
         # If the user requested background mode, fire that up now and exit
-        if bpy.context.scene.TextureBake_Props.background_bake == "bg":
+        if context.scene.TextureBake_Props.background_bake == "bg":
             bpy.ops.wm.save_mainfile()
             filepath = filepath = bpy.data.filepath
             process = subprocess.Popen(
@@ -184,9 +180,9 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
             background_bake_ops.bgops_list.append(
                 BackgroundBakeParams(
                     process,
-                    bpy.context.scene.TextureBake_Props.background_bake_name,
-                    bpy.context.scene.TextureBake_Props.prep_mesh,
-                    bpy.context.scene.TextureBake_Props.hide_source_objects
+                    context.scene.TextureBake_Props.background_bake_name,
+                    context.scene.TextureBake_Props.prep_mesh,
+                    context.scene.TextureBake_Props.hide_source_objects
                 )
             )
 
@@ -197,7 +193,7 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
         # If we are doing this here and now, get on with it
         # Create a bake operation
         ts = datetime.now()
-        commence_bake(needed_bake_modes)
+        self.commence_bake(context, needed_bake_modes)
         tf = datetime.now()
         s = (tf-ts).seconds
         functions.print_msg(f"Time taken - {s} seconds ({floor(s/60)} minutes, {s%60} seconds)")
@@ -213,19 +209,19 @@ class TEXTUREBAKE_OT_pbr_select_all(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def execute(self, context):
-        bpy.context.scene.TextureBake_Props.selected_col = True
-        bpy.context.scene.TextureBake_Props.selected_metal = True
-        bpy.context.scene.TextureBake_Props.selected_rough = True
-        bpy.context.scene.TextureBake_Props.selected_normal = True
-        bpy.context.scene.TextureBake_Props.selected_trans = True
-        bpy.context.scene.TextureBake_Props.selected_transrough = True
-        bpy.context.scene.TextureBake_Props.selected_emission = True
-        bpy.context.scene.TextureBake_Props.selected_clearcoat = True
-        bpy.context.scene.TextureBake_Props.selected_clearcoat_rough = True
-        bpy.context.scene.TextureBake_Props.selected_specular = True
-        bpy.context.scene.TextureBake_Props.selected_alpha = True
-        bpy.context.scene.TextureBake_Props.selected_sss = True
-        bpy.context.scene.TextureBake_Props.selected_ssscol = True
+        context.scene.TextureBake_Props.selected_col = True
+        context.scene.TextureBake_Props.selected_metal = True
+        context.scene.TextureBake_Props.selected_rough = True
+        context.scene.TextureBake_Props.selected_normal = True
+        context.scene.TextureBake_Props.selected_trans = True
+        context.scene.TextureBake_Props.selected_transrough = True
+        context.scene.TextureBake_Props.selected_emission = True
+        context.scene.TextureBake_Props.selected_clearcoat = True
+        context.scene.TextureBake_Props.selected_clearcoat_rough = True
+        context.scene.TextureBake_Props.selected_specular = True
+        context.scene.TextureBake_Props.selected_alpha = True
+        context.scene.TextureBake_Props.selected_sss = True
+        context.scene.TextureBake_Props.selected_ssscol = True
         return {'FINISHED'}
 
 
@@ -236,31 +232,19 @@ class TEXTUREBAKE_OT_pbr_select_none(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def execute(self, context):
-        bpy.context.scene.TextureBake_Props.selected_col = False
-        bpy.context.scene.TextureBake_Props.selected_metal = False
-        bpy.context.scene.TextureBake_Props.selected_rough = False
-        bpy.context.scene.TextureBake_Props.selected_normal = False
-        bpy.context.scene.TextureBake_Props.selected_trans = False
-        bpy.context.scene.TextureBake_Props.selected_transrough = False
-        bpy.context.scene.TextureBake_Props.selected_emission = False
-        bpy.context.scene.TextureBake_Props.selected_clearcoat = False
-        bpy.context.scene.TextureBake_Props.selected_clearcoat_rough = False
-        bpy.context.scene.TextureBake_Props.selected_specular = False
-        bpy.context.scene.TextureBake_Props.selected_alpha = False
-        bpy.context.scene.TextureBake_Props.selected_sss = False
-        bpy.context.scene.TextureBake_Props.selected_ssscol = False
-        return {'FINISHED'}
-
-
-class TEXTUREBAKE_OT_reset_name_format(bpy.types.Operator):
-    """Reset the image name format string to default"""
-    bl_idname = "texture_bake.reset_name_format"
-    bl_label = "Restore Defaults"
-    bl_options = {'INTERNAL'}
-
-    def execute(self, context):
-        bpy.context.preferences.addons[__package__].preferences.property_unset("img_name_format")
-        bpy.ops.wm.save_userpref()
+        context.scene.TextureBake_Props.selected_col = False
+        context.scene.TextureBake_Props.selected_metal = False
+        context.scene.TextureBake_Props.selected_rough = False
+        context.scene.TextureBake_Props.selected_normal = False
+        context.scene.TextureBake_Props.selected_trans = False
+        context.scene.TextureBake_Props.selected_transrough = False
+        context.scene.TextureBake_Props.selected_emission = False
+        context.scene.TextureBake_Props.selected_clearcoat = False
+        context.scene.TextureBake_Props.selected_clearcoat_rough = False
+        context.scene.TextureBake_Props.selected_specular = False
+        context.scene.TextureBake_Props.selected_alpha = False
+        context.scene.TextureBake_Props.selected_sss = False
+        context.scene.TextureBake_Props.selected_ssscol = False
         return {'FINISHED'}
 
 
@@ -271,7 +255,7 @@ class TEXTUREBAKE_OT_reset_aliases(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def execute(self, context):
-        bpy.context.preferences.addons[__package__].preferences.reset_aliases()
+        context.preferences.addons[__package__].preferences.reset_aliases()
         return {'FINISHED'}
 
 
@@ -282,7 +266,7 @@ class TEXTUREBAKE_OT_bake_import(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def execute(self, context):
-        if bpy.context.mode != "OBJECT":
+        if context.mode != "OBJECT":
             self.report({"ERROR"}, "You must be in object mode")
             return {'CANCELLED'}
 
@@ -367,7 +351,7 @@ class TEXTUREBAKE_OT_bake_import_individual(bpy.types.Operator):
     pnum: bpy.props.IntProperty()
 
     def execute(self, context):
-        if bpy.context.mode != "OBJECT":
+        if context.mode != "OBJECT":
             self.report({"ERROR"}, "You must be in object mode")
             return {'CANCELLED'}
 
@@ -495,10 +479,10 @@ class TEXTUREBAKE_OT_import_materials(bpy.types.Operator):
 
     @classmethod
     def poll(cls,context):
-        return bpy.context.scene.TextureBake_Props.selected_ao or\
-            bpy.context.scene.TextureBake_Props.selected_curvature or\
-            bpy.context.scene.TextureBake_Props.selected_thickness or\
-            bpy.context.scene.TextureBake_Props.selected_lightmap
+        return context.scene.TextureBake_Props.selected_ao or\
+            context.scene.TextureBake_Props.selected_curvature or\
+            context.scene.TextureBake_Props.selected_thickness or\
+            context.scene.TextureBake_Props.selected_lightmap
 
     def execute(self, context):
         functions.import_needed_specials_materials()
@@ -514,105 +498,105 @@ class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
 
     @classmethod
     def poll(cls,context):
-        return bpy.context.scene.TextureBake_Props.preset_name != ""
+        return context.scene.TextureBake_Props.preset_name != ""
 
     def execute(self, context):
         d = {}
         d["export_preset"] = context.scene.TextureBake_Props.export_preset
-        d["global_mode"] = bpy.context.scene.TextureBake_Props.global_mode
-        d["ray_distance"] = bpy.context.scene.TextureBake_Props.ray_distance
-        d["cage_extrusion"] = bpy.context.scene.TextureBake_Props.cage_extrusion
-        d["selected_to_target"] = bpy.context.scene.TextureBake_Props.selected_to_target
-        d["merged_bake"] = bpy.context.scene.TextureBake_Props.merged_bake
-        d["merged_bake_name"] = bpy.context.scene.TextureBake_Props.merged_bake_name
-        d["input_height"] = bpy.context.scene.TextureBake_Props.input_height
-        d["input_width"] = bpy.context.scene.TextureBake_Props.input_width
-        d["output_height"] = bpy.context.scene.TextureBake_Props.output_height
-        d["output_width"] = bpy.context.scene.TextureBake_Props.output_width
-        d["bake_32bit_float"] = bpy.context.scene.TextureBake_Props.bake_32bit_float
-        d["use_alpha"] = bpy.context.scene.TextureBake_Props.use_alpha
-        d["rough_glossy_switch"] = bpy.context.scene.TextureBake_Props.rough_glossy_switch
-        d["normal_format_switch"] = bpy.context.scene.TextureBake_Props.normal_format_switch
-        d["tex_per_mat"] = bpy.context.scene.TextureBake_Props.tex_per_mat
-        d["selected_col"] = bpy.context.scene.TextureBake_Props.selected_col
-        d["selected_metal"] = bpy.context.scene.TextureBake_Props.selected_metal
-        d["selected_rough"] = bpy.context.scene.TextureBake_Props.selected_rough
-        d["selected_normal"] = bpy.context.scene.TextureBake_Props.selected_normal
-        d["selected_trans"] = bpy.context.scene.TextureBake_Props.selected_trans
-        d["selected_transrough"] = bpy.context.scene.TextureBake_Props.selected_transrough
-        d["selected_emission"] = bpy.context.scene.TextureBake_Props.selected_emission
-        d["selected_sss"] = bpy.context.scene.TextureBake_Props.selected_sss
-        d["selected_ssscol"] = bpy.context.scene.TextureBake_Props.selected_ssscol
-        d["selected_clearcoat"] = bpy.context.scene.TextureBake_Props.selected_clearcoat
-        d["selected_clearcoat_rough"] = bpy.context.scene.TextureBake_Props.selected_clearcoat_rough
-        d["selected_specular"] = bpy.context.scene.TextureBake_Props.selected_specular
-        d["selected_alpha"] = bpy.context.scene.TextureBake_Props.selected_alpha
-        d["selected_col_mats"] = bpy.context.scene.TextureBake_Props.selected_col_mats
-        d["selected_col_vertex"] = bpy.context.scene.TextureBake_Props.selected_col_vertex
-        d["selected_ao"] = bpy.context.scene.TextureBake_Props.selected_ao
-        d["selected_thickness"] = bpy.context.scene.TextureBake_Props.selected_thickness
-        d["selected_curvature"] = bpy.context.scene.TextureBake_Props.selected_curvature
-        d["selected_lightmap"] = bpy.context.scene.TextureBake_Props.selected_lightmap
-        d["lightmap_apply_colman"] = bpy.context.scene.TextureBake_Props.lightmap_apply_colman
-        d["selected_lightmap_denoise"] = bpy.context.scene.TextureBake_Props.selected_lightmap_denoise
-        d["prefer_existing_uvmap"] = bpy.context.scene.TextureBake_Props.prefer_existing_uvmap
-        d["restore_active_uvmap"] = bpy.context.scene.TextureBake_Props.restore_active_uvmap
-        d["uv_mode"] = bpy.context.scene.TextureBake_Props.uv_mode
-        d["udim_tiles"] = bpy.context.scene.TextureBake_Props.udim_tiles
-        d["cp_file_format"] = bpy.context.scene.TextureBake_Props.cp_file_format
-        d["export_textures"] = bpy.context.scene.TextureBake_Props.export_textures
-        d["export_folder_per_object"] = bpy.context.scene.TextureBake_Props.export_folder_per_object
-        d["export_mesh"] = bpy.context.scene.TextureBake_Props.export_mesh
-        d["fbx_name"] = bpy.context.scene.TextureBake_Props.fbx_name
-        d["prep_mesh"] = bpy.context.scene.TextureBake_Props.prep_mesh
-        d["hide_source_objects"] = bpy.context.scene.TextureBake_Props.hide_source_objects
-        d["preserve_materials"] = bpy.context.scene.TextureBake_Props.preserve_materials
-        d["export_16bit"] = bpy.context.scene.TextureBake_Props.export_16bit
-        d["export_file_format"] = bpy.context.scene.TextureBake_Props.export_file_format
-        d["export_folder_name"] = bpy.context.scene.TextureBake_Props.export_folder_name
-        d["export_color_space"] = bpy.context.scene.TextureBake_Props.export_color_space
-        d["export_datetime"] = bpy.context.scene.TextureBake_Props.export_datetime
-        d["run_denoise"] = bpy.context.scene.TextureBake_Props.run_denoise
-        d["export_apply_modifiers"] = bpy.context.scene.TextureBake_Props.export_apply_modifiers
-        d["use_object_list"] = bpy.context.scene.TextureBake_Props.use_object_list
-        d["object_list_index"] = bpy.context.scene.TextureBake_Props.object_list_index
-        d["background_bake"] = bpy.context.scene.TextureBake_Props.background_bake
-        d["memory_limit"] = bpy.context.scene.TextureBake_Props.memory_limit
-        d["batch_name"] = bpy.context.scene.TextureBake_Props.batch_name
-        d["first_texture_show"] = bpy.context.scene.TextureBake_Props.first_texture_show
-        d["background_bake_name"] = bpy.context.scene.TextureBake_Props.background_bake_name
+        d["global_mode"] = context.scene.TextureBake_Props.global_mode
+        d["ray_distance"] = context.scene.TextureBake_Props.ray_distance
+        d["cage_extrusion"] = context.scene.TextureBake_Props.cage_extrusion
+        d["selected_to_target"] = context.scene.TextureBake_Props.selected_to_target
+        d["merged_bake"] = context.scene.TextureBake_Props.merged_bake
+        d["merged_bake_name"] = context.scene.TextureBake_Props.merged_bake_name
+        d["input_height"] = context.scene.TextureBake_Props.input_height
+        d["input_width"] = context.scene.TextureBake_Props.input_width
+        d["output_height"] = context.scene.TextureBake_Props.output_height
+        d["output_width"] = context.scene.TextureBake_Props.output_width
+        d["bake_32bit_float"] = context.scene.TextureBake_Props.bake_32bit_float
+        d["use_alpha"] = context.scene.TextureBake_Props.use_alpha
+        d["rough_glossy_switch"] = context.scene.TextureBake_Props.rough_glossy_switch
+        d["normal_format_switch"] = context.scene.TextureBake_Props.normal_format_switch
+        d["tex_per_mat"] = context.scene.TextureBake_Props.tex_per_mat
+        d["selected_col"] = context.scene.TextureBake_Props.selected_col
+        d["selected_metal"] = context.scene.TextureBake_Props.selected_metal
+        d["selected_rough"] = context.scene.TextureBake_Props.selected_rough
+        d["selected_normal"] = context.scene.TextureBake_Props.selected_normal
+        d["selected_trans"] = context.scene.TextureBake_Props.selected_trans
+        d["selected_transrough"] = context.scene.TextureBake_Props.selected_transrough
+        d["selected_emission"] = context.scene.TextureBake_Props.selected_emission
+        d["selected_sss"] = context.scene.TextureBake_Props.selected_sss
+        d["selected_ssscol"] = context.scene.TextureBake_Props.selected_ssscol
+        d["selected_clearcoat"] = context.scene.TextureBake_Props.selected_clearcoat
+        d["selected_clearcoat_rough"] = context.scene.TextureBake_Props.selected_clearcoat_rough
+        d["selected_specular"] = context.scene.TextureBake_Props.selected_specular
+        d["selected_alpha"] = context.scene.TextureBake_Props.selected_alpha
+        d["selected_col_mats"] = context.scene.TextureBake_Props.selected_col_mats
+        d["selected_col_vertex"] = context.scene.TextureBake_Props.selected_col_vertex
+        d["selected_ao"] = context.scene.TextureBake_Props.selected_ao
+        d["selected_thickness"] = context.scene.TextureBake_Props.selected_thickness
+        d["selected_curvature"] = context.scene.TextureBake_Props.selected_curvature
+        d["selected_lightmap"] = context.scene.TextureBake_Props.selected_lightmap
+        d["lightmap_apply_colman"] = context.scene.TextureBake_Props.lightmap_apply_colman
+        d["selected_lightmap_denoise"] = context.scene.TextureBake_Props.selected_lightmap_denoise
+        d["prefer_existing_uvmap"] = context.scene.TextureBake_Props.prefer_existing_uvmap
+        d["restore_active_uvmap"] = context.scene.TextureBake_Props.restore_active_uvmap
+        d["uv_mode"] = context.scene.TextureBake_Props.uv_mode
+        d["udim_tiles"] = context.scene.TextureBake_Props.udim_tiles
+        d["cp_file_format"] = context.scene.TextureBake_Props.cp_file_format
+        d["export_textures"] = context.scene.TextureBake_Props.export_textures
+        d["export_folder_per_object"] = context.scene.TextureBake_Props.export_folder_per_object
+        d["export_mesh"] = context.scene.TextureBake_Props.export_mesh
+        d["fbx_name"] = context.scene.TextureBake_Props.fbx_name
+        d["prep_mesh"] = context.scene.TextureBake_Props.prep_mesh
+        d["hide_source_objects"] = context.scene.TextureBake_Props.hide_source_objects
+        d["preserve_materials"] = context.scene.TextureBake_Props.preserve_materials
+        d["export_16bit"] = context.scene.TextureBake_Props.export_16bit
+        d["export_file_format"] = context.scene.TextureBake_Props.export_file_format
+        d["export_folder_name"] = context.scene.TextureBake_Props.export_folder_name
+        d["export_color_space"] = context.scene.TextureBake_Props.export_color_space
+        d["export_datetime"] = context.scene.TextureBake_Props.export_datetime
+        d["run_denoise"] = context.scene.TextureBake_Props.run_denoise
+        d["export_apply_modifiers"] = context.scene.TextureBake_Props.export_apply_modifiers
+        d["use_object_list"] = context.scene.TextureBake_Props.use_object_list
+        d["object_list_index"] = context.scene.TextureBake_Props.object_list_index
+        d["background_bake"] = context.scene.TextureBake_Props.background_bake
+        d["memory_limit"] = context.scene.TextureBake_Props.memory_limit
+        d["batch_name"] = context.scene.TextureBake_Props.batch_name
+        d["first_texture_show"] = context.scene.TextureBake_Props.first_texture_show
+        d["background_bake_name"] = context.scene.TextureBake_Props.background_bake_name
 
-        d["bake_type"] = bpy.context.scene.cycles.bake_type
-        d["use_pass_direct"] = bpy.context.scene.render.bake.use_pass_direct
-        d["use_pass_indirect"] = bpy.context.scene.render.bake.use_pass_indirect
-        d["use_pass_diffuse"] = bpy.context.scene.render.bake.use_pass_diffuse
-        d["use_pass_glossy"] = bpy.context.scene.render.bake.use_pass_glossy
-        d["use_pass_transmission"] = bpy.context.scene.render.bake.use_pass_transmission
-        d["use_pass_emit"] = bpy.context.scene.render.bake.use_pass_emit
-        d["cycles.samples"] = bpy.context.scene.cycles.samples
-        d["bake.normal_space"] = bpy.context.scene.render.bake.normal_space
-        d["render.bake.normal_r"] = bpy.context.scene.render.bake.normal_r
-        d["render.bake.normal_g"] = bpy.context.scene.render.bake.normal_g
-        d["render.bake.normal_b"] = bpy.context.scene.render.bake.normal_b
-        d["use_pass_color"] = bpy.context.scene.render.bake.use_pass_color
-        d["bake.margin"] = bpy.context.scene.render.bake.margin
+        d["bake_type"] = context.scene.cycles.bake_type
+        d["use_pass_direct"] = context.scene.render.bake.use_pass_direct
+        d["use_pass_indirect"] = context.scene.render.bake.use_pass_indirect
+        d["use_pass_diffuse"] = context.scene.render.bake.use_pass_diffuse
+        d["use_pass_glossy"] = context.scene.render.bake.use_pass_glossy
+        d["use_pass_transmission"] = context.scene.render.bake.use_pass_transmission
+        d["use_pass_emit"] = context.scene.render.bake.use_pass_emit
+        d["cycles.samples"] = context.scene.cycles.samples
+        d["bake.normal_space"] = context.scene.render.bake.normal_space
+        d["render.bake.normal_r"] = context.scene.render.bake.normal_r
+        d["render.bake.normal_g"] = context.scene.render.bake.normal_g
+        d["render.bake.normal_b"] = context.scene.render.bake.normal_b
+        d["use_pass_color"] = context.scene.render.bake.use_pass_color
+        d["bake.margin"] = context.scene.render.bake.margin
 
         # Grab the objects in the advanced list (if any)
-        d["object_list"] = [i.obj.name for i in bpy.context.scene.TextureBake_Props.object_list]
+        d["object_list"] = [i.obj.name for i in context.scene.TextureBake_Props.object_list]
         # Grab the target objects if there is one
-        if bpy.context.scene.TextureBake_Props.target_object != None:
-            d["target_object"] = bpy.context.scene.TextureBake_Props.target_object.name
+        if context.scene.TextureBake_Props.target_object != None:
+            d["target_object"] = context.scene.TextureBake_Props.target_object.name
         else:
             d["target_object"] = None
         # Cage object if there is one
-        if bpy.context.scene.render.bake.cage_object != None:
-            d["cage_object"] = bpy.context.scene.render.bake.cage_object.name
+        if context.scene.render.bake.cage_object != None:
+            d["cage_object"] = context.scene.render.bake.cage_object.name
         else:
             d["cage_object"] = None
 
         # Channel packed images
         cp_images_dict = {}
-        for cpi in bpy.context.scene.TextureBake_Props.cp_list:
+        for cpi in context.scene.TextureBake_Props.cp_list:
             thiscpi_dict = {}
             thiscpi_dict["R"] = cpi.R
             thiscpi_dict["G"] = cpi.G
@@ -628,7 +612,7 @@ class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
         # Find where we want to save
         p = Path(bpy.utils.script_path_user())
         p = p.parents[1]
-        savename = functions.clean_file_name(bpy.context.scene.TextureBake_Props.preset_name)
+        savename = functions.clean_file_name(context.scene.TextureBake_Props.preset_name)
 
         # Check for data directory
         if not os.path.isdir(str(p / "data")):
@@ -667,7 +651,7 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
     @classmethod
     def poll(cls,context):
         try:
-            bpy.context.scene.TextureBake_Props.presets_list[bpy.context.scene.TextureBake_Props.presets_list_index].name
+            context.scene.TextureBake_Props.presets_list[context.scene.TextureBake_Props.presets_list_index].name
             return True
         except:
             return False
@@ -675,8 +659,8 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
     def execute(self, context):
         # Load it
         loadname = functions.clean_file_name(\
-            bpy.context.scene.TextureBake_Props.presets_list[\
-            bpy.context.scene.TextureBake_Props.presets_list_index].name)
+            context.scene.TextureBake_Props.presets_list[\
+            context.scene.TextureBake_Props.presets_list_index].name)
 
         p = Path(bpy.utils.script_path_user())
         p = p.parents[1]
@@ -695,96 +679,96 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
         d = json.loads(jsonContent)
 
         context.scene.TextureBake_Props.export_preset = d["export_preset"]
-        bpy.context.scene.TextureBake_Props.global_mode = d["global_mode"]
-        bpy.context.scene.TextureBake_Props.ray_distance = d["ray_distance"]
-        bpy.context.scene.TextureBake_Props.cage_extrusion = d["cage_extrusion"]
-        bpy.context.scene.TextureBake_Props.selected_to_target = d["selected_to_target"]
-        bpy.context.scene.TextureBake_Props.merged_bake = d["merged_bake"]
-        bpy.context.scene.TextureBake_Props.merged_bake_name = d["merged_bake_name"]
-        bpy.context.scene.TextureBake_Props.input_height = d["input_height"]
-        bpy.context.scene.TextureBake_Props.input_width = d["input_width"]
-        bpy.context.scene.TextureBake_Props.output_height = d["output_height"]
-        bpy.context.scene.TextureBake_Props.output_width = d["output_width"]
-        bpy.context.scene.TextureBake_Props.bake_32bit_float = d["bake_32bit_float"]
-        bpy.context.scene.TextureBake_Props.use_alpha = d["use_alpha"]
-        bpy.context.scene.TextureBake_Props.rough_glossy_switch = d["rough_glossy_switch"]
-        bpy.context.scene.TextureBake_Props.normal_format_switch = d["normal_format_switch"]
-        bpy.context.scene.TextureBake_Props.tex_per_mat = d["tex_per_mat"]
-        bpy.context.scene.TextureBake_Props.selected_col = d["selected_col"]
-        bpy.context.scene.TextureBake_Props.selected_metal = d["selected_metal"]
-        bpy.context.scene.TextureBake_Props.selected_rough = d["selected_rough"]
-        bpy.context.scene.TextureBake_Props.selected_normal = d["selected_normal"]
-        bpy.context.scene.TextureBake_Props.selected_trans = d["selected_trans"]
-        bpy.context.scene.TextureBake_Props.selected_transrough = d["selected_transrough"]
-        bpy.context.scene.TextureBake_Props.selected_emission = d["selected_emission"]
-        bpy.context.scene.TextureBake_Props.selected_sss = d["selected_sss"]
-        bpy.context.scene.TextureBake_Props.selected_ssscol = d["selected_ssscol"]
-        bpy.context.scene.TextureBake_Props.selected_clearcoat = d["selected_clearcoat"]
-        bpy.context.scene.TextureBake_Props.selected_clearcoat_rough = d["selected_clearcoat_rough"]
-        bpy.context.scene.TextureBake_Props.selected_specular = d["selected_specular"]
-        bpy.context.scene.TextureBake_Props.selected_alpha = d["selected_alpha"]
-        bpy.context.scene.TextureBake_Props.selected_col_mats = d["selected_col_mats"]
-        bpy.context.scene.TextureBake_Props.selected_col_vertex = d["selected_col_vertex"]
-        bpy.context.scene.TextureBake_Props.selected_ao = d["selected_ao"]
-        bpy.context.scene.TextureBake_Props.selected_thickness = d["selected_thickness"]
-        bpy.context.scene.TextureBake_Props.selected_curvature = d["selected_curvature"]
-        bpy.context.scene.TextureBake_Props.selected_lightmap = d["selected_lightmap"]
-        bpy.context.scene.TextureBake_Props.lightmap_apply_colman = d["lightmap_apply_colman"]
-        bpy.context.scene.TextureBake_Props.selected_lightmap_denoise = d["selected_lightmap_denoise"]
-        bpy.context.scene.TextureBake_Props.restore_active_uvmap = d["restore_active_uvmap"]
-        bpy.context.scene.TextureBake_Props.uv_mode = d["uv_mode"]
-        bpy.context.scene.TextureBake_Props.udim_tiles = d["udim_tiles"]
-        bpy.context.scene.TextureBake_Props.cp_file_format = d["cp_file_format"]
-        bpy.context.scene.TextureBake_Props.export_textures = d["export_textures"]
-        bpy.context.scene.TextureBake_Props.export_folder_per_object = d["export_folder_per_object"]
-        bpy.context.scene.TextureBake_Props.export_mesh = d["export_mesh"]
-        bpy.context.scene.TextureBake_Props.fbx_name = d["fbx_name"]
-        bpy.context.scene.TextureBake_Props.prep_mesh = d["prep_mesh"]
-        bpy.context.scene.TextureBake_Props.hide_source_objects = d["hide_source_objects"]
-        bpy.context.scene.TextureBake_Props.preserve_materials = d["preserve_materials"]
-        bpy.context.scene.TextureBake_Props.export_16bit = d["export_16bit"]
-        bpy.context.scene.TextureBake_Props.export_file_format = d["export_file_format"]
-        bpy.context.scene.TextureBake_Props.export_folder_name = d["export_folder_name"]
-        bpy.context.scene.TextureBake_Props.export_color_space = d["export_color_space"]
-        bpy.context.scene.TextureBake_Props.export_datetime = d["export_datetime"]
-        bpy.context.scene.TextureBake_Props.run_denoise = d["run_denoise"]
-        bpy.context.scene.TextureBake_Props.export_apply_modifiers = d["export_apply_modifiers"]
-        bpy.context.scene.TextureBake_Props.use_object_list = d["use_object_list"]
-        bpy.context.scene.TextureBake_Props.object_list_index = d["object_list_index"]
-        bpy.context.scene.TextureBake_Props.background_bake = d["background_bake"]
-        bpy.context.scene.TextureBake_Props.memory_limit = d["memory_limit"]
-        bpy.context.scene.TextureBake_Props.batch_name = d["batch_name"]
-        bpy.context.scene.TextureBake_Props.first_texture_show = d["first_texture_show"]
-        bpy.context.scene.TextureBake_Props.background_bake_name = d["background_bake_name"]
-        bpy.context.scene.TextureBake_Props.prefer_existing_uvmap = d["prefer_existing_uvmap"]
+        context.scene.TextureBake_Props.global_mode = d["global_mode"]
+        context.scene.TextureBake_Props.ray_distance = d["ray_distance"]
+        context.scene.TextureBake_Props.cage_extrusion = d["cage_extrusion"]
+        context.scene.TextureBake_Props.selected_to_target = d["selected_to_target"]
+        context.scene.TextureBake_Props.merged_bake = d["merged_bake"]
+        context.scene.TextureBake_Props.merged_bake_name = d["merged_bake_name"]
+        context.scene.TextureBake_Props.input_height = d["input_height"]
+        context.scene.TextureBake_Props.input_width = d["input_width"]
+        context.scene.TextureBake_Props.output_height = d["output_height"]
+        context.scene.TextureBake_Props.output_width = d["output_width"]
+        context.scene.TextureBake_Props.bake_32bit_float = d["bake_32bit_float"]
+        context.scene.TextureBake_Props.use_alpha = d["use_alpha"]
+        context.scene.TextureBake_Props.rough_glossy_switch = d["rough_glossy_switch"]
+        context.scene.TextureBake_Props.normal_format_switch = d["normal_format_switch"]
+        context.scene.TextureBake_Props.tex_per_mat = d["tex_per_mat"]
+        context.scene.TextureBake_Props.selected_col = d["selected_col"]
+        context.scene.TextureBake_Props.selected_metal = d["selected_metal"]
+        context.scene.TextureBake_Props.selected_rough = d["selected_rough"]
+        context.scene.TextureBake_Props.selected_normal = d["selected_normal"]
+        context.scene.TextureBake_Props.selected_trans = d["selected_trans"]
+        context.scene.TextureBake_Props.selected_transrough = d["selected_transrough"]
+        context.scene.TextureBake_Props.selected_emission = d["selected_emission"]
+        context.scene.TextureBake_Props.selected_sss = d["selected_sss"]
+        context.scene.TextureBake_Props.selected_ssscol = d["selected_ssscol"]
+        context.scene.TextureBake_Props.selected_clearcoat = d["selected_clearcoat"]
+        context.scene.TextureBake_Props.selected_clearcoat_rough = d["selected_clearcoat_rough"]
+        context.scene.TextureBake_Props.selected_specular = d["selected_specular"]
+        context.scene.TextureBake_Props.selected_alpha = d["selected_alpha"]
+        context.scene.TextureBake_Props.selected_col_mats = d["selected_col_mats"]
+        context.scene.TextureBake_Props.selected_col_vertex = d["selected_col_vertex"]
+        context.scene.TextureBake_Props.selected_ao = d["selected_ao"]
+        context.scene.TextureBake_Props.selected_thickness = d["selected_thickness"]
+        context.scene.TextureBake_Props.selected_curvature = d["selected_curvature"]
+        context.scene.TextureBake_Props.selected_lightmap = d["selected_lightmap"]
+        context.scene.TextureBake_Props.lightmap_apply_colman = d["lightmap_apply_colman"]
+        context.scene.TextureBake_Props.selected_lightmap_denoise = d["selected_lightmap_denoise"]
+        context.scene.TextureBake_Props.restore_active_uvmap = d["restore_active_uvmap"]
+        context.scene.TextureBake_Props.uv_mode = d["uv_mode"]
+        context.scene.TextureBake_Props.udim_tiles = d["udim_tiles"]
+        context.scene.TextureBake_Props.cp_file_format = d["cp_file_format"]
+        context.scene.TextureBake_Props.export_textures = d["export_textures"]
+        context.scene.TextureBake_Props.export_folder_per_object = d["export_folder_per_object"]
+        context.scene.TextureBake_Props.export_mesh = d["export_mesh"]
+        context.scene.TextureBake_Props.fbx_name = d["fbx_name"]
+        context.scene.TextureBake_Props.prep_mesh = d["prep_mesh"]
+        context.scene.TextureBake_Props.hide_source_objects = d["hide_source_objects"]
+        context.scene.TextureBake_Props.preserve_materials = d["preserve_materials"]
+        context.scene.TextureBake_Props.export_16bit = d["export_16bit"]
+        context.scene.TextureBake_Props.export_file_format = d["export_file_format"]
+        context.scene.TextureBake_Props.export_folder_name = d["export_folder_name"]
+        context.scene.TextureBake_Props.export_color_space = d["export_color_space"]
+        context.scene.TextureBake_Props.export_datetime = d["export_datetime"]
+        context.scene.TextureBake_Props.run_denoise = d["run_denoise"]
+        context.scene.TextureBake_Props.export_apply_modifiers = d["export_apply_modifiers"]
+        context.scene.TextureBake_Props.use_object_list = d["use_object_list"]
+        context.scene.TextureBake_Props.object_list_index = d["object_list_index"]
+        context.scene.TextureBake_Props.background_bake = d["background_bake"]
+        context.scene.TextureBake_Props.memory_limit = d["memory_limit"]
+        context.scene.TextureBake_Props.batch_name = d["batch_name"]
+        context.scene.TextureBake_Props.first_texture_show = d["first_texture_show"]
+        context.scene.TextureBake_Props.background_bake_name = d["background_bake_name"]
+        context.scene.TextureBake_Props.prefer_existing_uvmap = d["prefer_existing_uvmap"]
 
-        bpy.context.scene.cycles.bake_type = d["bake_type"]
-        bpy.context.scene.render.bake.use_pass_direct = d["use_pass_direct"]
-        bpy.context.scene.render.bake.use_pass_indirect = d["use_pass_indirect"]
-        bpy.context.scene.render.bake.use_pass_diffuse = d["use_pass_diffuse"]
-        bpy.context.scene.render.bake.use_pass_glossy = d["use_pass_glossy"]
-        bpy.context.scene.render.bake.use_pass_transmission = d["use_pass_transmission"]
-        bpy.context.scene.render.bake.use_pass_emit = d["use_pass_emit"]
-        bpy.context.scene.cycles.samples = d["cycles.samples"]
-        bpy.context.scene.render.bake.normal_space = d["bake.normal_space"]
-        bpy.context.scene.render.bake.normal_r = d["render.bake.normal_r"]
-        bpy.context.scene.render.bake.normal_g = d["render.bake.normal_g"]
-        bpy.context.scene.render.bake.normal_b = d["render.bake.normal_b"]
-        bpy.context.scene.render.bake.use_pass_color = d["use_pass_color"]
-        bpy.context.scene.render.bake.margin = d["bake.margin"]
+        context.scene.cycles.bake_type = d["bake_type"]
+        context.scene.render.bake.use_pass_direct = d["use_pass_direct"]
+        context.scene.render.bake.use_pass_indirect = d["use_pass_indirect"]
+        context.scene.render.bake.use_pass_diffuse = d["use_pass_diffuse"]
+        context.scene.render.bake.use_pass_glossy = d["use_pass_glossy"]
+        context.scene.render.bake.use_pass_transmission = d["use_pass_transmission"]
+        context.scene.render.bake.use_pass_emit = d["use_pass_emit"]
+        context.scene.cycles.samples = d["cycles.samples"]
+        context.scene.render.bake.normal_space = d["bake.normal_space"]
+        context.scene.render.bake.normal_r = d["render.bake.normal_r"]
+        context.scene.render.bake.normal_g = d["render.bake.normal_g"]
+        context.scene.render.bake.normal_b = d["render.bake.normal_b"]
+        context.scene.render.bake.use_pass_color = d["use_pass_color"]
+        context.scene.render.bake.margin = d["bake.margin"]
 
         # Channel packing images
         if "channel_packed_images" in d:
             channel_packed_images = d["channel_packed_images"]
 
             if len(channel_packed_images) > 0:
-                bpy.context.scene.TextureBake_Props.cp_list.clear()
+                context.scene.TextureBake_Props.cp_list.clear()
 
             for imgname in channel_packed_images:
                 thiscpi_dict = channel_packed_images[imgname]
 
                 # Create the list item
-                li = bpy.context.scene.TextureBake_Props.cp_list.add()
+                li = context.scene.TextureBake_Props.cp_list.add()
                 li.name = imgname
 
                 # Set the list item properies
@@ -795,17 +779,17 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
                 li.file_format = thiscpi_dict["file_format"]
 
         # And now the objects, if they are here
-        bpy.context.scene.TextureBake_Props.object_list.clear()
+        context.scene.TextureBake_Props.object_list.clear()
         for name in d["object_list"]:
             if name in bpy.data.objects:
-                item = bpy.context.scene.TextureBake_Props.object_list.add()
+                item = context.scene.TextureBake_Props.object_list.add()
                 item.obj = bpy.data.objects[name]
 
         if d["target_object"] != None and d["target_object"] in bpy.data.objects:
-            bpy.context.scene.TextureBake_Props.target_object = bpy.data.objects[d["target_object"]]
+            context.scene.TextureBake_Props.target_object = bpy.data.objects[d["target_object"]]
         # Cage object
         if d["cage_object"] != None and d["cage_object"] in bpy.data.objects:
-            bpy.context.scene.render.bake.cage_object = bpy.data.objects[d["cage_object"]]
+            context.scene.render.bake.cage_object = bpy.data.objects[d["cage_object"]]
 
         self.report({"INFO"}, f"Preset {loadname} loaded")
         return {'FINISHED'}
@@ -818,7 +802,7 @@ class TEXTUREBAKE_OT_refresh_presets(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def execute(self, context):
-        bpy.context.scene.TextureBake_Props.presets_list.clear()
+        context.scene.TextureBake_Props.presets_list.clear()
 
         p = Path(bpy.utils.script_path_user())
         p = p.parents[1]
@@ -836,7 +820,7 @@ class TEXTUREBAKE_OT_refresh_presets(bpy.types.Operator):
 
         for preset in presets:
             # List should be clear
-            i = bpy.context.scene.TextureBake_Props.presets_list.add()
+            i = context.scene.TextureBake_Props.presets_list.add()
             i.name = preset
 
         return {'FINISHED'}
@@ -851,7 +835,7 @@ class TEXTUREBAKE_OT_delete_preset(bpy.types.Operator):
     @classmethod
     def poll(cls,context):
         try:
-            bpy.context.scene.TextureBake_Props.presets_list[bpy.context.scene.TextureBake_Props.presets_list_index].name
+            context.scene.TextureBake_Props.presets_list[context.scene.TextureBake_Props.presets_list_index].name
             return True
         except:
             return False
@@ -878,20 +862,20 @@ class TEXTUREBAKE_OT_increase_bake_res(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def execute(self, context):
-        x = bpy.context.scene.TextureBake_Props.input_width
-        bpy.context.scene.TextureBake_Props.input_width = x + 1024
-        y = bpy.context.scene.TextureBake_Props.input_height
-        bpy.context.scene.TextureBake_Props.input_height = y + 1024
+        x = context.scene.TextureBake_Props.input_width
+        context.scene.TextureBake_Props.input_width = x + 1024
+        y = context.scene.TextureBake_Props.input_height
+        context.scene.TextureBake_Props.input_height = y + 1024
 
-        while bpy.context.scene.TextureBake_Props.input_height % 1024 != 0:
-            bpy.context.scene.TextureBake_Props.input_height -= 1
+        while context.scene.TextureBake_Props.input_height % 1024 != 0:
+            context.scene.TextureBake_Props.input_height -= 1
 
-        while bpy.context.scene.TextureBake_Props.input_width % 1024 != 0:
-            bpy.context.scene.TextureBake_Props.input_width -= 1
+        while context.scene.TextureBake_Props.input_width % 1024 != 0:
+            context.scene.TextureBake_Props.input_width -= 1
 
-        result = min(bpy.context.scene.TextureBake_Props.input_width, bpy.context.scene.TextureBake_Props.input_height)
-        bpy.context.scene.TextureBake_Props.input_width = result
-        bpy.context.scene.TextureBake_Props.input_height = result
+        result = min(context.scene.TextureBake_Props.input_width, context.scene.TextureBake_Props.input_height)
+        context.scene.TextureBake_Props.input_width = result
+        context.scene.TextureBake_Props.input_height = result
 
         functions.auto_set_bake_margin()
         return {'FINISHED'}
@@ -904,26 +888,26 @@ class TEXTUREBAKE_OT_decrease_bake_res(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def execute(self, context):
-        x = bpy.context.scene.TextureBake_Props.input_width
-        bpy.context.scene.TextureBake_Props.input_width = x - 1024
-        y = bpy.context.scene.TextureBake_Props.input_height
-        bpy.context.scene.TextureBake_Props.input_height = y - 1024
+        x = context.scene.TextureBake_Props.input_width
+        context.scene.TextureBake_Props.input_width = x - 1024
+        y = context.scene.TextureBake_Props.input_height
+        context.scene.TextureBake_Props.input_height = y - 1024
 
-        if bpy.context.scene.TextureBake_Props.input_height < 1:
-            bpy.context.scene.TextureBake_Props.input_height = 1024
+        if context.scene.TextureBake_Props.input_height < 1:
+            context.scene.TextureBake_Props.input_height = 1024
 
-        if bpy.context.scene.TextureBake_Props.input_width < 1:
-            bpy.context.scene.TextureBake_Props.input_width = 1024
+        if context.scene.TextureBake_Props.input_width < 1:
+            context.scene.TextureBake_Props.input_width = 1024
 
-        while bpy.context.scene.TextureBake_Props.input_height % 1024 != 0:
-            bpy.context.scene.TextureBake_Props.input_height += 1
+        while context.scene.TextureBake_Props.input_height % 1024 != 0:
+            context.scene.TextureBake_Props.input_height += 1
 
-        while bpy.context.scene.TextureBake_Props.input_width % 1024 != 0:
-            bpy.context.scene.TextureBake_Props.input_width += 1
+        while context.scene.TextureBake_Props.input_width % 1024 != 0:
+            context.scene.TextureBake_Props.input_width += 1
 
-        result = max(bpy.context.scene.TextureBake_Props.input_width, bpy.context.scene.TextureBake_Props.input_height)
-        bpy.context.scene.TextureBake_Props.input_width = result
-        bpy.context.scene.TextureBake_Props.input_height = result
+        result = max(context.scene.TextureBake_Props.input_width, context.scene.TextureBake_Props.input_height)
+        context.scene.TextureBake_Props.input_width = result
+        context.scene.TextureBake_Props.input_height = result
 
         functions.auto_set_bake_margin()
         return {'FINISHED'}
@@ -936,20 +920,20 @@ class TEXTUREBAKE_OT_increase_output_res(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def execute(self, context):
-        x = bpy.context.scene.TextureBake_Props.output_width
-        bpy.context.scene.TextureBake_Props.output_width = x + 1024
-        y = bpy.context.scene.TextureBake_Props.output_height
-        bpy.context.scene.TextureBake_Props.output_height = y + 1024
+        x = context.scene.TextureBake_Props.output_width
+        context.scene.TextureBake_Props.output_width = x + 1024
+        y = context.scene.TextureBake_Props.output_height
+        context.scene.TextureBake_Props.output_height = y + 1024
 
-        while bpy.context.scene.TextureBake_Props.output_height % 1024 != 0:
-            bpy.context.scene.TextureBake_Props.output_height -= 1
+        while context.scene.TextureBake_Props.output_height % 1024 != 0:
+            context.scene.TextureBake_Props.output_height -= 1
 
-        while bpy.context.scene.TextureBake_Props.output_width % 1024 != 0:
-            bpy.context.scene.TextureBake_Props.output_width -= 1
+        while context.scene.TextureBake_Props.output_width % 1024 != 0:
+            context.scene.TextureBake_Props.output_width -= 1
 
-        result = min(bpy.context.scene.TextureBake_Props.output_width, bpy.context.scene.TextureBake_Props.output_height)
-        bpy.context.scene.TextureBake_Props.output_width = result
-        bpy.context.scene.TextureBake_Props.output_height = result
+        result = min(context.scene.TextureBake_Props.output_width, context.scene.TextureBake_Props.output_height)
+        context.scene.TextureBake_Props.output_width = result
+        context.scene.TextureBake_Props.output_height = result
 
         functions.auto_set_bake_margin()
         return {'FINISHED'}
@@ -962,26 +946,26 @@ class TEXTUREBAKE_OT_decrease_output_res(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def execute(self, context):
-        x = bpy.context.scene.TextureBake_Props.output_width
-        bpy.context.scene.TextureBake_Props.output_width = x - 1024
-        y = bpy.context.scene.TextureBake_Props.output_height
-        bpy.context.scene.TextureBake_Props.output_height = y - 1024
+        x = context.scene.TextureBake_Props.output_width
+        context.scene.TextureBake_Props.output_width = x - 1024
+        y = context.scene.TextureBake_Props.output_height
+        context.scene.TextureBake_Props.output_height = y - 1024
 
-        if bpy.context.scene.TextureBake_Props.output_height < 1:
-            bpy.context.scene.TextureBake_Props.output_height = 1024
+        if context.scene.TextureBake_Props.output_height < 1:
+            context.scene.TextureBake_Props.output_height = 1024
 
-        if bpy.context.scene.TextureBake_Props.output_width < 1:
-            bpy.context.scene.TextureBake_Props.output_width = 1024
+        if context.scene.TextureBake_Props.output_width < 1:
+            context.scene.TextureBake_Props.output_width = 1024
 
-        while bpy.context.scene.TextureBake_Props.output_height % 1024 != 0:
-            bpy.context.scene.TextureBake_Props.output_height += 1
+        while context.scene.TextureBake_Props.output_height % 1024 != 0:
+            context.scene.TextureBake_Props.output_height += 1
 
-        while bpy.context.scene.TextureBake_Props.output_width % 1024 != 0:
-            bpy.context.scene.TextureBake_Props.output_width += 1
+        while context.scene.TextureBake_Props.output_width % 1024 != 0:
+            context.scene.TextureBake_Props.output_width += 1
 
-        result = max(bpy.context.scene.TextureBake_Props.output_width, bpy.context.scene.TextureBake_Props.output_height)
-        bpy.context.scene.TextureBake_Props.output_width = result
-        bpy.context.scene.TextureBake_Props.output_height = result
+        result = max(context.scene.TextureBake_Props.output_width, context.scene.TextureBake_Props.output_height)
+        context.scene.TextureBake_Props.output_width = result
+        context.scene.TextureBake_Props.output_height = result
 
         functions.auto_set_bake_margin()
         return {'FINISHED'}
@@ -995,27 +979,27 @@ class TEXTUREBAKE_OT_add_packed_texture(bpy.types.Operator):
 
     @classmethod
     def poll(cls,context):
-        return bpy.context.scene.TextureBake_Props.cp_name != ""
+        return context.scene.TextureBake_Props.cp_name != ""
 
     def execute(self, context):
-        cp_list = bpy.context.scene.TextureBake_Props.cp_list
-        name = functions.clean_file_name(bpy.context.scene.TextureBake_Props.cp_name)
+        cp_list = context.scene.TextureBake_Props.cp_list
+        name = functions.clean_file_name(context.scene.TextureBake_Props.cp_name)
 
         if name in cp_list:
             # Delete it
-            index = bpy.context.scene.TextureBake_Props.cp_list.find(name)
-            bpy.context.scene.TextureBake_Props.cp_list.remove(index)
+            index = context.scene.TextureBake_Props.cp_list.find(name)
+            context.scene.TextureBake_Props.cp_list.remove(index)
 
         li = cp_list.add()
         li.name = name
 
-        li.R = bpy.context.scene.TextureBake_Props.cptex_R
-        li.G = bpy.context.scene.TextureBake_Props.cptex_G
-        li.B = bpy.context.scene.TextureBake_Props.cptex_B
-        li.A = bpy.context.scene.TextureBake_Props.cptex_A
-        li.file_format = bpy.context.scene.TextureBake_Props.cp_file_format
+        li.R = context.scene.TextureBake_Props.cptex_R
+        li.G = context.scene.TextureBake_Props.cptex_G
+        li.B = context.scene.TextureBake_Props.cptex_B
+        li.A = context.scene.TextureBake_Props.cptex_A
+        li.file_format = context.scene.TextureBake_Props.cp_file_format
 
-        bpy.context.scene.TextureBake_Props.cp_list_index = bpy.context.scene.TextureBake_Props.cp_list.find(name)
+        context.scene.TextureBake_Props.cp_list_index = context.scene.TextureBake_Props.cp_list.find(name)
 
         self.report({"INFO"}, "CP texture saved")
         return {'FINISHED'}
@@ -1030,13 +1014,13 @@ class TEXTUREBAKE_OT_delete_packed_texture(bpy.types.Operator):
     @classmethod
     def poll(cls,context):
         try:
-            bpy.context.scene.TextureBake_Props.cp_list[bpy.context.scene.TextureBake_Props.cp_list_index].name
+            context.scene.TextureBake_Props.cp_list[context.scene.TextureBake_Props.cp_list_index].name
             return True
         except:
             return False
 
     def execute(self, context):
-        bpy.context.scene.TextureBake_Props.cp_list.remove(bpy.context.scene.TextureBake_Props.cp_list_index)
+        context.scene.TextureBake_Props.cp_list.remove(context.scene.TextureBake_Props.cp_list_index)
         self.report({"INFO"}, "CP texture deleted")
         return {'FINISHED'}
 
@@ -1052,7 +1036,7 @@ class TEXTUREBAKE_OT_reset_packed_textures(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        cp_list = bpy.context.scene.TextureBake_Props.cp_list
+        cp_list = context.scene.TextureBake_Props.cp_list
 
         # Unity Lit shader. R=metalness, G=AO, B=N/A, A=Glossy.
         li = cp_list.add()

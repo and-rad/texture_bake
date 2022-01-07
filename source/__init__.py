@@ -850,11 +850,6 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
         default = 0,
     )
 
-    img_name_format: StringProperty(
-        name="Image format string",
-        default="%OBJ%_%BATCH%_%BAKEMODE%_%BAKETYPE%",
-    )
-
     # Aliases
     diffuse_alias: StringProperty(name="Diffuse", default="diffuse")
     metal_alias: StringProperty(name="Metal", default="metalness")
@@ -970,14 +965,6 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
         row.label(text="%BAKETYPE%")
         row.label(text="Diffuse, emission, AO, etc.")
 
-        box.separator()
-        example = self.img_name_format
-        for k, v in ({"%OBJ%": "Cube", "%BATCH%": "Bake1", "%BAKEMODE%": "pbr", "%BAKETYPE%": "diffuse"}).items():
-            example = example.replace(k, v)
-        box.row().label(text=f"Example: {example}")
-        box.row().prop(self, "img_name_format", text="")
-        box.row().operator("texture_bake.reset_name_format")
-
         # PBR Aliases
         box = layout.box()
         box.row().label(text="Aliases for PBR bake types")
@@ -1017,7 +1004,6 @@ classes = [
     operators.TEXTUREBAKE_OT_bake,
     operators.TEXTUREBAKE_OT_pbr_select_all,
     operators.TEXTUREBAKE_OT_pbr_select_none,
-    operators.TEXTUREBAKE_OT_reset_name_format,
     operators.TEXTUREBAKE_OT_reset_aliases,
     operators.TEXTUREBAKE_OT_bake_import,
     operators.TEXTUREBAKE_OT_bake_delete_individual,

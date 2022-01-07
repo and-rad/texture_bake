@@ -11,6 +11,10 @@
 - Background baking parameters are stored in a class instead of a flat array.
   This makes the code a little cleaner and easier to follow and reason about.
 
+### Removed
+- Image name format preferences have been removed in favor of handling name
+  formatting in export settings on a per-texture basis.
+
 ### Fixed
 - Background baking progress UI refreshes properly even when the mouse does not
   move.

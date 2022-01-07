@@ -57,7 +57,9 @@ def does_object_have_bakes(obj):
 def gen_image_name(obj_name, baketype):
     current_bake_op = MasterOperation.current_bake_operation
     prefs = bpy.context.preferences.addons[__package__].preferences
-    image_name = prefs.img_name_format
+    preset = prefs.export_presets[prefs.export_presets_index]
+    texture = preset.textures[preset.textures_index]
+    image_name = texture.name
 
     # The easy ones
     image_name = image_name.replace("%OBJ%", obj_name)
@@ -409,10 +411,11 @@ def check_scene(objects, bakemode):
     for obj in objects:
         if obj.name != clean_file_name(obj.name) and bpy.context.scene.TextureBake_Props.export_textures:
             prefs = bpy.context.preferences.addons[__package__].preferences
-            image_name = prefs.img_name_format
-            if "%OBJ%" in image_name:
-                messages.append(f"ERROR: You are trying to save external images, but object with name \"{obj.name}\" contains invalid characters for saving externally.")
-
+            textures = prefs.export_presets[prefs.export_presets_index].textures
+            for t in textures:
+                if "%OBJ%" in t.name:
+                    messages.append(f"ERROR: You are trying to save external images, but object with name \"{obj.name}\" contains invalid characters for saving externally.")
+                    break
 
     if bpy.context.scene.TextureBake_Props.merged_bake and bpy.context.scene.TextureBake_Props.merged_bake_name == "":
         messages.append(f"ERROR: You are baking multiple objects to one texture set, but the texture name is blank")
