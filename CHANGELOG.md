@@ -11,6 +11,10 @@
 - Background baking parameters are stored in a class instead of a flat array.
   This makes the code a little cleaner and easier to follow and reason about.
 
+### Fixed
+- Background baking progress UI refreshes properly even when the mouse does not
+  move.
+
 ## [0.9.0] - 2021-12-26
 
 ### Changed

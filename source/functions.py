@@ -1571,3 +1571,9 @@ def auto_set_bake_margin():
     context = bpy.context
     current_width = context.scene.TextureBake_Props.input_width
     context.scene.render.bake.margin = round((current_width / 1024) * 4)
+
+def redraw_property_panel():
+    for window in bpy.context.window_manager.windows:
+        for area in window.screen.areas:
+            if area.type == "PROPERTIES":
+                area.tag_redraw()

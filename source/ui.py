@@ -63,16 +63,7 @@ class TEXTUREBAKE_PT_main(bpy.types.Panel):
 
         if background_bake_ops.bgops_list or background_bake_ops.bgops_list_finished:
             for p in background_bake_ops.bgops_list:
-                t = Path(tempfile.gettempdir())
-                t = t / f"TextureBake_background_bake_{str(p.process.pid)}"
-
-                try:
-                    with open(str(t), "r") as progfile:
-                        progress = progfile.readline()
-                except:
-                    progress = 0
-
-                box.row().label(text=f"{p.name} - baking in progress {progress}%", icon='GHOST_DISABLED')
+                box.row().label(text=f"{p.name} - in progress {p.progress}%", icon='CHECKBOX_DEHLT')
         else:
             box.row().label(text="No running or finished background bakes", icon='MONKEY')
 
@@ -80,7 +71,7 @@ class TEXTUREBAKE_PT_main(bpy.types.Panel):
             for p in background_bake_ops.bgops_list_finished:
                 row = box.row()
                 col = row.column()
-                col.label(text=f"{p.name} - finished!", icon='GHOST_ENABLED')
+                col.label(text=f"{p.name} - finished", icon='CHECKBOX_HLT')
                 col = row.column()
                 col.operator("texture_bake.bake_import_individual", text="", icon='IMPORT').pnum = int(p.process.pid)
                 col = row.column()

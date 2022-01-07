@@ -19,6 +19,9 @@
 
 import bpy
 import os
+import tempfile
+from pathlib import Path
+from . import functions
 
 
 class background_bake_ops():
@@ -36,12 +39,26 @@ class BackgroundBakeParams:
         self.progress = 0
 
 
-def remove_dead():
-    """Removes dead background processes from current list"""
+def refresh_bake_progress():
+    """Updates baking progress for all active background bake processes"""
+    if not background_bake_ops.bgops_list:
+        bpy.app.timers.unregister(refresh_bake_progress)
+        return None
+
     for p in background_bake_ops.bgops_list:
+        t = Path(tempfile.gettempdir())
+        t = t / f"TextureBake_background_bake_{str(p.process.pid)}"
+        try:
+            with open(str(t), "r") as progfile:
+                p.progress = int(progfile.readline())
+        except:
+            pass
+
         if p.process.poll() == 0:
             background_bake_ops.bgops_list_finished.append(p)
             background_bake_ops.bgops_list.remove(p)
+
+    functions.redraw_property_panel()
     return 1
 
 
@@ -62,14 +79,10 @@ def clean_object_list():
 
     new_size = len(object_list)
     if old_size != new_size:
-        for window in bpy.context.window_manager.windows:
-            for area in window.screen.areas:
-                if area.type == "PROPERTIES":
-                    area.tag_redraw()
+        functions.redraw_property_panel()
 
     return 1
 
 
-bpy.app.timers.register(remove_dead, persistent=True)
 bpy.app.timers.register(check_export_col_setting, persistent=True)
 bpy.app.timers.register(clean_object_list, persistent=True)

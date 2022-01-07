@@ -21,7 +21,6 @@ import bpy
 import sys
 import subprocess
 import os
-import tempfile
 import json
 
 from pathlib import Path
@@ -31,7 +30,7 @@ from math import floor
 from . import functions
 from . import bakefunctions
 from .bake_operation import BakeOperation, MasterOperation, BakeStatus, bakes_to_list, TextureBakeConstants
-from .bg_bake import background_bake_ops, BackgroundBakeParams
+from .bg_bake import background_bake_ops, BackgroundBakeParams, refresh_bake_progress
 
 
 class TEXTUREBAKE_OT_bake(bpy.types.Operator):
@@ -191,6 +190,7 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
                 )
             )
 
+            bpy.app.timers.register(refresh_bake_progress)
             self.report({"INFO"}, "Background bake process started")
             return {'FINISHED'}
 
