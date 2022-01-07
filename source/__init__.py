@@ -734,8 +734,8 @@ class TextureBakeTextureChannel(PropertyGroup):
             ('DIFFUSE', "Diffuse", ""),
             ('EMISSION', "Emission", ""),
             ('METAL', "Metalness", ""),
-            ('NORMAL_OPENGL', "Normal (DirectX)", ""),
-            ('NORMAL_DIRECTX', "Normal (OpenGL)", ""),
+            ('NORMAL_OPENGL', "Normal (OpenGL)", ""),
+            ('NORMAL_DIRECTX', "Normal (DirectX)", ""),
             ('OPACITY', "Opacity", ""),
             ('ROUGH', "Roughness", ""),
         ],
@@ -932,23 +932,23 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
                 row.prop(texture, "depth", text="")
                 col = box.column()
                 row = col.split(factor=0.1)
-                row.label(text="R:")
+                row.label(text="Red:")
                 row = row.split(factor=0.7)
                 row.prop(texture.red, "info", text="")
                 row.prop(texture.red, "space", text="")
                 row = col.split(factor=0.1)
-                row.label(text="G:")
+                row.label(text="Green:")
                 row = row.split(factor=0.7)
                 row.prop(texture.green, "info", text="")
                 row.prop(texture.green, "space", text="")
                 row = col.split(factor=0.1)
-                row.label(text="B:")
+                row.label(text="Blue:")
                 row = row.split(factor=0.7)
                 row.prop(texture.blue, "info", text="")
                 row.prop(texture.blue, "space", text="")
                 row = col.split(factor=0.1)
                 row.enabled = texture.file_format != 'JPG'
-                row.label(text="A:")
+                row.label(text="Alpha:")
                 row = row.split(factor=0.7)
                 row.prop(texture.alpha, "info", text="")
                 row.prop(texture.alpha, "space", text="")
