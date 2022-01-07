@@ -190,7 +190,7 @@ def get_export_presets_enum(self, context):
     items = [('NONE', "None", "")]
     prefs = context.preferences.addons[__package__].preferences
     for idx, pr in enumerate(prefs.export_presets):
-        items.append((str(idx), pr.name, ""))
+        items.append((pr.uid, pr.name, ""))
     return items
 
 
@@ -817,6 +817,11 @@ class TextureBakePackedTexture(PropertyGroup):
 
 class TextureBakeExportPreset(bpy.types.PropertyGroup):
     """Group of properties representing an export preset."""
+
+    uid: StringProperty(
+        name = "UID",
+        description = "A unique identifier used internally to allow renaming and reordering presets",
+    )
 
     name: StringProperty(
         name = "Name",

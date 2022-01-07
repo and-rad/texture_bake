@@ -22,6 +22,7 @@ import sys
 import subprocess
 import os
 import json
+import uuid
 
 from pathlib import Path
 from datetime import datetime
@@ -124,7 +125,7 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
         if preset == 'NONE':
             return False
         prefs = context.preferences.addons[__package__].preferences
-        return int(preset) < len(prefs.export_presets)
+        return [p for p in prefs.export_presets if p.uid == preset]
 
     def execute(self, context):
         needed_bake_modes = []
@@ -1088,6 +1089,7 @@ class TEXTUREBAKE_OT_add_export_preset(bpy.types.Operator):
         prefs = context.preferences.addons[__package__].preferences
         presets = prefs.export_presets
         preset = presets.add()
+        preset.uid = str(uuid.uuid4())
         preset.name = "New Preset"
         bpy.ops.wm.save_userpref()
         return {'FINISHED'}
@@ -1125,7 +1127,7 @@ class TEXTUREBAKE_OT_reset_export_presets(bpy.types.Operator):
         presets = prefs.export_presets
         presets.clear()
         item = presets.add()
-        item.name = "Default Preset"
+        item.uid = "6a8abd21-609f-4219-9268-b5c6656a501b"
         bpy.ops.wm.save_userpref()
         return {'FINISHED'}
 
