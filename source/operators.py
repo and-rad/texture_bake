@@ -31,7 +31,7 @@ from math import floor
 from . import functions
 from . import bakefunctions
 from .bake_operation import BakeOperation, MasterOperation, BakeStatus, bakes_to_list, TextureBakeConstants
-from .bg_bake import background_bake_ops
+from .bg_bake import background_bake_ops, BackgroundBakeParams
 
 
 class TEXTUREBAKE_OT_bake(bpy.types.Operator):
@@ -182,8 +182,14 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
                 bpy.ops.texture_bake.bake();"],
                 shell=False)
 
-            background_bake_ops.bgops_list.append([process, bpy.context.scene.TextureBake_Props.prep_mesh,
-                bpy.context.scene.TextureBake_Props.hide_source_objects, bpy.context.scene.TextureBake_Props.background_bake_name])
+            background_bake_ops.bgops_list.append(
+                BackgroundBakeParams(
+                    process,
+                    bpy.context.scene.TextureBake_Props.background_bake_name,
+                    bpy.context.scene.TextureBake_Props.prep_mesh,
+                    bpy.context.scene.TextureBake_Props.hide_source_objects
+                )
+            )
 
             self.report({"INFO"}, "Background bake process started")
             return {'FINISHED'}
@@ -282,7 +288,7 @@ class TEXTUREBAKE_OT_bake_import(bpy.types.Operator):
 
         for p in background_bake_ops.bgops_list_finished:
             savepath = Path(bpy.data.filepath).parent
-            pid_str = str(p[0].pid)
+            pid_str = str(p.process.pid)
             path = savepath / (pid_str + ".blend")
             path = str(path) + "\\Collection\\"
 
@@ -295,7 +301,7 @@ class TEXTUREBAKE_OT_bake_import(bpy.types.Operator):
             bpy.ops.wm.append(filename="TextureBake_Bakes", directory=path, use_recursive=False, active_collection=False)
 
             # If we didn't actually want the objects, delete them
-            if not p[1]:
+            if not p.copy_objects:
                 # Delete objects we just imported (leaving only textures)
                 for obj_name in functions.spot_new_items(initialise=False, item_type = "objects"):
                     bpy.data.objects.remove(bpy.data.objects[obj_name])
@@ -303,7 +309,7 @@ class TEXTUREBAKE_OT_bake_import(bpy.types.Operator):
                     bpy.data.collections.remove(bpy.data.collections[col_name])
 
             # If we have to hide the source objects, do it
-            if p[2]:
+            if p.hide_source:
                 # Get the newly introduced objects:
                 objects_before_names = functions.spot_new_items(initialise=False, item_type="objects")
 
@@ -366,12 +372,10 @@ class TEXTUREBAKE_OT_bake_import_individual(bpy.types.Operator):
             return {'CANCELLED'}
 
         # Need to get the actual SINGLE entry from the list
-        p = [p for p in background_bake_ops.bgops_list_finished if p[0].pid == self.pnum]
-        assert(len(p) == 1)
-        p = p[0]
+        p = ([p for p in background_bake_ops.bgops_list_finished if p.process.pid == self.pnum])[0]
 
         savepath = Path(bpy.data.filepath).parent
-        pid_str = str(p[0].pid)
+        pid_str = str(p.process.pid)
         path = savepath / (pid_str + ".blend")
         path = str(path) + "\\Collection\\"
 
@@ -384,14 +388,14 @@ class TEXTUREBAKE_OT_bake_import_individual(bpy.types.Operator):
         bpy.ops.wm.append(filename="TextureBake_Bakes", directory=path, use_recursive=False, active_collection=False)
 
         # If we didn't actually want the objects, delete them
-        if not p[1]:
+        if not p.copy_objects:
             for obj_name in functions.spot_new_items(initialise=False, item_type = "objects"):
                 bpy.data.objects.remove(bpy.data.objects[obj_name])
             for col_name in functions.spot_new_items(initialise=False, item_type = "collections"):
                 bpy.data.collections.remove(bpy.data.collections[col_name])
 
         # If we have to hide the source objects, do it
-        if p[2]:
+        if p.hide_source:
             # Get the newly introduced objects:
             objects_before_names = functions.spot_new_items(initialise=False, item_type="objects")
 
@@ -410,7 +414,7 @@ class TEXTUREBAKE_OT_bake_import_individual(bpy.types.Operator):
             pass
 
         # Remove this P from the list
-        background_bake_ops.bgops_list_finished = [p for p in background_bake_ops.bgops_list_finished if p[0].pid != self.pnum]
+        background_bake_ops.bgops_list_finished = [p for p in background_bake_ops.bgops_list_finished if p.process.pid != self.pnum]
 
         # Confirm back to user
         self.report({"INFO"}, "Import complete")
@@ -451,7 +455,7 @@ class TEXTUREBAKE_OT_bake_delete(bpy.types.Operator):
         savepath = Path(bpy.data.filepath).parent
 
         for p in background_bake_ops.bgops_list_finished:
-            pid_str = str(p[0].pid)
+            pid_str = str(p.process.pid)
             try:
                 os.remove(str(savepath / pid_str) + ".blend")
                 os.remove(str(savepath / pid_str) + ".blend1")
@@ -479,7 +483,7 @@ class TEXTUREBAKE_OT_bake_delete_individual(bpy.types.Operator):
         except:
             pass
 
-        background_bake_ops.bgops_list_finished = [p for p in background_bake_ops.bgops_list_finished if p[0].pid != self.pnum]
+        background_bake_ops.bgops_list_finished = [p for p in background_bake_ops.bgops_list_finished if p.process.pid != self.pnum]
         return {'FINISHED'}
 
 

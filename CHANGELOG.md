@@ -5,9 +5,11 @@
 ### Added
 - Export presets
 ### Changed
-- Setting the input texture size no longer overrides output teture size. The
-  previous behavior was inconvenient and would cause users to re-apply values
-  constantly by hand.
+- Setting the input texture size no longer overrides output texture size. The
+  previous behavior was inconvenient and would cause users to constantly
+  re-enter values.
+- Background baking parameters are stored in a class instead of a flat array.
+  This makes the code a little cleaner and easier to follow and reason about.
 
 ## [0.9.0] - 2021-12-26
 

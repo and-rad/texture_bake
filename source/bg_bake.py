@@ -27,10 +27,19 @@ class background_bake_ops():
     bgops_list_finished = []
 
 
+class BackgroundBakeParams:
+    def __init__(self, proc, name, cp_obj, hide_src):
+        self.process = proc
+        self.name = name if name else "Untitled"
+        self.copy_objects = cp_obj
+        self.hide_source = hide_src
+        self.progress = 0
+
+
 def remove_dead():
     """Removes dead background processes from current list"""
     for p in background_bake_ops.bgops_list:
-        if p[0].poll() == 0:
+        if p.process.poll() == 0:
             background_bake_ops.bgops_list_finished.append(p)
             background_bake_ops.bgops_list.remove(p)
     return 1

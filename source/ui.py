@@ -61,39 +61,30 @@ class TEXTUREBAKE_PT_main(bpy.types.Panel):
         row = box.row()
         row.label(text="Background bakes")
 
-        if len(background_bake_ops.bgops_list) == 0 and len(background_bake_ops.bgops_list_finished) == 0:
-            row = box.row()
-            row.label(text="No running or finished background bakes", icon='MONKEY')
-        else:
+        if background_bake_ops.bgops_list or background_bake_ops.bgops_list_finished:
             for p in background_bake_ops.bgops_list:
                 t = Path(tempfile.gettempdir())
-                t = t / f"TextureBake_background_bake_{str(p[0].pid)}"
+                t = t / f"TextureBake_background_bake_{str(p.process.pid)}"
 
                 try:
                     with open(str(t), "r") as progfile:
                         progress = progfile.readline()
                 except:
-                    # No file yet, as no bake operation has completed yet. Holding message
                     progress = 0
 
-                row = box.row()
-                name = p[3]
-                if name == "":
-                    name = "Untitled"
-                row.label(text=f"{name} - baking in progress {progress}%", icon='GHOST_DISABLED')
+                box.row().label(text=f"{p.name} - baking in progress {progress}%", icon='GHOST_DISABLED')
+        else:
+            box.row().label(text="No running or finished background bakes", icon='MONKEY')
 
         if len(background_bake_ops.bgops_list_finished) != 0:
             for p in background_bake_ops.bgops_list_finished:
                 row = box.row()
                 col = row.column()
-                name = p[3]
-                if name == "":
-                    name = "Untitled"
-                col.label(text=f"{name} - finished!", icon='GHOST_ENABLED')
+                col.label(text=f"{p.name} - finished!", icon='GHOST_ENABLED')
                 col = row.column()
-                col.operator("texture_bake.bake_import_individual", text="", icon='IMPORT').pnum = int(p[0].pid)
+                col.operator("texture_bake.bake_import_individual", text="", icon='IMPORT').pnum = int(p.process.pid)
                 col = row.column()
-                col.operator("texture_bake.bake_delete_individual", text="", icon='CANCEL').pnum = int(p[0].pid)
+                col.operator("texture_bake.bake_delete_individual", text="", icon='CANCEL').pnum = int(p.process.pid)
 
         row = box.row()
         row.operator("texture_bake.bake_import", text="Import all", icon='IMPORT')
