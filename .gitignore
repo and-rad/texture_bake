@@ -3,3 +3,7 @@ env.mk
 
 # build files
 out/
+
+# intermediate files
+*.blend1
+*.Blend1
