@@ -541,11 +541,6 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
         ],
     )
 
-    background_bake_name: StringProperty(
-        name = "Background bake task name",
-        description = "Name to help you identify the background bake task. This can be anything, and is only to help keep track of multiple background bake tasks. The name will show in the list below",
-    )
-
     memory_limit: EnumProperty(
         name = "GPU Memory Limit",
         description = "Limit memory usage by limiting render tile size. More memory means faster bake times, but it is possible to exceed the capabilities of your computer which will lead to a crash or slow bake times",

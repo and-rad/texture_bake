@@ -50,9 +50,6 @@ class TEXTUREBAKE_PT_main(bpy.types.Panel):
         row = layout.row()
         row.prop(context.scene.TextureBake_Props, "background_bake", expand = True)
 
-        if context.scene.TextureBake_Props.background_bake == "bg":
-            layout.row().prop(context.scene.TextureBake_Props, "background_bake_name", text="Name")
-
         row = layout.row()
         row.scale_y = 1.5
         row.operator("texture_bake.bake", icon='RENDER_RESULT')

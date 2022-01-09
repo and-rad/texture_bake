@@ -22,6 +22,7 @@ import sys
 import subprocess
 import os
 import json
+import time
 import uuid
 
 from pathlib import Path
@@ -189,7 +190,7 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
             background_bake_ops.bgops_list.append(
                 BackgroundBakeParams(
                     process,
-                    context.scene.TextureBake_Props.background_bake_name,
+                    time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
                     context.scene.TextureBake_Props.prep_mesh,
                     context.scene.TextureBake_Props.hide_source_objects
                 )
@@ -514,7 +515,6 @@ class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
         d["memory_limit"] = context.scene.TextureBake_Props.memory_limit
         d["batch_name"] = context.scene.TextureBake_Props.batch_name
         d["first_texture_show"] = context.scene.TextureBake_Props.first_texture_show
-        d["background_bake_name"] = context.scene.TextureBake_Props.background_bake_name
 
         d["bake_type"] = context.scene.cycles.bake_type
         d["use_pass_direct"] = context.scene.render.bake.use_pass_direct
@@ -676,7 +676,6 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
         context.scene.TextureBake_Props.memory_limit = d["memory_limit"]
         context.scene.TextureBake_Props.batch_name = d["batch_name"]
         context.scene.TextureBake_Props.first_texture_show = d["first_texture_show"]
-        context.scene.TextureBake_Props.background_bake_name = d["background_bake_name"]
         context.scene.TextureBake_Props.prefer_existing_uvmap = d["prefer_existing_uvmap"]
 
         context.scene.cycles.bake_type = d["bake_type"]
