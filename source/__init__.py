@@ -622,7 +622,7 @@ class TextureBakeTextureChannel(PropertyGroup):
         default = 'NONE',
         items = [
             ('NONE', "None", "Do not store anything in this channel"),
-            (constants.TEX_AO, "Ambient Occlusion", ""),
+            (constants.PBR_AO, "Ambient Occlusion", ""),
             (constants.PBR_DIFFUSE, "Diffuse", ""),
             (constants.PBR_EMISSION, "Emission", ""),
             (constants.PBR_METAL, "Metalness", ""),

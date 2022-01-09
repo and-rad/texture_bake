@@ -104,10 +104,8 @@ def common_bake_prep():
 
     # Run information
     op_num = MasterOperation.this_bake_operation_num
-    firstop = False
-    lastop = False
-    if op_num == 1: firstop = True
-    if op_num == MasterOperation.total_bake_operations: lastop = True
+    firstop = (op_num == 1)
+    lastop = (op_num == MasterOperation.total_bake_operations)
 
     # If this is a pbr bake, gather the selected maps
     if current_bake_op.bake_mode in {TextureBakeConstants.PBR, TextureBakeConstants.PBRS2A}:
@@ -390,10 +388,8 @@ def common_bake_finishing():
     current_bake_op = MasterOperation.current_bake_operation
     op_num = MasterOperation.this_bake_operation_num
 
-    firstop = False
-    lastop = False
-    if op_num == 1: firstop = True
-    if op_num == MasterOperation.total_bake_operations: lastop = True
+    firstop = (op_num == 1)
+    lastop = (op_num == MasterOperation.total_bake_operations)
 
     # Restore the original rendering engine
     if lastop:
@@ -1128,8 +1124,8 @@ def do_bake():
                     # Remove all disconnected nodes so don't interfere with typing the material
                     functions.remove_disconnected_nodes(nodetree)
 
-                    # Normal and emission bakes require no further material prep. Just skip the rest
-                    if(thisbake not in [constants.PBR_EMISSION, constants.PBR_NORMAL_DX, constants.PBR_NORMAL_OGL]):
+                    # AO, normal, and emission require no further material prep
+                    if(thisbake not in [constants.PBR_AO, constants.PBR_EMISSION, constants.PBR_NORMAL_DX, constants.PBR_NORMAL_OGL]):
                         # Work out what type of material we are dealing with here and take correct action
                         mat_type = functions.get_mat_type(nodetree)
 

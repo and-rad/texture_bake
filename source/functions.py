@@ -92,7 +92,7 @@ def gen_image_name(obj_name, baketype):
         parts.append(prefs.specular_alias)
     elif baketype == constants.PBR_OPACITY:
         parts.append(prefs.alpha_alias)
-    elif baketype == constants.TEX_AO:
+    elif baketype == constants.TEX_AO or baketype == constants.PBR_AO:
         parts.append(prefs.ao_alias)
     elif baketype == TextureBakeConstants.LIGHTMAP:
         parts.append(prefs.lightmap_alias)
@@ -1127,8 +1127,7 @@ def setup_pure_p_material(nodetree, thisbake):
 def setup_pure_e_material(nodetree, thisbake):
     # If baking something other than emission, mute the emission modes so they don't contaiminate our bake
     if thisbake != "Emission":
-        nodes = nodetree.nodes
-        for node in nodes:
+        for node in nodetree.nodes:
             if node.type == "EMISSION":
                 node.mute = True
                 node.label = "TextureBakeMuted"
@@ -1557,7 +1556,7 @@ def get_maps_to_bake():
         maps.add(texture.green.info)
         maps.add(texture.blue.info)
         maps.add(texture.alpha.info)
-    maps = maps - {'NONE', 'AO'} # TODO: AO needs to be reimplemented later
+    maps = maps - {'NONE'}
 
     return list(maps)
 

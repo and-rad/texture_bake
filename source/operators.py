@@ -1011,7 +1011,7 @@ class TEXTUREBAKE_OT_reset_export_presets(bpy.types.Operator):
         tex = item.textures.add()
         tex.name = "T_%OBJ%_%BATCH%_ORM"
         tex.file_format = 'TGA'
-        tex.red.info = constants.TEX_AO
+        tex.red.info = constants.PBR_AO
         tex.red.space = 'NON_COLOR'
         tex.green.info = constants.PBR_ROUGHNESS
         tex.green.space = 'NON_COLOR'

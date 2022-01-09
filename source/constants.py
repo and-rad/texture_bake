@@ -17,6 +17,7 @@
 #
 #########################################################################
 
+PBR_AO = 'AO_OUT'
 PBR_DIFFUSE = 'DIFFUSE'
 PBR_METAL = 'METALNESS'
 PBR_SSS = 'SSS'
@@ -33,4 +34,4 @@ PBR_EMISSION = 'EMISSION'
 PBR_SPECULAR = 'SPECULAR'
 PBR_OPACITY = 'ALPHA'
 
-TEX_AO = 'AO'
+TEX_AO = 'AO_IN'
