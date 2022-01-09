@@ -138,39 +138,6 @@ def cp_list_index_update(self, context):
 def get_selected_bakes_dropdown(self, context):
     items = [("none", "None","")]
 
-    if context.scene.TextureBake_Props.selected_col:
-        items.append(("diffuse", "Diffuse",""))
-    if context.scene.TextureBake_Props.selected_metal:
-        items.append(("metalness", "Metal",""))
-
-    if context.scene.TextureBake_Props.selected_sss:
-        items.append(("sss", "SSS",""))
-    if context.scene.TextureBake_Props.selected_ssscol:
-        items.append(("ssscol", "SSS Color",""))
-
-    if context.scene.TextureBake_Props.selected_rough:
-        if context.scene.TextureBake_Props.rough_glossy_switch == "glossy":
-            items.append(("glossy", "Glossy",""))
-        else:
-            items.append(("roughness", "Rouchness",""))
-
-    if context.scene.TextureBake_Props.selected_normal:
-        items.append(("normal", "Normal",""))
-    if context.scene.TextureBake_Props.selected_trans:
-        items.append(("transparency", "Transmission",""))
-    if context.scene.TextureBake_Props.selected_transrough:
-        items.append(("transparencyroughness", "Transmission Rough",""))
-    if context.scene.TextureBake_Props.selected_clearcoat:
-        items.append(("clearcoat", "Clearcoat",""))
-    if context.scene.TextureBake_Props.selected_clearcoat_rough:
-        items.append(("clearcoatroughness", "ClearcoatRough",""))
-    if context.scene.TextureBake_Props.selected_emission:
-        items.append(("emission", "Emission",""))
-    if context.scene.TextureBake_Props.selected_specular:
-        items.append(("specular", "Specular",""))
-    if context.scene.TextureBake_Props.selected_alpha:
-        items.append(("alpha", "Alpha",""))
-
     if context.scene.TextureBake_Props.selected_col_mats:
         items.append((TextureBakeConstants.COLORID, TextureBakeConstants.COLORID,""))
     if context.scene.TextureBake_Props.selected_col_vertex:
@@ -594,11 +561,6 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
         description = "Name to save this preset under",
         default = "Preset Name",
         maxlen = 20,
-    )
-
-    first_texture_show: BoolProperty(
-        name = "",
-        default = True,
     )
 
     cptex_R: EnumProperty(

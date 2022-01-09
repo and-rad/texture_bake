@@ -514,7 +514,6 @@ class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
         d["background_bake"] = context.scene.TextureBake_Props.background_bake
         d["memory_limit"] = context.scene.TextureBake_Props.memory_limit
         d["batch_name"] = context.scene.TextureBake_Props.batch_name
-        d["first_texture_show"] = context.scene.TextureBake_Props.first_texture_show
 
         d["bake_type"] = context.scene.cycles.bake_type
         d["use_pass_direct"] = context.scene.render.bake.use_pass_direct
@@ -675,7 +674,6 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
         context.scene.TextureBake_Props.background_bake = d["background_bake"]
         context.scene.TextureBake_Props.memory_limit = d["memory_limit"]
         context.scene.TextureBake_Props.batch_name = d["batch_name"]
-        context.scene.TextureBake_Props.first_texture_show = d["first_texture_show"]
         context.scene.TextureBake_Props.prefer_existing_uvmap = d["prefer_existing_uvmap"]
 
         context.scene.cycles.bake_type = d["bake_type"]
