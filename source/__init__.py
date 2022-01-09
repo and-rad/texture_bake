@@ -796,8 +796,8 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
     roughness_alias: StringProperty(name="Roughness", default="roughness")
     glossy_alias: StringProperty(name="Glossy", default="glossy")
     normal_alias: StringProperty(name="Normal", default="normal")
-    transmission_alias: StringProperty(name="Transmission", default="transparency")
-    transmissionrough_alias: StringProperty(name="Transmission Roughness", default="transparencyroughness")
+    transmission_alias: StringProperty(name="Transmission", default="transmission")
+    transmissionrough_alias: StringProperty(name="Transmission Roughness", default="transmissionroughness")
     clearcoat_alias: StringProperty(name="Clearcost", default="clearcoat")
     clearcoatrough_alias: StringProperty(name="Clearcoat Roughness", default="clearcoatroughness")
     emission_alias: StringProperty(name="Emission", default="emission")
@@ -888,27 +888,9 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
                 row.prop(texture.alpha, "info", text="")
                 row.prop(texture.alpha, "space", text="")
 
+        # Aliases
         box = layout.box()
-        box.row().label(text="Image Name Format")
-        box.row().label(text="These placeholders are available to generate image file names:")
-        col = box.column()
-        row = col.split(factor=0.25)
-        row.label(text="%OBJ%")
-        row.label(text="Object name or 'merged_bake' for multiple objects")
-        row = col.split(factor=0.25)
-        row.label(text="%BATCH%")
-        row.label(text="Batch name as defined in the Properties panel")
-        row = col.split(factor=0.25)
-        row.label(text="%BAKEMODE%")
-        row.label(text="PBR or Cycles")
-        row = col.split(factor=0.25)
-        row.label(text="%BAKETYPE%")
-        row.label(text="Diffuse, emission, AO, etc.")
-
-        # PBR Aliases
-        box = layout.box()
-        box.row().label(text="Aliases for PBR bake types")
-
+        box.row().label(text="Aliases")
         box.row().prop(self, "diffuse_alias")
         box.row().prop(self, "metal_alias")
         box.row().prop(self, "sss_alias")
@@ -923,19 +905,12 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
         box.row().prop(self, "specular_alias")
         box.row().prop(self, "alpha_alias")
         box.row().prop(self, "normal_alias")
-
-        # Specials Aliases
-        box = layout.box()
-        box.row().label(text="Aliases for special bake types")
         box.row().prop(self, "ao_alias")
         box.row().prop(self, "curvature_alias")
         box.row().prop(self, "thickness_alias")
         box.row().prop(self, "vertexcol_alias")
         box.row().prop(self, "colid_alias")
         box.row().prop(self, "lightmap_alias")
-
-        # Reset button
-        box = layout.box()
         box.row().operator("texture_bake.reset_aliases")
 
 
