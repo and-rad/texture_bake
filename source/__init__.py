@@ -50,6 +50,7 @@ from bpy.props import (
 
 from . import (
     bg_bake,
+    constants,
     functions,
     operators,
     ui,
@@ -345,72 +346,6 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
         name = "Texture per material",
         description = "Bake each material into its own texture (for export to virtual worlds like Second Life",
         update = tex_per_mat_update,
-    )
-
-    selected_col: BoolProperty(
-        name = "Diffuse",
-        description = "Bake a PBR Color map",
-        default = True,
-    )
-
-    selected_metal: BoolProperty(
-        name = "Metal",
-        description = "Bake a PBR Metalness map",
-    )
-
-    selected_rough: BoolProperty(
-        name = "Roughness/Glossy",
-        description = "Bake a PBR Roughness or Glossy map",
-    )
-
-    selected_normal: BoolProperty(
-        name = "Normal",
-        description = "Bake a Normal map",
-    )
-
-    selected_trans: BoolProperty(
-        name = "Transmission",
-        description = "Bake a PBR Transmission map",
-    )
-
-    selected_transrough: BoolProperty(
-        name = "Transmission Rough",
-        description = "Bake a PBR Transmission Roughness map",
-    )
-
-    selected_emission: BoolProperty(
-        name = "Emission",
-        description = "Bake an Emission map",
-    )
-
-    selected_sss: BoolProperty(
-        name = "SSS",
-        description = "Bake a Subsurface Scattering map",
-    )
-
-    selected_ssscol: BoolProperty(
-        name = "SSS Col",
-        description = "Bake a Subsurface color map",
-    )
-
-    selected_clearcoat: BoolProperty(
-        name = "Clearcoat",
-        description = "Bake a PBR Clearcoat Map",
-    )
-
-    selected_clearcoat_rough: BoolProperty(
-        name = "Clearcoat Roughness",
-        description = "Bake a PBR Clearcoat Roughness map",
-    )
-
-    selected_specular: BoolProperty(
-        name = "Specular",
-        description = "Bake a Specular/Reflection map",
-    )
-
-    selected_alpha: BoolProperty(
-        name = "Alpha",
-        description = "Bake a PBR Alpha map",
     )
 
     selected_col_mats: BoolProperty(
@@ -730,14 +665,14 @@ class TextureBakeTextureChannel(PropertyGroup):
         default = 'NONE',
         items = [
             ('NONE', "None", "Do not store anything in this channel"),
-            ('AO', "Ambient Occlusion", ""),
-            ('DIFFUSE', "Diffuse", ""),
-            ('EMISSION', "Emission", ""),
-            ('METAL', "Metalness", ""),
-            ('NORMAL_OPENGL', "Normal (OpenGL)", ""),
-            ('NORMAL_DIRECTX', "Normal (DirectX)", ""),
-            ('OPACITY', "Opacity", ""),
-            ('ROUGH', "Roughness", ""),
+            (constants.TEX_AO, "Ambient Occlusion", ""),
+            (constants.PBR_DIFFUSE, "Diffuse", ""),
+            (constants.PBR_EMISSION, "Emission", ""),
+            (constants.PBR_METAL, "Metalness", ""),
+            (constants.PBR_NORMAL_OGL, "Normal (OpenGL)", ""),
+            (constants.PBR_NORMAL_DX, "Normal (DirectX)", ""),
+            (constants.PBR_OPACITY, "Opacity", ""),
+            (constants.PBR_ROUGHNESS, "Roughness", ""),
         ],
         update = export_texture_update,
     )
@@ -1007,8 +942,6 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
 # List of all classes that will be registered
 classes = [
     operators.TEXTUREBAKE_OT_bake,
-    operators.TEXTUREBAKE_OT_pbr_select_all,
-    operators.TEXTUREBAKE_OT_pbr_select_none,
     operators.TEXTUREBAKE_OT_reset_aliases,
     operators.TEXTUREBAKE_OT_bake_import,
     operators.TEXTUREBAKE_OT_bake_delete_individual,
@@ -1024,8 +957,6 @@ classes = [
     operators.TEXTUREBAKE_OT_increase_output_res,
     operators.TEXTUREBAKE_OT_decrease_output_res,
     operators.TEXTUREBAKE_OT_add_packed_texture,
-    operators.TEXTUREBAKE_OT_delete_packed_texture,
-    operators.TEXTUREBAKE_OT_reset_packed_textures,
     operators.TEXTUREBAKE_OT_add_export_preset,
     operators.TEXTUREBAKE_OT_delete_export_preset,
     operators.TEXTUREBAKE_OT_reset_export_presets,
@@ -1036,7 +967,6 @@ classes = [
     ui.TEXTUREBAKE_PT_presets,
     ui.TEXTUREBAKE_PT_objects,
     ui.TEXTUREBAKE_PT_input,
-    ui.TEXTUREBAKE_PT_output,
     ui.TEXTUREBAKE_PT_bake_settings,
     ui.TEXTUREBAKE_PT_export_settings,
     ui.TEXTUREBAKE_PT_uv,

@@ -25,29 +25,39 @@ import os
 import base64
 import sys
 import tempfile
-from . import material_setup
-from .bake_operation import BakeOperation, MasterOperation, TextureBakeConstants
-from .bake_operation import bakes_to_list
+
+from . import (
+    constants,
+    material_setup,
+)
+
+from .bake_operation import (
+    BakeOperation,
+    MasterOperation,
+    TextureBakeConstants,
+)
 
 
 # Global variables
 psocketname = {
-    "diffuse": "Base Color",
-    "metalness": "Metallic",
-    "roughness": "Roughness",
-    "normal": "Normal",
-    "transparency": "Transmission",
-    "transparencyroughness": "Transmission Roughness",
-    "clearcoat": "Clearcoat",
-    "clearcoatroughness": "Clearcoat Roughness",
-    "specular": "Specular",
-    "alpha": "Alpha",
-    "sss": "Subsurface",
-    "ssscol": "Subsurface Color"
-    }
+    constants.PBR_DIFFUSE: "Base Color",
+    constants.PBR_METAL: "Metallic",
+    constants.PBR_ROUGHNESS: "Roughness",
+    constants.PBR_NORMAL_DX: "Normal",
+    constants.PBR_NORMAL_OGL: "Normal",
+    constants.PBR_TRANSMISSION: "Transmission",
+    constants.PBR_TRANSMISSION_ROUGH: "Transmission Roughness",
+    constants.PBR_CLEARCOAT: "Clearcoat",
+    constants.PBR_CLEARCOAT_ROUGH: "Clearcoat Roughness",
+    constants.PBR_SPECULAR: "Specular",
+    constants.PBR_OPACITY: "Alpha",
+    constants.PBR_SSS: "Subsurface",
+    constants.PBR_SSS_COL: "Subsurface Color"
+}
 
 def print_msg(msg):
     print(f"TEXTUREBAKE: {msg}")
+
 
 def does_object_have_bakes(obj):
     for img in bpy.data.images:
@@ -55,60 +65,53 @@ def does_object_have_bakes(obj):
 
 
 def gen_image_name(obj_name, baketype):
-    current_bake_op = MasterOperation.current_bake_operation
+    parts = [obj_name]
+    if bpy.context.scene.TextureBake_Props.batch_name:
+        parts.append(bpy.context.scene.TextureBake_Props.batch_name)
+
     prefs = bpy.context.preferences.addons[__package__].preferences
-    preset = prefs.export_presets[prefs.export_presets_index]
-    texture = preset.textures[preset.textures_index]
-    image_name = texture.name
-
-    # The easy ones
-    image_name = image_name.replace("%OBJ%", obj_name)
-    image_name = image_name.replace("%BATCH%", bpy.context.scene.TextureBake_Props.batch_name)
-    image_name = image_name.replace("%BAKEMODE%", current_bake_op.bake_mode)
-
-    # The hard ones
-    if baketype == "diffuse":
-        image_name = image_name.replace("%BAKETYPE%", prefs.diffuse_alias)
-    elif baketype == "metalness":
-        image_name = image_name.replace("%BAKETYPE%", prefs.metal_alias)
-    elif baketype == "roughness":
-        image_name = image_name.replace("%BAKETYPE%", prefs.roughness_alias)
-    elif baketype == "normal":
-        image_name = image_name.replace("%BAKETYPE%", prefs.normal_alias)
-    elif baketype == "transparency":
-        image_name = image_name.replace("%BAKETYPE%", prefs.transmission_alias)
-    elif baketype == "transparencyroughness":
-        image_name = image_name.replace("%BAKETYPE%", prefs.transmissionrough_alias)
-    elif baketype == "clearcoat":
-        image_name = image_name.replace("%BAKETYPE%", prefs.clearcoat_alias)
-    elif baketype == "clearcoatroughness":
-        image_name = image_name.replace("%BAKETYPE%", prefs.clearcoatrough_alias)
-    elif baketype == "emission":
-        image_name = image_name.replace("%BAKETYPE%", prefs.emission_alias)
-    elif baketype == "specular":
-        image_name = image_name.replace("%BAKETYPE%", prefs.specular_alias)
-    elif baketype == "alpha":
-        image_name = image_name.replace("%BAKETYPE%", prefs.alpha_alias)
-    elif baketype == TextureBakeConstants.AO:
-        image_name = image_name.replace("%BAKETYPE%", prefs.ao_alias)
+    if baketype == constants.PBR_DIFFUSE:
+        parts.append(prefs.diffuse_alias)
+    elif baketype == constants.PBR_METAL:
+        parts.append(prefs.metal_alias)
+    elif baketype == constants.PBR_ROUGHNESS:
+        parts.append(prefs.roughness_alias)
+    elif baketype == constants.PBR_NORMAL_DX or baketype == constants.PBR_NORMAL_OGL:
+        parts.append(prefs.normal_alias)
+    elif baketype == constants.PBR_TRANSMISSION:
+        parts.append(prefs.transmission_alias)
+    elif baketype == constants.PBR_TRANSMISSION_ROUGH:
+        parts.append(prefs.transmissionrough_alias)
+    elif baketype == constants.PBR_CLEARCOAT:
+        parts.append(prefs.clearcoat_alias)
+    elif baketype == constants.PBR_CLEARCOAT_ROUGH:
+        parts.append(prefs.clearcoatrough_alias)
+    elif baketype == constants.PBR_EMISSION:
+        parts.append(prefs.emission_alias)
+    elif baketype == constants.PBR_SPECULAR:
+        parts.append(prefs.specular_alias)
+    elif baketype == constants.PBR_OPACITY:
+        parts.append(prefs.alpha_alias)
+    elif baketype == constants.TEX_AO:
+        parts.append(prefs.ao_alias)
     elif baketype == TextureBakeConstants.LIGHTMAP:
-        image_name = image_name.replace("%BAKETYPE%", prefs.lightmap_alias)
+        parts.append(prefs.lightmap_alias)
     elif baketype == TextureBakeConstants.COLORID:
-        image_name = image_name.replace("%BAKETYPE%", prefs.colid_alias)
+        parts.append(prefs.colid_alias)
     elif baketype == TextureBakeConstants.CURVATURE:
-        image_name = image_name.replace("%BAKETYPE%", prefs.curvature_alias)
+        parts.append(prefs.curvature_alias)
     elif baketype == TextureBakeConstants.THICKNESS:
-        image_name = image_name.replace("%BAKETYPE%", prefs.thickness_alias)
+        parts.append(prefs.thickness_alias)
     elif baketype == TextureBakeConstants.VERTEXCOL:
-        image_name = image_name.replace("%BAKETYPE%", prefs.vertexcol_alias)
-    elif baketype == "sss":
-        image_name = image_name.replace("%BAKETYPE%", prefs.sss_alias)
-    elif baketype == "ssscol":
-        image_name = image_name.replace("%BAKETYPE%", prefs.ssscol_alias)
+        parts.append(prefs.vertexcol_alias)
+    elif baketype == constants.PBR_SSS:
+        parts.append(prefs.sss_alias)
+    elif baketype == constants.PBR_SSS_COL:
+        parts.append(prefs.ssscol_alias)
     else:
-        image_name = image_name.replace("%BAKETYPE%", baketype)
+        parts.append(baketype)
 
-    return image_name
+    return "_".join(parts)
 
 
 def remove_disconnected_nodes(nodetree):
@@ -184,7 +187,7 @@ def create_images(imgname, thisbake, objname):
     all16 = bpy.context.scene.TextureBake_Props.export_16bit
 
     # Create image 32 bit or not 32 bit
-    if thisbake == "normal" or (global_mode == TextureBakeConstants.CYCLESBAKE and bpy.context.scene.cycles.bake_type == "NORMAL"):
+    if thisbake == constants.PBR_NORMAL_DX or thisbake == constants.PBR_NORMAL_OGL or (global_mode == TextureBakeConstants.CYCLESBAKE and bpy.context.scene.cycles.bake_type == "NORMAL"):
         image = bpy.data.images.new(imgname, input_width, input_height, alpha=alpha, float_buffer=True)
     elif all32:
         image = bpy.data.images.new(imgname, input_width, input_height, alpha=alpha, float_buffer=True)
@@ -222,29 +225,16 @@ def deselect_all_nodes(nodes):
 
 
 def find_socket_connected_to_pnode(pnode, thisbake):
-    # Get socket name for this bake mode
     socketname = psocketname[thisbake]
-
-    # Get socket of the pnode
     socket = pnode.inputs[socketname]
-    fromsocket = socket.links[0].from_socket
-
-    # Return the socket connected to the pnode
-    return fromsocket
+    return socket.links[0].from_socket
 
 
 def create_dummy_nodes(nodetree, thisbake):
-    # Loop through pnodes
-    nodes = nodetree.nodes
-
-    for node in nodes:
+    for node in nodetree.nodes:
         if node.type == "BSDF_PRINCIPLED":
-            pnode = node
-            # Get socket name for this bake mode
             socketname = psocketname[thisbake]
-
-            # Get socket of the pnode
-            psocket = pnode.inputs[socketname]
+            psocket = node.inputs[socketname]
 
             # If it has something plugged in, we can leave it here
             if(len(psocket.links) > 0):
@@ -253,7 +243,7 @@ def create_dummy_nodes(nodetree, thisbake):
             # Get value of the unconnected socket
             val = psocket.default_value
 
-            # If this is base col or ssscol, add an RGB node and set it's value to that of the socket
+            # If this is base col or ssscol, add an RGB node and set its value to that of the socket
             if(socketname == "Base Color" or socketname == "Subsurface Color"):
                 rgb = nodetree.nodes.new("ShaderNodeRGB")
                 rgb.outputs[0].default_value = val
@@ -282,7 +272,7 @@ def bake_operation(thisbake, img):
     print_msg(f"Beginning bake for {thisbake}")
 
     use_clear = False
-    if(thisbake != "normal"):
+    if thisbake not in [constants.PBR_NORMAL_DX, constants.PBR_NORMAL_OGL]:
         bpy.ops.object.bake(type="EMIT", save_mode="INTERNAL", use_clear=use_clear)
     else:
         bpy.ops.object.bake(type="NORMAL", save_mode="INTERNAL", use_clear=use_clear)
@@ -304,34 +294,6 @@ def check_scene(objects, bakemode):
     advancedobj = bpy.context.scene.TextureBake_Props.use_object_list
     if advancedobj:
         objects = advanced_object_selection_to_list()
-
-    # Check no cp textures rely on bakes that are no longer enabled
-    # Hacky
-    if bpy.context.scene.TextureBake_Props.global_mode == "pbr_bake":
-        pbr_bakes = bakes_to_list()
-        if bpy.context.scene.TextureBake_Props.rough_glossy_switch == "glossy":
-            pbr_bakes = ["glossy" if bake == "roughness" else bake for bake in pbr_bakes]
-        special_bakes = []
-        special_bakes.append(TextureBakeConstants.COLORID) if bpy.context.scene.TextureBake_Props.selected_col_mats else False
-        special_bakes.append(TextureBakeConstants.VERTEXCOL) if bpy.context.scene.TextureBake_Props.selected_col_vertex else False
-        special_bakes.append(TextureBakeConstants.AO) if bpy.context.scene.TextureBake_Props.selected_ao else False
-        special_bakes.append(TextureBakeConstants.THICKNESS) if bpy.context.scene.TextureBake_Props.selected_thickness else False
-        special_bakes.append(TextureBakeConstants.CURVATURE) if bpy.context.scene.TextureBake_Props.selected_curvature else False
-        special_bakes.append(TextureBakeConstants.LIGHTMAP) if bpy.context.scene.TextureBake_Props.selected_lightmap else False
-        bakes = pbr_bakes + special_bakes
-        bakes.append("none")
-        for cpt in bpy.context.scene.TextureBake_Props.cp_list:
-            if cpt.R not in bakes:
-                messages.append(f"ERROR: Channel packed texture \"{cpt.name}\" depends on {cpt.R}, but you are no longer baking it")
-            if cpt.G not in bakes:
-                messages.append(f"ERROR: Channel packed texture \"{cpt.name}\" depends on {cpt.G}, but you are no longer baking it")
-            if cpt.B not in bakes:
-                messages.append(f"ERROR: Channel packed texture \"{cpt.name}\" depends on {cpt.B}, but you are no longer baking it")
-            if cpt.A not in bakes:
-                messages.append(f"ERROR: Channel packed texture \"{cpt.name}\" depends on {cpt.A}, but you are no longer baking it")
-        if len(messages) >0:
-            show_message_box(messages, "Errors occured", "ERROR")
-            return False
 
     # Is anything seleccted at all for bake?
     if len(objects) == 0:
@@ -763,7 +725,7 @@ def export_textures(image, baketype, obj):
 
     # Color management settings
     dcm_opt = bpy.context.scene.TextureBake_Props.export_color_space
-    if current_bake_op.bake_mode in [TextureBakeConstants.PBR, TextureBakeConstants.PBRS2A] and (baketype == "diffuse" or baketype == "emission") :
+    if current_bake_op.bake_mode in [TextureBakeConstants.PBR, TextureBakeConstants.PBRS2A] and (baketype == constants.PBR_DIFFUSE or baketype == constants.PBR_EMISSION) :
         if dcm_opt:
             print_msg("Applying color management settings from current scene for PBR diffuse or emission")
             apply_scene_col_settings(scene)
@@ -821,7 +783,7 @@ def export_textures(image, baketype, obj):
     if file_extension == "tga" or file_extension == "jpg":
         # Only one option
         settings.color_depth = '8'
-    elif (baketype == "normal" or baketype == "cyclesbake" and bpy.context.scene.cycles.bake_type == "NORMAL") and file_extension != "exr":
+    elif (baketype == constants.PBR_NORMAL_DX or baketype == constants.PBR_NORMAL_OGL or (baketype == "cyclesbake" and bpy.context.scene.cycles.bake_type == "NORMAL")) and file_extension != "exr":
         settings.color_depth = '16'
     elif bpy.context.scene.TextureBake_Props.export_16bit and file_extension != "exr":
         settings.color_depth = '16'
@@ -946,7 +908,7 @@ def export_textures(image, baketype, obj):
         image.colorspace_settings.name = "Non-Color"
 
     elif originally_float and\
-     (image["SB_thisbake"] == "diffuse" or\
+     (image["SB_thisbake"] == constants.PBR_DIFFUSE or\
      current_bake_op.bake_mode == TextureBakeConstants.CYCLESBAKE and bpy.context.scene.cycles.bake_type in ["COMBINED", "DIFFUSE"]):
         image.colorspace_settings.name = "sRGB"
 
@@ -1557,7 +1519,7 @@ def set_image_internal_col_space(image, thisbake):
         if bpy.context.scene.cycles.bake_type not in ["COMBINED", "DIFFUSE"]:
             image.colorspace_settings.name = "Non-Color"
     else: # PBR
-        if thisbake != "diffuse" and thisbake != "emission":
+        if thisbake != constants.PBR_DIFFUSE and thisbake != constants.PBR_EMISSION:
             image.colorspace_settings.name = "Non-Color"
 
 
@@ -1575,8 +1537,31 @@ def auto_set_bake_margin():
     current_width = context.scene.TextureBake_Props.input_width
     context.scene.render.bake.margin = round((current_width / 1024) * 4)
 
+
 def redraw_property_panel():
     for window in bpy.context.window_manager.windows:
         for area in window.screen.areas:
             if area.type == "PROPERTIES":
                 area.tag_redraw()
+
+
+def get_maps_to_bake():
+    """Returns the maps that should be baked under the selected export preset"""
+    uid = bpy.context.scene.TextureBake_Props.export_preset
+    prefs = bpy.context.preferences.addons[__package__].preferences
+    preset = [p for p in prefs.export_presets if p.uid == uid][0]
+
+    maps = set()
+    for texture in preset.textures:
+        maps.add(texture.red.info)
+        maps.add(texture.green.info)
+        maps.add(texture.blue.info)
+        maps.add(texture.alpha.info)
+    maps = maps - {'NONE', 'AO'} # TODO: AO needs to be reimplemented later
+
+    return list(maps)
+
+
+def get_num_maps_to_bake():
+    """Returns the number of maps that should be baked under the selected export preset"""
+    return len(get_maps_to_bake())

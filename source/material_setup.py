@@ -18,8 +18,16 @@
 #########################################################################
 
 import bpy
-from . import functions
-from .bake_operation import BakeOperation, MasterOperation
+
+from . import (
+    constants,
+    functions,
+)
+
+from .bake_operation import (
+    BakeOperation,
+    MasterOperation,
+)
 
 
 def find_node_from_label(label, nodes):
@@ -141,15 +149,13 @@ def create_cyclesbake_setup(nodetree, obj):
 def create_principled_setup(nodetree, obj):
     functions.print_msg("Creating principled material")
 
-    # Take note of whether or not the images were saved externally
-    save_external = bpy.context.scene.TextureBake_Props.export_textures
-    nodes = nodetree.nodes
     if(bpy.context.scene.TextureBake_Props.merged_bake):
         obj_name = bpy.context.scene.TextureBake_Props.merged_bake_name
     else:
         obj_name = obj.name.replace("_TextureBake", "")
 
     # First we wipe out any existing nodes
+    nodes = nodetree.nodes
     for node in nodes:
         nodes.remove(node)
 
@@ -163,30 +169,31 @@ def create_principled_setup(nodetree, obj):
     node.location = (659.590027, 192.059998)
     node.label = "monode"
 
-    if(bpy.context.scene.TextureBake_Props.selected_emission):
+    maps = functions.get_maps_to_bake()
+    if constants.PBR_EMISSION in maps:
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-566.83667, -87.645897)
         node.label = "emission_tex"
-        image = get_image_from_tag("emission", obj_name)
+        image = get_image_from_tag(constants.PBR_EMISSION, obj_name)
         node.image = image
 
     # OpenGL Normal Map
-    if(bpy.context.scene.TextureBake_Props.selected_normal and bpy.context.scene.TextureBake_Props.normal_format_switch == "opengl"):
+    if constants.PBR_NORMAL_OGL in maps:
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-566.83667, -374.788513)
         node.label = "normal_tex"
-        image = get_image_from_tag("normal", obj_name)
+        image = get_image_from_tag(constants.PBR_NORMAL_OGL, obj_name)
         node.image = image
 
     # DirectX Normal Map
-    if(bpy.context.scene.TextureBake_Props.selected_normal and bpy.context.scene.TextureBake_Props.normal_format_switch == "directx"):
+    if constants.PBR_NORMAL_DX in maps:
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-1087.9599609375, -374.78851318359375)
         node.label = "normal_tex"
-        image = get_image_from_tag("normal", obj_name)
+        image = get_image_from_tag(constants.PBR_NORMAL_DX, obj_name)
         node.image = image
 
         node = nodes.new("ShaderNodeSeparateRGB")
@@ -204,32 +211,32 @@ def create_principled_setup(nodetree, obj):
         node.hide = True
         node.label = "normal_Yinvert"
 
-    if(bpy.context.scene.TextureBake_Props.selected_alpha):
+    if constants.PBR_OPACITY in maps:
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-566.83667, -190.841217)
         node.label = "alpha_tex"
-        image = get_image_from_tag("alpha", obj_name)
+        image = get_image_from_tag(constants.PBR_OPACITY, obj_name)
         node.image = image
 
-    if(bpy.context.scene.TextureBake_Props.selected_transrough):
+    if constants.PBR_TRANSMISSION_ROUGH in maps:
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-566.83667, 45.946487)
         node.label = "transmissionrough_tex"
-        image = get_image_from_tag("transparencyroughness", obj_name)
+        image = get_image_from_tag(constants.PBR_TRANSMISSION_ROUGH, obj_name)
         node.image = image
 
-    if(bpy.context.scene.TextureBake_Props.selected_trans):
+    if constants.PBR_TRANSMISSION in maps:
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-566.83667, 101.945831)
         node.label = "transmission_tex"
-        image = get_image_from_tag("transparency", obj_name)
+        image = get_image_from_tag(constants.PBR_TRANSMISSION, obj_name)
         node.image = image
 
-    if(bpy.context.scene.TextureBake_Props.selected_col):
-        image = get_image_from_tag("diffuse", obj_name)
+    if constants.PBR_DIFFUSE in maps:
+        image = get_image_from_tag(constants.PBR_DIFFUSE, obj_name)
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-566.83667, 612.749451)
@@ -237,16 +244,16 @@ def create_principled_setup(nodetree, obj):
         node.image = image
 
     # Roughness
-    if(bpy.context.scene.TextureBake_Props.selected_rough and bpy.context.scene.TextureBake_Props.rough_glossy_switch == "rough"):
+    if constants.PBR_ROUGHNESS in maps and bpy.context.scene.TextureBake_Props.rough_glossy_switch == "rough":
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-566.83667, 411.958191)
         node.label = "roughness_tex"
-        image = get_image_from_tag("roughness", obj_name)
+        image = get_image_from_tag(constants.PBR_ROUGHNESS, obj_name)
         node.image = image
 
     # Glossy
-    if(bpy.context.scene.TextureBake_Props.selected_rough and bpy.context.scene.TextureBake_Props.rough_glossy_switch == "glossy"):
+    if constants.PBR_ROUGHNESS in maps and bpy.context.scene.TextureBake_Props.rough_glossy_switch == "glossy":
         # We need an invert node
         node = nodes.new("ShaderNodeInvert")
         node.hide = True
@@ -258,58 +265,58 @@ def create_principled_setup(nodetree, obj):
         node.hide = True
         node.location = (-566.83667, 411.958191)
         node.label = "roughness_tex"
-        image = get_image_from_tag("glossy", obj_name)
+        image = get_image_from_tag(constants.PBR_GLOSSY, obj_name)
         node.image = image
 
-    if(bpy.context.scene.TextureBake_Props.selected_metal):
+    if constants.PBR_METAL in maps:
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-566.83667, 521.816956)
         node.label = "metal_tex"
-        image = get_image_from_tag("metalness", obj_name)
+        image = get_image_from_tag(constants.PBR_METAL, obj_name)
         node.image = image
 
-    if(bpy.context.scene.TextureBake_Props.selected_clearcoat):
+    if constants.PBR_CLEARCOAT in maps:
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-566.83667, 281.322052)
         node.label = "clearcoat_tex"
-        image = get_image_from_tag("clearcoat", obj_name)
+        image = get_image_from_tag(constants.PBR_CLEARCOAT, obj_name)
         node.image = image
 
-    if(bpy.context.scene.TextureBake_Props.selected_clearcoat_rough):
+    if constants.PBR_CLEARCOAT_ROUGH in maps:
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-566.83667, 224.522537)
         node.label = "clearcoatrough_tex"
-        image = get_image_from_tag("clearcoatroughness", obj_name)
+        image = get_image_from_tag(constants.PBR_CLEARCOAT_ROUGH, obj_name)
         node.image = image
 
-    if(bpy.context.scene.TextureBake_Props.selected_specular):
+    if constants.PBR_SPECULAR in maps:
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-566.83667, 472.24707)
         node.label = "specular_tex"
-        image = get_image_from_tag("specular", obj_name)
+        image = get_image_from_tag(constants.PBR_SPECULAR, obj_name)
         node.image = image
 
-    if(bpy.context.scene.TextureBake_Props.selected_sss):
+    if constants.PBR_SSS in maps:
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-862.2991943359375, 375.0651550292969)
         node.label = "sss_tex"
-        image = get_image_from_tag("sss", obj_name)
+        image = get_image_from_tag(constants.PBR_SSS, obj_name)
         node.image = image
 
-    if(bpy.context.scene.TextureBake_Props.selected_ssscol):
+    if constants.PBR_SSS_COL in maps:
         node = nodes.new("ShaderNodeTexImage")
         node.hide = True
         node.location = (-862.2991943359375, 327.94659423828125)
         node.label = "ssscol_tex"
-        image = get_image_from_tag("ssscol", obj_name)
+        image = get_image_from_tag(constants.PBR_SSS_COL, obj_name)
         node.image = image
 
-    if(bpy.context.scene.TextureBake_Props.selected_normal):
+    if constants.PBR_NORMAL_OGL in maps or constants.PBR_NORMAL_DX in maps:
         node = nodes.new("ShaderNodeNormalMap")
         node.location = (-118.290894, -295.719452)
         node.label = "normalmap"
@@ -318,7 +325,7 @@ def create_principled_setup(nodetree, obj):
     make_link("col_tex", "Color", "pnode", "Base Color", nodetree)
     make_link("metal_tex", "Color", "pnode", "Metallic", nodetree)
 
-    if(bpy.context.scene.TextureBake_Props.selected_rough and bpy.context.scene.TextureBake_Props.rough_glossy_switch == "glossy"):
+    if constants.PBR_ROUGHNESS in maps and bpy.context.scene.TextureBake_Props.rough_glossy_switch == "glossy":
         # Need the invert for glossy
         make_link("roughness_tex", "Color", "roughness_invert", "Color", nodetree)
         make_link("roughness_invert", "Color", "pnode", "Roughness", nodetree)
@@ -330,12 +337,12 @@ def create_principled_setup(nodetree, obj):
     make_link("transmissionrough_tex", "Color", "pnode", "Transmission Roughness", nodetree)
 
     # OpenGL Normal Map
-    if(bpy.context.scene.TextureBake_Props.selected_normal and bpy.context.scene.TextureBake_Props.normal_format_switch == "opengl"):
+    if constants.PBR_NORMAL_OGL in maps:
         make_link("normal_tex", "Color", "normalmap", "Color", nodetree)
         make_link("normalmap", "Normal", "pnode", "Normal", nodetree)
 
     # DirectX Normal Map
-    if(bpy.context.scene.TextureBake_Props.selected_normal and bpy.context.scene.TextureBake_Props.normal_format_switch == "directx"):
+    if constants.PBR_NORMAL_OGL in maps:
         make_link("normal_tex", "Color", "normal_RGBsep", "Image", nodetree)
         make_link("normal_RGBsep", "R", "normal_RGBcombine", "R", nodetree)
         make_link("normal_RGBsep", "B", "normal_RGBcombine", "B", nodetree)

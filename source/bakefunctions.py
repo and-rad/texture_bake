@@ -22,9 +22,19 @@ from . import functions
 import os
 import shutil
 import sys
-from. import post_processing
 from pathlib import Path
-from .bake_operation import BakeOperation, MasterOperation, BakeStatus, TextureBakeConstants
+
+from. import (
+    constants,
+    post_processing,
+)
+
+from .bake_operation import (
+    BakeOperation,
+    MasterOperation,
+    BakeStatus,
+    TextureBakeConstants,
+)
 
 
 def optimize():
@@ -112,12 +122,8 @@ def common_bake_prep():
     current_bake_op.bake_objects = bpy.context.selected_objects.copy()
     current_bake_op.active_object = bpy.context.active_object
 
-    # If using advanced selection mode, override the viewport selection
     if bpy.context.scene.TextureBake_Props.use_object_list:
-        functions.print_msg("We are using advanced object selection")
         current_bake_op.bake_objects = functions.advanced_object_selection_to_list()
-
-    # Record the target objects if relevant
     if bpy.context.scene.TextureBake_Props.target_object != None:
         current_bake_op.sb_target_object = bpy.context.scene.TextureBake_Props.target_object
 
@@ -125,7 +131,6 @@ def common_bake_prep():
     current_bake_op.orig_engine = bpy.context.scene.render.engine
 
     # Create a new collection, and add selected objects and target objects to it
-    # Just in case of a previous crash
     for c in bpy.data.collections:
         if "TextureBake_Working" in c.name:
             bpy.data.collections.remove(c)
@@ -135,13 +140,13 @@ def common_bake_prep():
     for obj in current_bake_op.bake_objects:
         if obj.name not in c:
             c.objects.link(obj)
-    if bpy.context.scene.TextureBake_Props.target_object != None and bpy.context.scene.TextureBake_Props.target_object.name not in c.objects:
+    if bpy.context.scene.TextureBake_Props.target_object and bpy.context.scene.TextureBake_Props.target_object.name not in c.objects:
         c.objects.link(bpy.context.scene.TextureBake_Props.target_object)
 
     # Every object must have at least camera ray visibility
     for obj in current_bake_op.bake_objects:
         obj.visible_camera = True
-    if bpy.context.scene.TextureBake_Props.target_object != None:
+    if bpy.context.scene.TextureBake_Props.target_object:
         bpy.context.scene.TextureBake_Props.target_object.visible_camera = True
 
     # Record original UVs for everyone
@@ -158,18 +163,15 @@ def common_bake_prep():
             if obj.data.uv_layers.active != None:
                 MasterOperation.orig_UVs_dict[obj.name] = obj.data.uv_layers.active.name
 
-    # Record the rendering engine
-    if firstop:
         MasterOperation.orig_engine = bpy.context.scene.render.engine
 
-    if bpy.context.scene.TextureBake_Props.uv_mode == "udims": current_bake_op.uv_mode = "udims"
-    else: current_bake_op.uv_mode = "normal"
-
-    # Record the Cycles bake mode (actually redundant as this is the default anyway)
-    current_bake_op.cycles_bake_type = bpy.context.scene.cycles.bake_type
+    if bpy.context.scene.TextureBake_Props.uv_mode == "udims":
+        current_bake_op.uv_mode = "udims"
+    else:
+        current_bake_op.uv_mode = "normal"
 
     # Force it to cycles
-    bpy.context.scene.render.engine = "CYCLES"
+    bpy.context.scene.render.engine = 'CYCLES'
 
     # If this is a selected to active bake (PBR or cycles), turn it on
     if (current_bake_op.bake_mode==TextureBakeConstants.PBRS2A or current_bake_op.bake_mode==TextureBakeConstants.CYCLESBAKE) and bpy.context.scene.TextureBake_Props.selected_to_target:
@@ -178,13 +180,8 @@ def common_bake_prep():
         bpy.context.scene.render.bake.max_ray_distance = bpy.context.scene.TextureBake_Props.ray_distance
         functions.print_msg(f"Setting cage extrusion to {round(bpy.context.scene.TextureBake_Props.cage_extrusion, 2)}")
         bpy.context.scene.render.bake.cage_extrusion = bpy.context.scene.TextureBake_Props.cage_extrusion
-
-    elif current_bake_op.bake_mode in [TextureBakeConstants.SPECIALS, TextureBakeConstants.SPECIALS_CYCLES_TARGET_ONLY, TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY]:
-        bpy.context.scene.render.bake.use_selected_to_active = False
     else:
         bpy.context.scene.render.bake.use_selected_to_active = False
-
-    functions.print_msg(f"Selected to active is now {bpy.context.scene.render.bake.use_selected_to_active}")
 
     # If the user doesn't have a GPU, but has still set the render device to GPU, set it to CPU
     if not bpy.context.preferences.addons["cycles"].preferences.has_active_device():
@@ -196,7 +193,7 @@ def common_bake_prep():
 
     # If baking S2A, and the user has selected a cage object, there are extra steps to turn it on
     if bpy.context.scene.TextureBake_Props.selected_to_target:
-        if bpy.context.scene.render.bake.cage_object == None:
+        if bpy.context.scene.render.bake.cage_object:
             bpy.context.scene.render.bake.use_cage = False
         else:
             bpy.context.scene.render.bake.use_cage = True
@@ -208,7 +205,6 @@ def common_bake_prep():
     functions.trunc_num = 0
     functions.trunc_dict = {}
 
-    # Turn off that dam use clear.
     bpy.context.scene.render.bake.use_clear = False
 
     # Do what we are doing with UVs (only if we are the primary op)
@@ -225,7 +221,7 @@ def do_post_processing(thisbake, IMGNAME):
     functions.print_msg("Doing post processing")
 
     # DirectX vs OpenGL normal map format
-    if thisbake == "normal" and bpy.context.scene.TextureBake_Props.normal_format_switch == "directx":
+    if thisbake == constants.PBR_NORMAL_DX:
         post_processing.post_process(internal_img_name="SB_Temp_Img",\
         save=False, mode="1to1",\
             input_img=bpy.data.images[IMGNAME],\
@@ -253,7 +249,7 @@ def do_post_processing(thisbake, IMGNAME):
         MasterOperation.baked_textures.append(new)
 
     # Roughness vs Glossy
-    if thisbake == "roughness" and bpy.context.scene.TextureBake_Props.rough_glossy_switch == "glossy":
+    if thisbake == constants.PBR_ROUGHNESS and bpy.context.scene.TextureBake_Props.rough_glossy_switch == "glossy":
         post_processing.post_process(internal_img_name="SB_Temp_Img",\
         save=False, mode="1to1",\
             input_img=bpy.data.images[IMGNAME],\
@@ -324,9 +320,6 @@ def channel_packing(objects):
         else:
             export_folder_name = Path(str(functions.get_export_folder_name()))
             obj_export_folder_names[obj.name] = export_folder_name
-
-    # We need the find images from tag function from the material setup code
-    from .material_setup import get_image_from_tag
 
     # Need to look at all baked textures
     baked_textures = MasterOperation.baked_textures
@@ -708,7 +701,7 @@ def specials_bake():
     else:
         objects = current_bake_op.bake_objects
 
-    # Firstly, let's bake the coldid maps if they have been asked for
+    # Firstly, let's bake the colid maps if they have been asked for
     if bpy.context.scene.TextureBake_Props.selected_col_mats:
         col_id_map(input_width, input_height, objects, TextureBakeConstants.COLORID)
     if bpy.context.scene.TextureBake_Props.selected_col_vertex:
@@ -1136,7 +1129,7 @@ def do_bake():
                     functions.remove_disconnected_nodes(nodetree)
 
                     # Normal and emission bakes require no further material prep. Just skip the rest
-                    if(thisbake != "normal" and thisbake != "emission"):
+                    if(thisbake not in [constants.PBR_EMISSION, constants.PBR_NORMAL_DX, constants.PBR_NORMAL_OGL]):
                         # Work out what type of material we are dealing with here and take correct action
                         mat_type = functions.get_mat_type(nodetree)
 
@@ -1311,7 +1304,7 @@ def do_bake_selected_to_target():
                     functions.remove_disconnected_nodes(nodetree)
 
                     # Normal and emission bakes require no further material prep. Just skip the rest
-                    if(thisbake != "normal" and thisbake != "emission"):
+                    if(thisbake not in [constants.PBR_EMISSION, constants.PBR_NORMAL_DX, constants.PBR_NORMAL_OGL]):
                         # Work out what type of material we are dealing with here and take correct action
                         mat_type = functions.get_mat_type(nodetree)
 

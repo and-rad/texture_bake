@@ -4,6 +4,8 @@
 
 ### Added
 - Export presets
+  - Bundle settings for baking textures
+  - Presets can be modified, added, and removed
 ### Changed
 - Setting the input texture size no longer overrides output texture size. The
   previous behavior was inconvenient and would cause users to constantly

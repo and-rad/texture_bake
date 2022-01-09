@@ -173,93 +173,6 @@ class TEXTUREBAKE_PT_input(TextureBakeCategoryPanel, bpy.types.Panel):
         layout.row().operator("texture_bake.import_materials", icon='ADD')
 
 
-class TEXTUREBAKE_PT_output(TextureBakeCategoryPanel, bpy.types.Panel):
-    bl_label = "Output Textures"
-    bl_parent_id = "TEXTUREBAKE_PT_main"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_decorate = False
-
-        # PBR
-        if(context.scene.TextureBake_Props.global_mode == "pbr_bake"):
-            row = layout.row()
-            row.prop(context.scene.TextureBake_Props, "selected_col")
-            row.prop(context.scene.TextureBake_Props, "selected_metal")
-
-            row = layout.row()
-            row.prop(context.scene.TextureBake_Props, "selected_sss")
-            row.prop(context.scene.TextureBake_Props, "selected_ssscol")
-
-            row = layout.row()
-            row.prop(context.scene.TextureBake_Props, "selected_rough")
-            row.prop(context.scene.TextureBake_Props, "selected_normal")
-
-            if context.scene.TextureBake_Props.selected_rough or context.scene.TextureBake_Props.selected_normal:
-                row = layout.row()
-                if context.scene.TextureBake_Props.selected_normal and context.scene.TextureBake_Props.selected_rough:
-                    row.column().prop(context.scene.TextureBake_Props, "rough_glossy_switch")
-                    row.column().prop(context.scene.TextureBake_Props, "normal_format_switch")
-                elif context.scene.TextureBake_Props.selected_rough:
-                    row.column().prop(context.scene.TextureBake_Props, "rough_glossy_switch")
-                    row.column().label(text="")
-                elif context.scene.TextureBake_Props.selected_normal:
-                    row.column().label(text="")
-                    row.column().prop(context.scene.TextureBake_Props, "normal_format_switch")
-
-            row = layout.row()
-            row.prop(context.scene.TextureBake_Props, "selected_trans")
-            row.prop(context.scene.TextureBake_Props, "selected_transrough")
-
-            row = layout.row()
-            row.prop(context.scene.TextureBake_Props, "selected_clearcoat")
-            row.prop(context.scene.TextureBake_Props, "selected_clearcoat_rough")
-
-            row = layout.row()
-            row.prop(context.scene.TextureBake_Props, "selected_emission")
-            row.prop(context.scene.TextureBake_Props, "selected_specular")
-
-            row = layout.row()
-            row.prop(context.scene.TextureBake_Props, "selected_alpha")
-
-            row = layout.row()
-            row.operator("texture_bake.pbr_select_all", icon='ADD')
-            row.operator("texture_bake.pbr_select_none", icon='REMOVE')
-
-        # Cycles
-        if(context.scene.TextureBake_Props.global_mode == "cycles_bake"):
-            layout.use_property_split = True
-
-            cscene = context.scene.cycles
-            layout.row().prop(cscene, "bake_type")
-
-            cbk = context.scene.render.bake
-            if cscene.bake_type == 'NORMAL':
-                layout.row().prop(cbk, "normal_space", text="Space")
-                layout.row().prop(cbk, "normal_r", text="Swizzle R")
-                layout.row().prop(cbk, "normal_g", text="G")
-                layout.row().prop(cbk, "normal_b", text="B")
-            elif cscene.bake_type == 'COMBINED':
-                layout.row().prop(cbk, "use_pass_direct")
-                layout.row().prop(cbk, "use_pass_indirect")
-                if cbk.use_pass_direct or cbk.use_pass_indirect:
-                    layout.row().prop(cbk, "use_pass_diffuse")
-                    layout.row().prop(cbk, "use_pass_glossy")
-                    layout.row().prop(cbk, "use_pass_transmission")
-                    layout.row().prop(cbk, "use_pass_emit")
-            elif cscene.bake_type in {'DIFFUSE', 'GLOSSY', 'TRANSMISSION'}:
-                layout.row().prop(cbk, "use_pass_direct")
-                layout.row().prop(cbk, "use_pass_indirect")
-                layout.row().prop(cbk, "use_pass_color")
-
-            layout.row().prop(context.scene.cycles, "samples")
-
-            row = layout.row()
-            row.prop(context.scene.TextureBake_Props, "run_denoise", text="Denoise CyclesBake")
-            if not context.scene.TextureBake_Props.export_textures:
-                row.enabled = False
-
-
 class TEXTUREBAKE_PT_bake_settings(TextureBakeCategoryPanel, bpy.types.Panel):
     bl_label = "Bake Settings"
     bl_parent_id = "TEXTUREBAKE_PT_main"
@@ -441,9 +354,6 @@ class TEXTUREBAKE_PT_packing(TextureBakeCategoryPanel, bpy.types.Panel):
             col = row.column()
             col.template_list("TEXTUREBAKE_UL_packed_textures", "", context.scene.TextureBake_Props,
                                 "cp_list", context.scene.TextureBake_Props, "cp_list_index")
-            col = row.column()
-            col.operator("texture_bake.delete_packed_texture", text="", icon='CANCEL')
-            col.operator("texture_bake.reset_packed_textures", text="", icon='PRESET_NEW')
 
             layout.row().prop(context.scene.TextureBake_Props, "cp_name")
             layout.row().prop(context.scene.TextureBake_Props, "cp_file_format", text="Format")

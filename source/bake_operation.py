@@ -18,23 +18,7 @@
 #########################################################################
 
 import bpy
-
-def bakes_to_list(justcount = False):
-    selection = []
-    if bpy.context.scene.TextureBake_Props.selected_col: selection.append("diffuse")
-    if bpy.context.scene.TextureBake_Props.selected_metal: selection.append("metalness")
-    if bpy.context.scene.TextureBake_Props.selected_rough: selection.append("roughness")
-    if bpy.context.scene.TextureBake_Props.selected_normal: selection.append("normal")
-    if bpy.context.scene.TextureBake_Props.selected_trans: selection.append("transparency")
-    if bpy.context.scene.TextureBake_Props.selected_transrough: selection.append("transparencyroughness")
-    if bpy.context.scene.TextureBake_Props.selected_clearcoat: selection.append("clearcoat")
-    if bpy.context.scene.TextureBake_Props.selected_clearcoat_rough: selection.append("clearcoatroughness")
-    if bpy.context.scene.TextureBake_Props.selected_emission: selection.append("emission")
-    if bpy.context.scene.TextureBake_Props.selected_specular: selection.append("specular")
-    if bpy.context.scene.TextureBake_Props.selected_alpha: selection.append("alpha")
-    if bpy.context.scene.TextureBake_Props.selected_sss: selection.append("sss")
-    if bpy.context.scene.TextureBake_Props.selected_ssscol: selection.append("ssscol")
-    return len(selection) if justcount else selection
+from . import functions
 
 
 class TextureBakeConstants:
@@ -45,22 +29,6 @@ class TextureBakeConstants:
     SPECIALS = "Specials"
     SPECIALS_PBR_TARGET_ONLY = "specials_pbr_targetonly"
     SPECIALS_CYCLES_TARGET_ONLY = "specials_cycles_targetonly"
-
-    # PBR names - NOT YET USED
-    PBR_DIFFUSE = "Diffuse"
-    PBR_METAL = "Metalness"
-    PBR_SSS = "SSS"
-    PBR_SSSCOL = "SSS Color"
-    PBR_ROUGHNESS = "Roughness"
-    PBR_GLOSSY = "Glossiness"
-    PBR_NORMAL = "Normal"
-    PBR_TRANSMISSION = "Transmission"
-    PBR_TRANSMISSION_ROUGH = "Transmission Roughness"
-    PBR_CLEARCOAT = "Clearcoat"
-    PBR_CLEARCOAT_ROUGH = "Clearcoat Roughness"
-    PBR_EMISSION = "Emission"
-    PBR_SPECULAR = "Specular"
-    PBR_ALPHA = "Alpha"
 
     # Specials names
     THICKNESS = "Thickness"
@@ -95,7 +63,7 @@ class BakeOperation:
         self.mat_col_dict = {} #{matname, [r,g,b]
 
     def assemble_pbr_bake_list(self):
-        self.pbr_selected_bake_types = bakes_to_list()
+        self.pbr_selected_bake_types = functions.get_maps_to_bake()
 
 
 class MasterOperation:

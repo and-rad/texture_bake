@@ -28,10 +28,24 @@ from pathlib import Path
 from datetime import datetime
 from math import floor
 
-from . import functions
-from . import bakefunctions
-from .bake_operation import BakeOperation, MasterOperation, BakeStatus, bakes_to_list, TextureBakeConstants
-from .bg_bake import background_bake_ops, BackgroundBakeParams, refresh_bake_progress
+from . import (
+    bakefunctions,
+    constants,
+    functions,
+)
+
+from .bake_operation import (
+    BakeOperation,
+    MasterOperation,
+    BakeStatus,
+    TextureBakeConstants,
+)
+
+from .bg_bake import (
+    background_bake_ops,
+    BackgroundBakeParams,
+    refresh_bake_progress,
+)
 
 
 class TEXTUREBAKE_OT_bake(bpy.types.Operator):
@@ -50,13 +64,13 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
         total_maps = 0
         for need in needed_bake_modes:
             if need == TextureBakeConstants.PBR:
-                total_maps+=(bakes_to_list(justcount=True) * num_of_objects)
+                total_maps += functions.get_num_maps_to_bake() * num_of_objects
             if need == TextureBakeConstants.PBRS2A:
-                total_maps+=1*bakes_to_list(justcount=True)
+                total_maps += functions.get_num_maps_to_bake()
             if need == TextureBakeConstants.CYCLESBAKE and not context.scene.TextureBake_Props.selected_to_target:
-                total_maps+=1* num_of_objects
+                total_maps += num_of_objects
             if need == TextureBakeConstants.CYCLESBAKE and context.scene.TextureBake_Props.selected_to_target:
-                total_maps+=1
+                total_maps += 1
             if need == TextureBakeConstants.SPECIALS:
                 total_maps+=(functions.import_needed_specials_materials(justcount = True) * num_of_objects)
                 if context.scene.TextureBake_Props.selected_col_mats: total_maps+=1*num_of_objects
@@ -68,19 +82,13 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
 
         BakeStatus.total_maps = total_maps
 
-        # Clear the MasterOperation stuff
         MasterOperation.clear()
-
-        # Set master operation variables
         MasterOperation.merged_bake = context.scene.TextureBake_Props.merged_bake
         MasterOperation.merged_bake_name = context.scene.TextureBake_Props.merged_bake_name
-
-        # Need to know the total operations
         MasterOperation.total_bake_operations = len(needed_bake_modes)
 
         # Master list of all ops
         bops = []
-
         for need in needed_bake_modes:
             # Create operation
             bop = BakeOperation()
@@ -91,7 +99,7 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
 
         # Run queued operations
         for bop in bops:
-            MasterOperation.this_bake_operation_num+=1
+            MasterOperation.this_bake_operation_num += 1
             MasterOperation.current_bake_operation = bop
             if bop.bake_mode == TextureBakeConstants.PBR:
                 functions.print_msg("Running PBR bake")
@@ -200,52 +208,6 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
         functions.print_msg(f"Time taken - {s} seconds ({floor(s/60)} minutes, {s%60} seconds)")
 
         self.report({"INFO"}, "Bake complete")
-        return {'FINISHED'}
-
-
-class TEXTUREBAKE_OT_pbr_select_all(bpy.types.Operator):
-    """Select all PBR bake types"""
-    bl_idname = "texture_bake.pbr_select_all"
-    bl_label = "Select All"
-    bl_options = {'INTERNAL'}
-
-    def execute(self, context):
-        context.scene.TextureBake_Props.selected_col = True
-        context.scene.TextureBake_Props.selected_metal = True
-        context.scene.TextureBake_Props.selected_rough = True
-        context.scene.TextureBake_Props.selected_normal = True
-        context.scene.TextureBake_Props.selected_trans = True
-        context.scene.TextureBake_Props.selected_transrough = True
-        context.scene.TextureBake_Props.selected_emission = True
-        context.scene.TextureBake_Props.selected_clearcoat = True
-        context.scene.TextureBake_Props.selected_clearcoat_rough = True
-        context.scene.TextureBake_Props.selected_specular = True
-        context.scene.TextureBake_Props.selected_alpha = True
-        context.scene.TextureBake_Props.selected_sss = True
-        context.scene.TextureBake_Props.selected_ssscol = True
-        return {'FINISHED'}
-
-
-class TEXTUREBAKE_OT_pbr_select_none(bpy.types.Operator):
-    """Select none PBR bake types"""
-    bl_idname = "texture_bake.pbr_select_none"
-    bl_label = "Select None"
-    bl_options = {'INTERNAL'}
-
-    def execute(self, context):
-        context.scene.TextureBake_Props.selected_col = False
-        context.scene.TextureBake_Props.selected_metal = False
-        context.scene.TextureBake_Props.selected_rough = False
-        context.scene.TextureBake_Props.selected_normal = False
-        context.scene.TextureBake_Props.selected_trans = False
-        context.scene.TextureBake_Props.selected_transrough = False
-        context.scene.TextureBake_Props.selected_emission = False
-        context.scene.TextureBake_Props.selected_clearcoat = False
-        context.scene.TextureBake_Props.selected_clearcoat_rough = False
-        context.scene.TextureBake_Props.selected_specular = False
-        context.scene.TextureBake_Props.selected_alpha = False
-        context.scene.TextureBake_Props.selected_sss = False
-        context.scene.TextureBake_Props.selected_ssscol = False
         return {'FINISHED'}
 
 
@@ -519,19 +481,6 @@ class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
         d["rough_glossy_switch"] = context.scene.TextureBake_Props.rough_glossy_switch
         d["normal_format_switch"] = context.scene.TextureBake_Props.normal_format_switch
         d["tex_per_mat"] = context.scene.TextureBake_Props.tex_per_mat
-        d["selected_col"] = context.scene.TextureBake_Props.selected_col
-        d["selected_metal"] = context.scene.TextureBake_Props.selected_metal
-        d["selected_rough"] = context.scene.TextureBake_Props.selected_rough
-        d["selected_normal"] = context.scene.TextureBake_Props.selected_normal
-        d["selected_trans"] = context.scene.TextureBake_Props.selected_trans
-        d["selected_transrough"] = context.scene.TextureBake_Props.selected_transrough
-        d["selected_emission"] = context.scene.TextureBake_Props.selected_emission
-        d["selected_sss"] = context.scene.TextureBake_Props.selected_sss
-        d["selected_ssscol"] = context.scene.TextureBake_Props.selected_ssscol
-        d["selected_clearcoat"] = context.scene.TextureBake_Props.selected_clearcoat
-        d["selected_clearcoat_rough"] = context.scene.TextureBake_Props.selected_clearcoat_rough
-        d["selected_specular"] = context.scene.TextureBake_Props.selected_specular
-        d["selected_alpha"] = context.scene.TextureBake_Props.selected_alpha
         d["selected_col_mats"] = context.scene.TextureBake_Props.selected_col_mats
         d["selected_col_vertex"] = context.scene.TextureBake_Props.selected_col_vertex
         d["selected_ao"] = context.scene.TextureBake_Props.selected_ao
@@ -695,19 +644,6 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
         context.scene.TextureBake_Props.rough_glossy_switch = d["rough_glossy_switch"]
         context.scene.TextureBake_Props.normal_format_switch = d["normal_format_switch"]
         context.scene.TextureBake_Props.tex_per_mat = d["tex_per_mat"]
-        context.scene.TextureBake_Props.selected_col = d["selected_col"]
-        context.scene.TextureBake_Props.selected_metal = d["selected_metal"]
-        context.scene.TextureBake_Props.selected_rough = d["selected_rough"]
-        context.scene.TextureBake_Props.selected_normal = d["selected_normal"]
-        context.scene.TextureBake_Props.selected_trans = d["selected_trans"]
-        context.scene.TextureBake_Props.selected_transrough = d["selected_transrough"]
-        context.scene.TextureBake_Props.selected_emission = d["selected_emission"]
-        context.scene.TextureBake_Props.selected_sss = d["selected_sss"]
-        context.scene.TextureBake_Props.selected_ssscol = d["selected_ssscol"]
-        context.scene.TextureBake_Props.selected_clearcoat = d["selected_clearcoat"]
-        context.scene.TextureBake_Props.selected_clearcoat_rough = d["selected_clearcoat_rough"]
-        context.scene.TextureBake_Props.selected_specular = d["selected_specular"]
-        context.scene.TextureBake_Props.selected_alpha = d["selected_alpha"]
         context.scene.TextureBake_Props.selected_col_mats = d["selected_col_mats"]
         context.scene.TextureBake_Props.selected_col_vertex = d["selected_col_vertex"]
         context.scene.TextureBake_Props.selected_ao = d["selected_ao"]
@@ -1003,79 +939,6 @@ class TEXTUREBAKE_OT_add_packed_texture(bpy.types.Operator):
         context.scene.TextureBake_Props.cp_list_index = context.scene.TextureBake_Props.cp_list.find(name)
 
         self.report({"INFO"}, "CP texture saved")
-        return {'FINISHED'}
-
-
-class TEXTUREBAKE_OT_delete_packed_texture(bpy.types.Operator):
-    """Delete the selected channel pack texture"""
-    bl_idname = "texture_bake.delete_packed_texture"
-    bl_label = "Delete"
-    bl_options = {'INTERNAL'}
-
-    @classmethod
-    def poll(cls,context):
-        try:
-            context.scene.TextureBake_Props.cp_list[context.scene.TextureBake_Props.cp_list_index].name
-            return True
-        except:
-            return False
-
-    def execute(self, context):
-        context.scene.TextureBake_Props.cp_list.remove(context.scene.TextureBake_Props.cp_list_index)
-        self.report({"INFO"}, "CP texture deleted")
-        return {'FINISHED'}
-
-
-class TEXTUREBAKE_OT_reset_packed_textures(bpy.types.Operator):
-    """Add some example channel pack textures"""
-    bl_idname = "texture_bake.reset_packed_textures"
-    bl_label = "Add examples"
-    bl_options = {'INTERNAL'}
-
-    @classmethod
-    def poll(cls,context):
-        return True
-
-    def execute(self, context):
-        cp_list = context.scene.TextureBake_Props.cp_list
-
-        # Unity Lit shader. R=metalness, G=AO, B=N/A, A=Glossy.
-        li = cp_list.add()
-        li.name = "Unity Lit Shader"
-        li.file_format = "OPEN_EXR"
-        li.R = "metalness"
-        li.G = TextureBakeConstants.AO
-        li.B = "none"
-        li.A = "glossy"
-
-        # Unity Legacy Standard Diffuse. RGB=diffuse, A=alpha.
-        li = cp_list.add()
-        li.name = "Unity Legacy Shader"
-        li.file_format = "OPEN_EXR"
-        li.R = "diffuse"
-        li.G = "diffuse"
-        li.B = "diffuse"
-        li.A = "alpha"
-
-        # ORM format. R=AO, G=Roughness, B=Metalness, A=N/A.
-        li = cp_list.add()
-        li.name = "ORM"
-        li.file_format = "OPEN_EXR"
-        li.R = TextureBakeConstants.AO
-        li.G = "roughness"
-        li.B = "metalness"
-        li.A = "none"
-
-        # diffuse plus specular in the alpha channel.
-        li = cp_list.add()
-        li.name = "Diffuse and Spec in alpha"
-        li.file_format = "OPEN_EXR"
-        li.R = "diffuse"
-        li.G = "diffuse"
-        li.B = "diffuse"
-        li.A = "specular"
-
-        self.report({"INFO"}, "Default textures added")
         return {'FINISHED'}
 
 
