@@ -989,8 +989,38 @@ class TEXTUREBAKE_OT_reset_export_presets(bpy.types.Operator):
         prefs = context.preferences.addons[__package__].preferences
         presets = prefs.export_presets
         presets.clear()
+
+        # Unreal Engine
         item = presets.add()
         item.uid = "6a8abd21-609f-4219-9268-b5c6656a501b"
+        item.name = "Unreal Engine"
+        tex = item.textures.add()
+        tex.name = "T_%OBJ%_%BATCH%_D"
+        tex.file_format = 'TGA'
+        tex.red.info = constants.PBR_DIFFUSE
+        tex.green.info = constants.PBR_DIFFUSE
+        tex.blue.info = constants.PBR_DIFFUSE
+        tex.alpha.info = constants.PBR_OPACITY
+        tex.alpha.space = 'NON_COLOR'
+        tex = item.textures.add()
+        tex.name = "T_%OBJ%_%BATCH%_N"
+        tex.file_format = 'TGA'
+        tex.red.info = constants.PBR_NORMAL_DX
+        tex.red.space = 'NON_COLOR'
+        tex.green.info = constants.PBR_NORMAL_DX
+        tex.green.space = 'NON_COLOR'
+        tex.blue.info = constants.PBR_NORMAL_DX
+        tex.blue.space = 'NON_COLOR'
+        tex = item.textures.add()
+        tex.name = "T_%OBJ%_%BATCH%_ORM"
+        tex.file_format = 'TGA'
+        tex.red.info = constants.TEX_AO
+        tex.red.space = 'NON_COLOR'
+        tex.green.info = constants.PBR_ROUGHNESS
+        tex.green.space = 'NON_COLOR'
+        tex.blue.info = constants.PBR_METAL
+        tex.blue.space = 'NON_COLOR'
+
         bpy.ops.wm.save_userpref()
         return {'FINISHED'}
 
