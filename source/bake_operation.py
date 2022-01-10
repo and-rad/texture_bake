@@ -25,18 +25,14 @@ class TextureBakeConstants:
     # Constants
     PBR = "PBR"
     PBRS2A = "PBR StoA"
-    CYCLESBAKE = "CyclesBake"
     SPECIALS = "Specials"
     SPECIALS_PBR_TARGET_ONLY = "specials_pbr_targetonly"
-    SPECIALS_CYCLES_TARGET_ONLY = "specials_cycles_targetonly"
 
     # Specials names
     THICKNESS = "Thickness"
-    AO = "Ambient Occlusion"
     CURVATURE = "Curvature"
     COLORID = "Color ID"
     VERTEXCOL = "Vertex Color"
-    LIGHTMAP = "Lightmap"
 
 
 class BakeOperation:
@@ -44,7 +40,7 @@ class BakeOperation:
         self.udim_counter = 0
 
         # Mapping of object name to active UVs
-        self.bake_mode = TextureBakeConstants.PBR #So the example in the user prefs will work
+        self.bake_mode = TextureBakeConstants.PBR
         self.bake_objects = []
         self.active_object = None
         self.sb_target_object = None
@@ -54,9 +50,6 @@ class BakeOperation:
 
         # pbr stuff
         self.pbr_selected_bake_types = []
-
-        # cycles stuff
-        self.cycles_bake_type = bpy.context.scene.cycles.bake_type
 
         # ColIdmap stuff
         self.used_cols = [] #[[r,g,b],[r,g,b],[r,g,b]]

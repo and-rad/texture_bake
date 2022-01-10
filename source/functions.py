@@ -94,8 +94,6 @@ def gen_image_name(obj_name, baketype):
         parts.append(prefs.alpha_alias)
     elif baketype == constants.TEX_AO or baketype == constants.PBR_AO:
         parts.append(prefs.ao_alias)
-    elif baketype == TextureBakeConstants.LIGHTMAP:
-        parts.append(prefs.lightmap_alias)
     elif baketype == TextureBakeConstants.COLORID:
         parts.append(prefs.colid_alias)
     elif baketype == TextureBakeConstants.CURVATURE:
@@ -166,7 +164,6 @@ def create_images(imgname, thisbake, objname):
     # thisbake is subtype e.g. diffuse, ao, etc.
     current_bake_op = MasterOperation.current_bake_operation
     global_mode = current_bake_op.bake_mode
-    cycles_mode = bpy.context.scene.cycles.bake_type
     batch = MasterOperation.batch_name
 
     print_msg(f"Creating image {imgname}")
@@ -187,7 +184,7 @@ def create_images(imgname, thisbake, objname):
     all16 = bpy.context.scene.TextureBake_Props.export_16bit
 
     # Create image 32 bit or not 32 bit
-    if thisbake == constants.PBR_NORMAL_DX or thisbake == constants.PBR_NORMAL_OGL or (global_mode == TextureBakeConstants.CYCLESBAKE and bpy.context.scene.cycles.bake_type == "NORMAL"):
+    if thisbake == constants.PBR_NORMAL_DX or thisbake == constants.PBR_NORMAL_OGL:
         image = bpy.data.images.new(imgname, input_width, input_height, alpha=alpha, float_buffer=True)
     elif all32:
         image = bpy.data.images.new(imgname, input_width, input_height, alpha=alpha, float_buffer=True)
@@ -211,7 +208,7 @@ def create_images(imgname, thisbake, objname):
     else:
         image["SB_udims"] = False
 
-    # Always mark new iages fake user when generated in the background
+    # Always mark new images fake user when generated in the background
     if "--background" in sys.argv:
         image.use_fake_user = True
 
@@ -259,16 +256,6 @@ def create_dummy_nodes(nodetree, thisbake):
 
 
 def bake_operation(thisbake, img):
-    if(thisbake == "cyclesbake"):
-        # If we are doing an old fashioned cycles bake, do that and then exit
-        print_msg(f"Beginning bake based on Cycles settings: {bpy.context.scene.cycles.bake_type}")
-
-        bpy.ops.object.bake(type=bpy.context.scene.cycles.bake_type)
-        # Always pack the image for now
-        img.pack()
-
-        return True
-
     print_msg(f"Beginning bake for {thisbake}")
 
     use_clear = False
@@ -360,13 +347,8 @@ def check_scene(objects, bakemode):
                     messages.append(f"ERROR: Material '{mat.name}' on object '{obj.name}' has a Viewer node connected to the Material Output")
                     show_message_box(messages, "Errors occured", "ERROR")
                     return False
-    # glTF
-    if bpy.context.scene.TextureBake_Props.create_gltf_node:
-        if bpy.context.scene.TextureBake_Props.gltf_selection == TextureBakeConstants.AO and not bpy.context.scene.TextureBake_Props.selected_ao:
-            messages.append(f"ERROR: You have selected AO for glTF settings (in the 'Other Settings' section), but you aren't baking AO")
-        if bpy.context.scene.TextureBake_Props.gltf_selection == TextureBakeConstants.LIGHTMAP and not bpy.context.scene.TextureBake_Props.selected_lightmap:
-            messages.append(f"ERROR: You have selected Lightmap for glTF settings (in the 'Other Settings' section), but you aren't baking Lightmap")
-    if len(messages)>1:
+
+    if len(messages) > 1:
         show_message_box(messages, "Errors occured", "ERROR")
         return False
 
@@ -472,55 +454,6 @@ def check_scene(objects, bakemode):
                     print_msg(f"{obj.name} (target) has invalid material config - fixing")
                     fix_invalid_material_config(obj)
 
-    # Cycles Bake - No S2A
-    if bakemode == TextureBakeConstants.CYCLESBAKE and not bpy.context.scene.TextureBake_Props.selected_to_target:
-        # First lets check for old users using the old method
-        if bpy.context.scene.render.bake.use_selected_to_active:
-            messages.append(f"ERROR: It looks like you are trying to bake selected to active. To do this with TextureBake, use the option on the TextureBake panel. You don’t need to worry about the setting in the Blender bake panel.")
-
-        for obj in objects:
-            # Are UVs OK?
-            if not bpy.context.scene.TextureBake_Props.tex_per_mat:
-                if len(obj.data.uv_layers) == 0:
-                    messages.append(f"ERROR: Object {obj.name} has no UVs")
-                    show_message_box(messages, "Errors occured", "ERROR")
-                    return False
-            else:
-                if len(obj.data.uv_layers) == 0:
-                    messages.append(f"ERROR: Object {obj.name} has no UVs")
-                    show_message_box(messages, "Errors occured", "ERROR")
-                    return False
-
-            # Are materials OK?
-            if not check_object_valid_material_config(obj):
-                fix_invalid_material_config(obj)
-
-    # Cycles Bake - S2A
-    if bakemode == TextureBakeConstants.CYCLESBAKE and bpy.context.scene.TextureBake_Props.selected_to_target:
-        # We only care about the target object
-        obj = bpy.context.scene.TextureBake_Props.target_object
-
-        # Do we actually have an active object?
-        if obj == None:
-            messages.append(f"ERROR: You are trying to bake selected to active with CyclesBake, but there is no active object")
-            show_message_box(messages, "Errors occured", "ERROR")
-            return False
-
-        # Have we got more selected than just the target object?
-        elif len(objects) == 1 and objects[0] == obj:
-            messages.append("ERROR: You are trying to bake selected to active with CyclesBake, but the only object you have selected is your active (target) object")
-            show_message_box(messages, "Errors occured", "ERROR")
-            return False
-
-        # Are UVs OK?
-        elif len(obj.data.uv_layers) == 0:
-            messages.append(f"ERROR: Object {obj.name} has no UVs")
-            show_message_box(messages, "Errors occured", "ERROR")
-            return False
-
-        if not check_object_valid_material_config(obj):
-            fix_invalid_material_config(obj)
-
     # Specials Bake
     if bpy.context.scene.TextureBake_Props.selected_col_vertex:
         if bakemode == TextureBakeConstants.SPECIALS:
@@ -530,7 +463,7 @@ def check_scene(objects, bakemode):
                     show_message_box(messages, "Errors occured", "ERROR")
                     return False
 
-        if bakemode == TextureBakeConstants.SPECIALS_CYCLES_TARGET_ONLY or bakemode == TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY:
+        if bakemode == TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY:
             t = bpy.context.scene.TextureBake_Props.target_object
             if len(t.data.vertex_colors) == 0:
                 messages.append(f"You are trying to bake the active vertex colors, but object {t.name} doesn't have vertex colors")
@@ -709,16 +642,6 @@ def export_textures(image, baketype, obj):
 
     current_bake_op = MasterOperation.current_bake_operation
 
-    # Firstly, work out if we want denoising or not
-    if current_bake_op.bake_mode == TextureBakeConstants.CYCLESBAKE and bpy.context.scene.TextureBake_Props.run_denoise:
-        need_denoise = True
-    elif current_bake_op.bake_mode in [TextureBakeConstants.SPECIALS, TextureBakeConstants.SPECIALS_CYCLES_TARGET_ONLY, \
-        TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY] and \
-        baketype == TextureBakeConstants.LIGHTMAP and bpy.context.scene.TextureBake_Props.selected_lightmap_denoise:
-        need_denoise = True
-    else:
-        need_denoise = False
-
     # We want to control the bit depth, so we need a new scene
     scene = bpy.data.scenes.new('TextureBakeTempScene')
     settings = scene.render.image_settings
@@ -738,24 +661,7 @@ def export_textures(image, baketype, obj):
         scene.view_settings.view_transform = "Raw"
         scene.sequencer_colorspace_settings.name = "Non-Color"
 
-    elif current_bake_op.bake_mode == TextureBakeConstants.CYCLESBAKE:
-        if bpy.context.scene.cycles.bake_type == "NORMAL":
-            print_msg("Raw color space for CyclesBake normal map")
-            scene.view_settings.view_transform = "Raw"
-            scene.sequencer_colorspace_settings.name = "Non-Color"
-        elif bpy.context.scene.TextureBake_Props.export_color_space:
-            print_msg("Applying color management settings from current scene for CyclesBake")
-            apply_scene_col_settings(scene)
-        else:
-            # Just standard
-            print_msg("Applying standard color management for CyclesBake")
-            scene.view_settings.view_transform = "Standard"
-
-    elif baketype == TextureBakeConstants.LIGHTMAP and bpy.context.scene.TextureBake_Props.lightmap_apply_colman:
-        print_msg("Applying color management settings from current scene for Lightmap")
-        apply_scene_col_settings(scene)
-
-    elif current_bake_op.bake_mode in [TextureBakeConstants.SPECIALS, TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY, TextureBakeConstants.SPECIALS_CYCLES_TARGET_ONLY]:
+    elif current_bake_op.bake_mode in [TextureBakeConstants.SPECIALS, TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY]:
         print_msg("Raw color space for Specials")
         scene.view_settings.view_transform = "Raw"
         scene.sequencer_colorspace_settings.name = "Non-Color"
@@ -783,7 +689,7 @@ def export_textures(image, baketype, obj):
     if file_extension == "tga" or file_extension == "jpg":
         # Only one option
         settings.color_depth = '8'
-    elif (baketype == constants.PBR_NORMAL_DX or baketype == constants.PBR_NORMAL_OGL or (baketype == "cyclesbake" and bpy.context.scene.cycles.bake_type == "NORMAL")) and file_extension != "exr":
+    elif (baketype == constants.PBR_NORMAL_DX or baketype == constants.PBR_NORMAL_OGL) and file_extension != "exr":
         settings.color_depth = '16'
     elif bpy.context.scene.TextureBake_Props.export_16bit and file_extension != "exr":
         settings.color_depth = '16'
@@ -832,15 +738,7 @@ def export_textures(image, baketype, obj):
     scene.render.resolution_y = bpy.context.scene.TextureBake_Props.output_height
     scene.render.resolution_x = bpy.context.scene.TextureBake_Props.output_width
 
-    # No denoising, minimal setup
-    if not need_denoise:
-        links.new(img_n.outputs[0], composite_n.inputs[0])
-
-    # If donoising, we need a compositing setup.
-    else:
-        denoise_n = scene.node_tree.nodes.new("CompositorNodeDenoise")
-        links.new(denoise_n.outputs[0], composite_n.inputs[0])
-        links.new(img_n.outputs[0], denoise_n.inputs[0])
+    links.new(img_n.outputs[0], composite_n.inputs[0])
 
     # In both cases render out
     bpy.ops.render.render(animation=False, write_still=True, use_viewport=False, scene=scene.name)
@@ -906,10 +804,7 @@ def export_textures(image, baketype, obj):
     # Col management
     if file_extension == "exr":
         image.colorspace_settings.name = "Non-Color"
-
-    elif originally_float and\
-     (image["SB_thisbake"] == constants.PBR_DIFFUSE or\
-     current_bake_op.bake_mode == TextureBakeConstants.CYCLESBAKE and bpy.context.scene.cycles.bake_type in ["COMBINED", "DIFFUSE"]):
+    elif originally_float and image["SB_thisbake"] == constants.PBR_DIFFUSE:
         image.colorspace_settings.name = "sRGB"
 
     return file_extension
@@ -1030,19 +925,13 @@ def prep_objects(objs, baketype):
                 for slot in obj.material_slots:
                     mat = slot.material
                     nodetree = mat.node_tree
-
-                    if(baketype in {TextureBakeConstants.PBR, TextureBakeConstants.PBRS2A}):
+                    if baketype in {TextureBakeConstants.PBR, TextureBakeConstants.PBRS2A}:
                         material_setup.create_principled_setup(nodetree, obj)
-                    if baketype == TextureBakeConstants.CYCLESBAKE:
-                        material_setup.create_cyclesbake_setup(nodetree, obj)
             else: # Should only have one material
                 mat = obj.material_slots[0].material
                 nodetree = mat.node_tree
-
-                if(baketype in {TextureBakeConstants.PBR, TextureBakeConstants.PBRS2A}):
+                if baketype in {TextureBakeConstants.PBR, TextureBakeConstants.PBRS2A}:
                     material_setup.create_principled_setup(nodetree, obj)
-                if baketype == TextureBakeConstants.CYCLESBAKE:
-                    material_setup.create_cyclesbake_setup(nodetree, obj)
 
             # Change object name to avoid collisions
             obj.name = obj.name.replace("_TextureBake", "_Baked")
@@ -1244,50 +1133,28 @@ def setup_mix_material(nodetree, thisbake):
 
 
 # ----------------Specials---------------------------------
-def import_needed_specials_materials(justcount = False):
+def import_needed_specials_materials():
     ordered_specials = []
     path = os.path.dirname(__file__) + "/materials/materials.blend\\Material\\"
-    if(bpy.context.scene.TextureBake_Props.selected_thickness):
-        if "TextureBake_"+TextureBakeConstants.THICKNESS not in bpy.data.materials:
-            material_name = "TextureBake_"+TextureBakeConstants.THICKNESS
-            if not justcount:
-                bpy.ops.wm.append(filename=material_name, directory=path)
-            ordered_specials.append(TextureBakeConstants.THICKNESS)
-        else:
-            ordered_specials.append(TextureBakeConstants.THICKNESS)
+    if bpy.context.scene.TextureBake_Props.selected_thickness:
+        if "TextureBake_" + TextureBakeConstants.THICKNESS not in bpy.data.materials:
+            material_name = "TextureBake_" + TextureBakeConstants.THICKNESS
+            bpy.ops.wm.append(filename=material_name, directory=path)
+        ordered_specials.append(TextureBakeConstants.THICKNESS)
 
-    if(bpy.context.scene.TextureBake_Props.selected_ao):
-        if "TextureBake_"+TextureBakeConstants.AO not in bpy.data.materials:
-            material_name = "TextureBake_"+TextureBakeConstants.AO
-            if not justcount:
-                bpy.ops.wm.append(filename=material_name, directory=path)
-            ordered_specials.append(TextureBakeConstants.AO)
-        else:
-            ordered_specials.append(TextureBakeConstants.AO)
+    if bpy.context.scene.TextureBake_Props.selected_ao:
+        if "TextureBake_" + constants.TEX_AO not in bpy.data.materials:
+            material_name = "TextureBake_" + constants.TEX_AO
+            bpy.ops.wm.append(filename=material_name, directory=path)
+        ordered_specials.append(constants.TEX_AO)
 
-    if(bpy.context.scene.TextureBake_Props.selected_curvature):
-        if "TextureBake"+TextureBakeConstants.CURVATURE not in bpy.data.materials:
-            material_name = "TextureBake_"+TextureBakeConstants.CURVATURE
-            if not justcount:
-                bpy.ops.wm.append(filename=material_name, directory=path)
-            ordered_specials.append(TextureBakeConstants.CURVATURE)
-        else:
-            ordered_specials.append(TextureBakeConstants.CURVATURE)
+    if bpy.context.scene.TextureBake_Props.selected_curvature:
+        if "TextureBake" + TextureBakeConstants.CURVATURE not in bpy.data.materials:
+            material_name = "TextureBake_" + TextureBakeConstants.CURVATURE
+            bpy.ops.wm.append(filename=material_name, directory=path)
+        ordered_specials.append(TextureBakeConstants.CURVATURE)
 
-    if(bpy.context.scene.TextureBake_Props.selected_lightmap):
-        if "TextureBake_"+TextureBakeConstants.LIGHTMAP not in bpy.data.materials:
-            material_name = "TextureBake_"+TextureBakeConstants.LIGHTMAP
-            if not justcount:
-                bpy.ops.wm.append(filename=material_name, directory=path)
-            ordered_specials.append(TextureBakeConstants.LIGHTMAP)
-        else:
-            ordered_specials.append(TextureBakeConstants.LIGHTMAP)
-
-    # return the list of specials
-    if justcount:
-        return len(ordered_specials)
-    else:
-        return ordered_specials
+    return ordered_specials
 
 
 trunc_num = 0
@@ -1514,12 +1381,8 @@ def sacle_image_if_needed(img):
 
 
 def set_image_internal_col_space(image, thisbake):
-    if thisbake == TextureBakeConstants.CYCLESBAKE:
-        if bpy.context.scene.cycles.bake_type not in ["COMBINED", "DIFFUSE"]:
-            image.colorspace_settings.name = "Non-Color"
-    else: # PBR
-        if thisbake != constants.PBR_DIFFUSE and thisbake != constants.PBR_EMISSION:
-            image.colorspace_settings.name = "Non-Color"
+    if thisbake != constants.PBR_DIFFUSE and thisbake != constants.PBR_EMISSION:
+        image.colorspace_settings.name = "Non-Color"
 
 
 def any_specials():
@@ -1527,8 +1390,7 @@ def any_specials():
         or bpy.context.scene.TextureBake_Props.selected_col_vertex
         or bpy.context.scene.TextureBake_Props.selected_ao
         or bpy.context.scene.TextureBake_Props.selected_thickness
-        or bpy.context.scene.TextureBake_Props.selected_curvature
-        or bpy.context.scene.TextureBake_Props.selected_lightmap)
+        or bpy.context.scene.TextureBake_Props.selected_curvature)
 
 
 def auto_set_bake_margin():
@@ -1564,3 +1426,20 @@ def get_maps_to_bake():
 def get_num_maps_to_bake():
     """Returns the number of maps that should be baked under the selected export preset"""
     return len(get_maps_to_bake())
+
+def get_num_input_maps_to_bake():
+    props = bpy.context.scene.TextureBake_Props
+    total = 0
+
+    if props.selected_thickness:
+        total += 1
+    if props.selected_ao:
+        total += 1
+    if props.selected_curvature:
+        total += 1
+    if props.selected_col_mats:
+        total += 1
+    if props.selected_col_vertex:
+        total += 1
+
+    return total

@@ -73,77 +73,28 @@ def get_image_from_tag(thisbake, objname):
     global_mode = current_bake_op.bake_mode
     objname = functions.untrunc_if_needed(objname)
     batch_name = bpy.context.scene.TextureBake_Props.batch_name
-    result = []
+    results = []
     if current_bake_op.uv_mode == "udims":
-
-        result = [img for img in bpy.data.images if\
+        results = [img for img in bpy.data.images if\
             ("SB_objname" in img and img["SB_objname"] == objname) and\
             ("SB_batch" in img and img["SB_batch"] == batch_name) and\
             ("SB_globalmode" in img and img["SB_globalmode"] == global_mode) and\
             ("SB_thisbake" in img and img["SB_thisbake"] == thisbake) and\
             ("SB_udims" in img and img["SB_udims"])\
-            ]
+        ]
     else:
-         result = [img for img in bpy.data.images if\
+         results = [img for img in bpy.data.images if\
             ("SB_objname" in img and img["SB_objname"] == objname) and\
             ("SB_batch" in img and img["SB_batch"] == batch_name) and\
             ("SB_globalmode" in img and img["SB_globalmode"] == global_mode) and\
             ("SB_thisbake" in img and img["SB_thisbake"] == thisbake)\
-            ]
+        ]
 
-    if len(result) > 0:
-        return result[0]
+    if results:
+        return results[0]
 
     functions.print_msg(f"ERROR: No image with matching tag ({thisbake}) found for object {objname}");
     return False
-
-
-def create_cyclesbake_setup(nodetree, obj):
-    current_bake_op = MasterOperation.current_bake_operation
-    if MasterOperation.merged_bake:
-        name = MasterOperation.merged_bake_name
-    else:
-        name = obj.name.replace("_TextureBake", "")
-    nodes = nodetree.nodes
-
-    # First we wipe out any existing nodes
-    for node in nodes:
-        nodes.remove(node)
-
-    node = nodes.new("ShaderNodeBsdfPrincipled")
-    node.location = (414, 6)
-    node.label = "pnode"
-
-    node = nodes.new("ShaderNodeTexImage")
-    node.location = (270, -10)
-    node.label = "emmision_tex"
-    node.image = get_image_from_tag(current_bake_op.cycles_bake_type, name)
-
-    node = nodes.new("ShaderNodeOutputMaterial")
-    node.location = (813, 270)
-    node.label = "monode"
-
-    make_link("emmision_tex", "Color", "pnode", "Base Color", nodetree)
-    make_link("pnode", "BSDF", "monode", "Surface", nodetree)
-
-    wipe_labels(nodes)
-
-        # Create node group if we want it
-    if bpy.context.scene.TextureBake_Props.create_gltf_node:
-        if "glTF Settings" not in bpy.data.node_groups:
-            g = bpy.data.node_groups.new("glTF Settings", "ShaderNodeTree")
-            # Create a group input (not sure we really need this)
-            g.nodes.new("NodeGroupInput")
-            # Create input socket
-            g.inputs.new("NodeSocketFloat", "Occlusion")
-        else:
-            g = bpy.data.node_groups["glTF Settings"]
-
-        # Create the node group material node
-        n = nodes.new("ShaderNodeGroup")
-        n.node_tree = bpy.data.node_groups["glTF Settings"]
-        n.label = "glTF Settings"
-        n.location = (659.0382690429688, 30.21734619140625)
 
 
 def create_principled_setup(nodetree, obj):
@@ -359,21 +310,3 @@ def create_principled_setup(nodetree, obj):
     make_link("ssscol_tex", "Color", "pnode", "Subsurface Color", nodetree)
     make_link("pnode", "BSDF", "monode", "Surface", nodetree)
     wipe_labels(nodes)
-
-    # glTF Settings Node
-    # Create node group if we want it
-    if bpy.context.scene.TextureBake_Props.create_gltf_node:
-        if "glTF Settings" not in bpy.data.node_groups:
-            g = bpy.data.node_groups.new("glTF Settings", "ShaderNodeTree")
-            # Create a group input (not sure we really need this)
-            g.nodes.new("NodeGroupInput")
-            # Create input socket
-            g.inputs.new("NodeSocketFloat", "Occlusion")
-        else:
-            g = bpy.data.node_groups["glTF Settings"]
-
-        # Create the node group material node
-        n = nodes.new("ShaderNodeGroup")
-        n.node_tree = bpy.data.node_groups["glTF Settings"]
-        n.label = "glTF Settings"
-        n.location = (659.0382690429688, 30.21734619140625)

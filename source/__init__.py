@@ -68,7 +68,6 @@ def tex_per_mat_update(self, context):
 def prep_mesh_update(self, context):
     if context.scene.TextureBake_Props.prep_mesh == False:
         context.scene.TextureBake_Props.hide_source_objects = False
-        context.scene.TextureBake_Props.create_gltf_node = False
     else:
         context.scene.TextureBake_Props.hide_source_objects = True
 
@@ -82,17 +81,8 @@ def export_textures_update(self, context):
     if context.scene.TextureBake_Props.export_textures == False:
         context.scene.TextureBake_Props.export_16bit = False
         context.scene.TextureBake_Props.run_denoise = False
-        context.scene.TextureBake_Props.selected_lightmap_denoise = False
         context.scene.TextureBake_Props.export_folder_per_object = False
         context.scene.TextureBake_Props.uv_mode = "normal"
-
-
-def global_mode_update(self, context):
-    if not context.scene.TextureBake_Props.global_mode == "cycles_bake":
-        context.scene.TextureBake_Props.tex_per_mat = False
-
-    if not context.scene.TextureBake_Props.global_mode == "pbr_bake":
-        context.scene.TextureBake_Props.selected_lightmap_denoise = False
 
 
 def presets_list_update(self,context):
@@ -136,22 +126,7 @@ def cp_list_index_update(self, context):
 
 
 def get_selected_bakes_dropdown(self, context):
-    items = [("none", "None","")]
-
-    if context.scene.TextureBake_Props.selected_col_mats:
-        items.append((TextureBakeConstants.COLORID, TextureBakeConstants.COLORID,""))
-    if context.scene.TextureBake_Props.selected_col_vertex:
-        items.append((TextureBakeConstants.VERTEXCOL, TextureBakeConstants.VERTEXCOL,""))
-    if context.scene.TextureBake_Props.selected_ao:
-        items.append((TextureBakeConstants.AO, TextureBakeConstants.AO,""))
-    if context.scene.TextureBake_Props.selected_thickness:
-        items.append((TextureBakeConstants.THICKNESS, TextureBakeConstants.THICKNESS,""))
-    if context.scene.TextureBake_Props.selected_curvature:
-        items.append((TextureBakeConstants.CURVATURE, TextureBakeConstants.CURVATURE,""))
-    if context.scene.TextureBake_Props.selected_lightmap:
-        items.append((TextureBakeConstants.LIGHTMAP, TextureBakeConstants.LIGHTMAP,""))
-
-    return items
+    return [("none", "None","")]
 
 
 def get_export_presets_enum(self, context):
@@ -205,17 +180,6 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
         name = "Export Preset",
         description = "The export preset to use when baking textures",
         items = get_export_presets_enum,
-    )
-
-    global_mode: EnumProperty(
-        name = "Bake Mode",
-        description = "Global Baking Mode",
-        default = "pbr_bake",
-        items = [
-            ("pbr_bake", "PBR Bake", "Bake PBR maps from materials created around the Principled BSDF and Emission shaders"),
-            ("cycles_bake", "Cycles Bake", "Bake the 'traditional' cycles bake modes"),
-        ],
-        update = global_mode_update,
     )
 
     ray_distance: FloatProperty(
@@ -326,7 +290,7 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
     )
 
     selected_ao: BoolProperty(
-        name = TextureBakeConstants.AO,
+        name = "Ambient Occlusion",
         description = "Ambient Occlusion",
     )
 
@@ -338,22 +302,6 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
     selected_curvature: BoolProperty(
         name = TextureBakeConstants.CURVATURE,
         description = "Curvature map",
-    )
-
-    selected_lightmap: BoolProperty(
-        name = TextureBakeConstants.LIGHTMAP,
-        description = "Lightmap. PBR baking doesn't normally need a sample count, but a lightmap does",
-    )
-
-    lightmap_apply_colman: BoolProperty(
-        name = "Export with color management settings",
-        description = "Apply the color management settings you have set in the render properties panel to the lightmap. Only available when you are exporting your bakes. Will be ignored if exporting to EXR files as these don't support color management",
-        default = False,
-    )
-
-    selected_lightmap_denoise: BoolProperty(
-        name = "Denoise Lightmap",
-        description = "Run lightmap through the compositor denoise node, only available when you are exporting you bakes",
     )
 
     prefer_existing_uvmap: BoolProperty(
@@ -526,22 +474,6 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
         description = "Name to apply to these bakes (is incorporated into the bakes file name, provided you have included this in the image format string - see addon preferences). NOTE: To maintain compatibility, only MS Windows acceptable characters will be used",
         default = "Bake1",
         maxlen = 20,
-    )
-
-    create_gltf_node: BoolProperty(
-        name = "Create glTF settings",
-        description = "Create the glTF settings node group",
-        default = False,
-    )
-
-    gltf_selection: EnumProperty(
-        name = "glTF selection",
-        description = "Which map should be plugged into the glTF settings node",
-        default = TextureBakeConstants.AO,
-        items = [
-            (TextureBakeConstants.AO, TextureBakeConstants.AO, "Use ambient occlusion"),
-            (TextureBakeConstants.LIGHTMAP, TextureBakeConstants.LIGHTMAP, "Use lightmap"),
-        ],
     )
 
     presets_list: CollectionProperty(
@@ -763,12 +695,11 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
     sss_alias: StringProperty(name="SSS", default="sss")
     ssscol_alias: StringProperty(name="SSS Color", default="ssscol")
 
-    ao_alias: StringProperty(name=TextureBakeConstants.AO, default="ao")
+    ao_alias: StringProperty(name="Ambient Occlusion", default="ao")
     curvature_alias: StringProperty(name=TextureBakeConstants.CURVATURE, default="curvature")
     thickness_alias: StringProperty(name=TextureBakeConstants.THICKNESS, default="thickness")
     vertexcol_alias: StringProperty(name=TextureBakeConstants.VERTEXCOL, default="vertexcol")
     colid_alias: StringProperty(name=TextureBakeConstants.COLORID, default="colid")
-    lightmap_alias: StringProperty(name=TextureBakeConstants.LIGHTMAP, default="lightmap")
 
     @classmethod
     def reset_aliases(self):
@@ -791,7 +722,6 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
         prefs.property_unset("thickness_alias")
         prefs.property_unset("vertexcol_alias")
         prefs.property_unset("colid_alias")
-        prefs.property_unset("lightmap_alias")
         bpy.ops.wm.save_userpref()
 
     def draw(self, context):
@@ -867,7 +797,6 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
         box.row().prop(self, "thickness_alias")
         box.row().prop(self, "vertexcol_alias")
         box.row().prop(self, "colid_alias")
-        box.row().prop(self, "lightmap_alias")
         box.row().operator("texture_bake.reset_aliases")
 
 
@@ -879,7 +808,6 @@ classes = [
     operators.TEXTUREBAKE_OT_bake_delete_individual,
     operators.TEXTUREBAKE_OT_bake_import_individual,
     operators.TEXTUREBAKE_OT_bake_delete,
-    operators.TEXTUREBAKE_OT_import_materials,
     operators.TEXTUREBAKE_OT_save_preset,
     operators.TEXTUREBAKE_OT_load_preset,
     operators.TEXTUREBAKE_OT_refresh_presets,

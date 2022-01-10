@@ -68,18 +68,10 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
                 total_maps += functions.get_num_maps_to_bake() * num_of_objects
             if need == TextureBakeConstants.PBRS2A:
                 total_maps += functions.get_num_maps_to_bake()
-            if need == TextureBakeConstants.CYCLESBAKE and not context.scene.TextureBake_Props.selected_to_target:
-                total_maps += num_of_objects
-            if need == TextureBakeConstants.CYCLESBAKE and context.scene.TextureBake_Props.selected_to_target:
-                total_maps += 1
             if need == TextureBakeConstants.SPECIALS:
-                total_maps+=(functions.import_needed_specials_materials(justcount = True) * num_of_objects)
-                if context.scene.TextureBake_Props.selected_col_mats: total_maps+=1*num_of_objects
-                if context.scene.TextureBake_Props.selected_col_vertex: total_maps+=1*num_of_objects
-            if need in [TextureBakeConstants.SPECIALS_CYCLES_TARGET_ONLY, TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY]:
-                total_maps+=(functions.import_needed_specials_materials(justcount = True))
-                if context.scene.TextureBake_Props.selected_col_mats: total_maps+=1
-                if context.scene.TextureBake_Props.selected_col_vertex: total_maps+=1
+                total_maps += functions.get_num_input_maps_to_bake() * num_of_objects
+            if need == TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY:
+                total_maps += functions.get_num_input_maps_to_bake()
 
         BakeStatus.total_maps = total_maps
 
@@ -108,10 +100,7 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
             elif bop.bake_mode == TextureBakeConstants.PBRS2A:
                 functions.print_msg("Running PBR S2A bake")
                 bakefunctions.do_bake_selected_to_target()
-            elif bop.bake_mode == TextureBakeConstants.CYCLESBAKE:
-                functions.print_msg("Running Cycles bake")
-                bakefunctions.cycles_bake()
-            elif bop.bake_mode in [TextureBakeConstants.SPECIALS, TextureBakeConstants.SPECIALS_CYCLES_TARGET_ONLY, TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY]:
+            elif bop.bake_mode in [TextureBakeConstants.SPECIALS, TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY]:
                 functions.print_msg("Running Specials bake")
                 bakefunctions.specials_bake()
 
@@ -138,19 +127,16 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
 
     def execute(self, context):
         needed_bake_modes = []
-        if context.scene.TextureBake_Props.global_mode == "pbr_bake" and not context.scene.TextureBake_Props.selected_to_target:
-            needed_bake_modes.append(TextureBakeConstants.PBR)
-        if context.scene.TextureBake_Props.global_mode == "pbr_bake" and context.scene.TextureBake_Props.selected_to_target:
+        if context.scene.TextureBake_Props.selected_to_target:
             needed_bake_modes.append(TextureBakeConstants.PBRS2A)
-        if context.scene.TextureBake_Props.global_mode == "cycles_bake":
-            needed_bake_modes.append(TextureBakeConstants.CYCLESBAKE)
+        else:
+            needed_bake_modes.append(TextureBakeConstants.PBR)
 
-        if functions.any_specials() and TextureBakeConstants.PBRS2A in needed_bake_modes:
-            needed_bake_modes.append(TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY)
-        elif functions.any_specials() and TextureBakeConstants.CYCLESBAKE in needed_bake_modes and context.scene.TextureBake_Props.selected_to_target:
-            needed_bake_modes.append(TextureBakeConstants.SPECIALS_CYCLES_TARGET_ONLY)
-        elif functions.any_specials():
-            needed_bake_modes.append(TextureBakeConstants.SPECIALS)
+        if functions.any_specials():
+            if TextureBakeConstants.PBRS2A in needed_bake_modes:
+                needed_bake_modes.append(TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY)
+            else:
+                needed_bake_modes.append(TextureBakeConstants.SPECIALS)
 
         # Clear the progress stuff
         BakeStatus.current_map = 0
@@ -435,25 +421,6 @@ class TEXTUREBAKE_OT_bake_delete_individual(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class TEXTUREBAKE_OT_import_materials(bpy.types.Operator):
-    """Import the selected specials materials if you want to edit them. Once edited, they will be used for all bakes of that type in this file"""
-    bl_idname = "texture_bake.import_materials"
-    bl_label = "Import specials materials"
-    bl_options = {'INTERNAL'}
-
-    @classmethod
-    def poll(cls,context):
-        return context.scene.TextureBake_Props.selected_ao or\
-            context.scene.TextureBake_Props.selected_curvature or\
-            context.scene.TextureBake_Props.selected_thickness or\
-            context.scene.TextureBake_Props.selected_lightmap
-
-    def execute(self, context):
-        functions.import_needed_specials_materials()
-        self.report({"INFO"}, "Materials imported into scene. Create a dummy object and edit them. They will be used for Specials bakes of this type going forwards")
-        return {'FINISHED'}
-
-
 class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
     """Save current TextureBake settings to preset"""
     bl_idname = "texture_bake.save_preset"
@@ -467,7 +434,6 @@ class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
     def execute(self, context):
         d = {}
         d["export_preset"] = context.scene.TextureBake_Props.export_preset
-        d["global_mode"] = context.scene.TextureBake_Props.global_mode
         d["ray_distance"] = context.scene.TextureBake_Props.ray_distance
         d["cage_extrusion"] = context.scene.TextureBake_Props.cage_extrusion
         d["selected_to_target"] = context.scene.TextureBake_Props.selected_to_target
@@ -487,9 +453,6 @@ class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
         d["selected_ao"] = context.scene.TextureBake_Props.selected_ao
         d["selected_thickness"] = context.scene.TextureBake_Props.selected_thickness
         d["selected_curvature"] = context.scene.TextureBake_Props.selected_curvature
-        d["selected_lightmap"] = context.scene.TextureBake_Props.selected_lightmap
-        d["lightmap_apply_colman"] = context.scene.TextureBake_Props.lightmap_apply_colman
-        d["selected_lightmap_denoise"] = context.scene.TextureBake_Props.selected_lightmap_denoise
         d["prefer_existing_uvmap"] = context.scene.TextureBake_Props.prefer_existing_uvmap
         d["restore_active_uvmap"] = context.scene.TextureBake_Props.restore_active_uvmap
         d["uv_mode"] = context.scene.TextureBake_Props.uv_mode
@@ -515,7 +478,6 @@ class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
         d["memory_limit"] = context.scene.TextureBake_Props.memory_limit
         d["batch_name"] = context.scene.TextureBake_Props.batch_name
 
-        d["bake_type"] = context.scene.cycles.bake_type
         d["use_pass_direct"] = context.scene.render.bake.use_pass_direct
         d["use_pass_indirect"] = context.scene.render.bake.use_pass_indirect
         d["use_pass_diffuse"] = context.scene.render.bake.use_pass_diffuse
@@ -628,7 +590,6 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
         d = json.loads(jsonContent)
 
         context.scene.TextureBake_Props.export_preset = d["export_preset"]
-        context.scene.TextureBake_Props.global_mode = d["global_mode"]
         context.scene.TextureBake_Props.ray_distance = d["ray_distance"]
         context.scene.TextureBake_Props.cage_extrusion = d["cage_extrusion"]
         context.scene.TextureBake_Props.selected_to_target = d["selected_to_target"]
@@ -648,9 +609,6 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
         context.scene.TextureBake_Props.selected_ao = d["selected_ao"]
         context.scene.TextureBake_Props.selected_thickness = d["selected_thickness"]
         context.scene.TextureBake_Props.selected_curvature = d["selected_curvature"]
-        context.scene.TextureBake_Props.selected_lightmap = d["selected_lightmap"]
-        context.scene.TextureBake_Props.lightmap_apply_colman = d["lightmap_apply_colman"]
-        context.scene.TextureBake_Props.selected_lightmap_denoise = d["selected_lightmap_denoise"]
         context.scene.TextureBake_Props.restore_active_uvmap = d["restore_active_uvmap"]
         context.scene.TextureBake_Props.uv_mode = d["uv_mode"]
         context.scene.TextureBake_Props.udim_tiles = d["udim_tiles"]
@@ -676,7 +634,6 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
         context.scene.TextureBake_Props.batch_name = d["batch_name"]
         context.scene.TextureBake_Props.prefer_existing_uvmap = d["prefer_existing_uvmap"]
 
-        context.scene.cycles.bake_type = d["bake_type"]
         context.scene.render.bake.use_pass_direct = d["use_pass_direct"]
         context.scene.render.bake.use_pass_indirect = d["use_pass_indirect"]
         context.scene.render.bake.use_pass_diffuse = d["use_pass_diffuse"]
@@ -1085,9 +1042,6 @@ class TEXTUREBAKE_OT_format_info(bpy.types.Operator):
         row = col.split(factor=0.25)
         row.label(text="%BATCH%")
         row.label(text="Batch name as defined in the Properties panel")
-        row = col.split(factor=0.25)
-        row.label(text="%BAKEMODE%")
-        row.label(text="PBR or Cycles")
         row = col.split(factor=0.25)
         row.label(text="%BAKETYPE%")
         row.label(text="Diffuse, emission, AO, etc.")

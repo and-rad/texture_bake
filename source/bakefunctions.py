@@ -70,10 +70,6 @@ def optimize():
 
 
         functions.print_msg(f"Setting tile size to {bpy.context.scene.cycles.tile_size} for baking on GPU")
-
-    if(current_bake_op.bake_mode == TextureBakeConstants.CYCLESBAKE):
-        functions.print_msg(f"Honouring user set sample count of {bpy.context.scene.cycles.samples} for Cycles bake")
-    else:
         functions.print_msg("Reducing sample count to 16 for more efficient baking")
         bpy.context.scene.cycles.samples = 16
 
@@ -172,7 +168,7 @@ def common_bake_prep():
     bpy.context.scene.render.engine = 'CYCLES'
 
     # If this is a selected to active bake (PBR or cycles), turn it on
-    if (current_bake_op.bake_mode==TextureBakeConstants.PBRS2A or current_bake_op.bake_mode==TextureBakeConstants.CYCLESBAKE) and bpy.context.scene.TextureBake_Props.selected_to_target:
+    if current_bake_op.bake_mode==TextureBakeConstants.PBRS2A and bpy.context.scene.TextureBake_Props.selected_to_target:
         bpy.context.scene.render.bake.use_selected_to_active = True
         functions.print_msg(f"Setting ray distance to {round(bpy.context.scene.TextureBake_Props.ray_distance, 2)}")
         bpy.context.scene.render.bake.max_ray_distance = bpy.context.scene.TextureBake_Props.ray_distance
@@ -416,8 +412,6 @@ def common_bake_finishing():
         if(bpy.context.scene.TextureBake_Props.export_mesh or bpy.context.scene.TextureBake_Props.prep_mesh or "--background" in sys.argv):
             if current_bake_op.bake_mode == TextureBakeConstants.PBRS2A:
                 functions.prep_objects([current_bake_op.sb_target_object], current_bake_op.bake_mode)
-            elif current_bake_op.bake_mode == TextureBakeConstants.CYCLESBAKE and bpy.context.scene.TextureBake_Props.selected_to_target:
-                functions.prep_objects([current_bake_op.sb_target_object], current_bake_op.bake_mode)
             else:
                 functions.prep_objects(current_bake_op.bake_objects, current_bake_op.bake_mode)
 
@@ -442,8 +436,8 @@ def common_bake_finishing():
     if lastop and "TextureBake_Placeholder" in bpy.data.materials:
         bpy.data.materials.remove(bpy.data.materials["TextureBake_Placeholder"])
 
-    # If we baked specials, add the specials to the materials, but we won't hook them up (except for glTF)
-    if current_bake_op.bake_mode in [TextureBakeConstants.SPECIALS, TextureBakeConstants.SPECIALS_CYCLES_TARGET_ONLY, TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY]:
+    # If we baked specials, add the specials to the materials, but we won't hook them up
+    if current_bake_op.bake_mode in [TextureBakeConstants.SPECIALS, TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY]:
         # Not a merged bake
         if MasterOperation.merged_bake:
             nametag = "SB_merged_bake_name"
@@ -452,9 +446,6 @@ def common_bake_finishing():
 
         mats_done = []
         for obj in MasterOperation.prepared_mesh_objects:
-
-            positions = [(-1116.65, 339.7911), (-1116.65, 280.8774), (-1116.65, 228.8141), (-1116.65, 163.0499), (-1116.65, 396.6267), (-1116.65,  454.67)]
-
             if MasterOperation.merged_bake:
                 name = MasterOperation.merged_bake_name
             else:
@@ -463,7 +454,7 @@ def common_bake_finishing():
             image_list = [img for img in bpy.data.images \
                 if nametag in img and "SB_globalmode" in img and  \
                 img[nametag] == name and \
-                img["SB_globalmode"] in [TextureBakeConstants.SPECIALS, TextureBakeConstants.SPECIALS_CYCLES_TARGET_ONLY, TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY] ]
+                img["SB_globalmode"] in [TextureBakeConstants.SPECIALS, TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY] ]
 
             print(image_list)
 
@@ -474,21 +465,7 @@ def common_bake_finishing():
                     nodes = obj.material_slots[0].material.node_tree.nodes
                     node = nodes.new("ShaderNodeTexImage")
                     node.hide = True
-                    node.location = positions[0]
-                    positions.remove(positions[0])
                     node.image = img
-
-                    # If this is ambient occlusion, and that's our selection, also hook it up to the glTF Settings node
-                    if bpy.context.scene.TextureBake_Props.create_gltf_node:
-
-                        gltf_node = [n for n in nodes if n.label=="glTF Settings"]
-                        gltf_node = gltf_node[0]
-
-                        if img["SB_thisbake"] == TextureBakeConstants.AO and bpy.context.scene.TextureBake_Props.gltf_selection == TextureBakeConstants.AO:
-                            mat.node_tree.links.new(node.outputs["Color"], gltf_node.inputs[0])
-
-                        if img["SB_thisbake"] == TextureBakeConstants.LIGHTMAP and bpy.context.scene.TextureBake_Props.gltf_selection == TextureBakeConstants.LIGHTMAP:
-                            mat.node_tree.links.new(node.outputs["Color"], gltf_node.inputs[0])
 
     if "--background" in sys.argv:
         # for img in bpy.data.images:
@@ -509,175 +486,6 @@ def common_bake_finishing():
             shutil.rmtree(str(workingdir / "textures"))
 
 
-def cycles_bake():
-    current_bake_op = MasterOperation.current_bake_operation
-    common_bake_prep()
-
-    # If this is selected to active, make that the only object
-    objects = []
-    if bpy.context.scene.TextureBake_Props.selected_to_target:
-        objects = [current_bake_op.sb_target_object]
-    else:
-        objects = current_bake_op.bake_objects
-
-    functions.print_msg(f"Baking from cycles settings")
-
-    IMGNAME = ""
-
-    def cycles_bake_actual():
-        IMGS_TO_SAVE = []
-
-        # If we are doing a merged bake, just create one image here
-        if(MasterOperation.merged_bake):
-            functions.print_msg("We are doing a merged bake")
-            IMGNAME = functions.gen_image_name(bpy.context.scene.TextureBake_Props.merged_bake_name, bpy.context.scene.cycles.bake_type)
-
-            # UDIMs
-            if current_bake_op.uv_mode == "udims":
-                    IMGNAME = IMGNAME+f".{current_bake_op.udim_counter}"
-
-            functions.create_images(IMGNAME, bpy.context.scene.cycles.bake_type, bpy.context.scene.TextureBake_Props.merged_bake_name)
-            IMGS_TO_SAVE.append(IMGNAME)
-
-        for obj in objects:
-            # We will save per object if doing normal or tex per mat bake
-            if not MasterOperation.merged_bake:
-                IMGS_TO_SAVE = []
-
-            # Reset the already processed list
-            mats_done = []
-            OBJNAME = functions.trunc_if_needed(obj.name)
-            materials = obj.material_slots
-
-            # If not merged and not bake per mat, create the image we need for this bake (Delete if exists)
-            if(not MasterOperation.merged_bake and not bpy.context.scene.TextureBake_Props.tex_per_mat):
-                IMGNAME = functions.gen_image_name(OBJNAME, bpy.context.scene.cycles.bake_type)
-
-                # UDIMS
-                if current_bake_op.uv_mode == "udims":
-                    IMGNAME = IMGNAME+f".{current_bake_op.udim_counter}"
-
-                functions.create_images(IMGNAME, bpy.context.scene.cycles.bake_type, obj.name)
-                IMGS_TO_SAVE.append(IMGNAME)
-
-            for matslot in materials:
-                mat = bpy.data.materials.get(matslot.name)
-
-                # If we are baking tex per mat, then we need an image for each mat
-                if bpy.context.scene.TextureBake_Props.tex_per_mat:
-                    functions.print_msg(f"Creating image for material; {matslot.name}")
-                    IMGNAME = functions.gen_image_name(OBJNAME, bpy.context.scene.cycles.bake_type)
-                    IMGNAME = IMGNAME + "_" + matslot.name
-                    functions.create_images(IMGNAME, bpy.context.scene.cycles.bake_type, obj.name)
-                    IMGS_TO_SAVE.append(IMGNAME)
-
-                if mat.name in mats_done:
-                    functions.print_msg(f"Skipping material {mat.name}, already processed")
-                    # Set the slot to the already created duplicate material and leave
-                    dupmat = [m for m in bpy.data.materials if "SB_dupmat" in m and m["SB_dupmat"] == mat.name][0] # Should only be one
-                    matslot.material = dupmat
-                    continue
-                else:
-                    # Append but also continue
-                    mats_done.append(mat.name)
-
-                # Duplicate material to work on it
-                functions.print_msg("Duplicating material")
-                mat["SB_originalmat"] = mat.name
-                dup = mat.copy()
-                dup["SB_dupmat"] = mat.name
-                matslot.material = dup
-                # We want to work on dup from now on
-                mat = dup
-
-                # Make sure we are using nodes
-                if not mat.use_nodes:
-                    functions.print_msg(f"Material {mat.name} wasn't using nodes. Have enabled nodes")
-                    mat.use_nodes = True
-
-                nodetree = mat.node_tree
-                nodes = nodetree.nodes
-                links = nodetree.links
-
-                # Create the image node and set to the bake texutre we are using
-                imgnode = nodes.new("ShaderNodeTexImage")
-                imgnode.image = bpy.data.images[IMGNAME]
-                imgnode.label = "TextureBake"
-                functions.deselect_all_nodes(nodes)
-                imgnode.select = True
-                nodetree.nodes.active = imgnode
-
-            # Make sure only the object we want is selected - unless selected to active
-            if not bpy.context.scene.TextureBake_Props.selected_to_target:
-                functions.select_only_this(obj)
-            else:
-                # If this is CyclesBake and S2A, we need to actually force the selection in the viewport
-
-                bpy.ops.object.select_all(action="DESELECT")
-                for obj in current_bake_op.bake_objects:
-                    obj.select_set(True)
-                bpy.context.view_layer.objects.active = current_bake_op.sb_target_object
-
-            # Prior to bake, set the color space of this image
-            functions.set_image_internal_col_space(bpy.data.images[IMGNAME], TextureBakeConstants.CYCLESBAKE)
-
-            # Bake
-            functions.bake_operation("cyclesbake", bpy.data.images[IMGNAME])
-
-            # Update tracking
-            BakeStatus.current_map+=1
-            functions.print_msg(f"Bake maps {BakeStatus.current_map} of {BakeStatus.total_maps} complete")
-            functions.write_bake_progress(BakeStatus.current_map, BakeStatus.total_maps)
-
-            # Restore the original materials
-            functions.restore_all_materials()
-
-            # If this isn't a merged bake, we are done with the image. Scale if needed
-            if not MasterOperation.merged_bake:
-                functions.sacle_image_if_needed(bpy.data.images[IMGNAME])
-
-            # If we are saving externally, and this isn't a merged bake, save all files after each object complete
-            if(bpy.context.scene.TextureBake_Props.export_textures and not MasterOperation.merged_bake):
-                functions.print_msg("Saving baked images externally")
-                for img in IMGS_TO_SAVE:
-                    functions.print_msg(f"Saving {img}")
-                    functions.export_textures(bpy.data.images[img], "cyclesbake", obj)
-
-        # If merged bake, we are done with the image. So scale if needed
-        if MasterOperation.merged_bake:
-            functions.sacle_image_if_needed(bpy.data.images[IMGNAME])
-
-        # If we did a merged bake, and we are saving externally, then save here
-        if MasterOperation.merged_bake and bpy.context.scene.TextureBake_Props.export_textures:
-
-            functions.print_msg("Saving merged baked image externally")
-            functions.export_textures(bpy.data.images[IMGNAME], "cyclesbake", None)
-
-    # Bake at least once
-    cycles_bake_actual()
-    current_bake_op.udim_counter = current_bake_op.udim_counter + 1
-
-    # If we are doing UDIMs, we need to go back in
-    if current_bake_op.uv_mode == "udims":
-        while current_bake_op.udim_counter < bpy.context.scene.TextureBake_Props.udim_tiles + 1001:
-            functions.print_msg(f"Going back in for tile {current_bake_op.udim_counter}")
-
-            # If S2A, shift UVs for the target object only
-            if bpy.context.scene.TextureBake_Props.selected_to_target:
-                obj = current_bake_op.sb_target_object
-                functions.focus_UDIM_tile(obj,current_bake_op.udim_counter - 1001)
-
-            else:
-                for obj in current_bake_op.bake_objects:
-                    functions.focus_UDIM_tile(obj,current_bake_op.udim_counter - 1001)
-
-            cycles_bake_actual()
-            current_bake_op.udim_counter = current_bake_op.udim_counter + 1
-
-    # Finished baking. Perform wind down actions
-    common_bake_finishing()
-
-
 def specials_bake():
     functions.print_msg("Specials Bake")
 
@@ -691,8 +499,6 @@ def specials_bake():
 
     # If we are baking S2A as the primary bake, this should focus on the target object
     if current_bake_op.bake_mode == TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY:
-        objects = [bpy.context.scene.TextureBake_Props.target_object]
-    elif current_bake_op.bake_mode == TextureBakeConstants.SPECIALS_CYCLES_TARGET_ONLY:
         objects = [bpy.context.scene.TextureBake_Props.target_object]
     else:
         objects = current_bake_op.bake_objects
@@ -765,48 +571,7 @@ def specials_bake():
 
                 # Bake this object
                 functions.select_only_this(obj)
-
-                # If this is the lightmap, we need to do some extra stuff
-                if special == TextureBakeConstants.LIGHTMAP:
-                    functions.print_msg("Setting up for lightmap")
-                    # Record what we have now
-                    by = bpy.context.scene.cycles.bake_type
-                    ud = bpy.context.scene.render.bake.use_pass_direct
-                    ui = bpy.context.scene.render.bake.use_pass_indirect
-                    udiff = bpy.context.scene.render.bake.use_pass_diffuse
-                    ugloss = bpy.context.scene.render.bake.use_pass_glossy
-                    utrans = bpy.context.scene.render.bake.use_pass_transmission
-                    uemit = bpy.context.scene.render.bake.use_pass_emit
-                    sc = bpy.context.scene.cycles.samples
-
-                    # Set up for lightmap
-                    bpy.context.scene.cycles.bake_type = "COMBINED"
-                    bpy.context.scene.render.bake.use_pass_direct = True
-                    bpy.context.scene.render.bake.use_pass_indirect = True
-                    bpy.context.scene.render.bake.use_pass_diffuse = True
-                    bpy.context.scene.render.bake.use_pass_glossy = True
-                    bpy.context.scene.render.bake.use_pass_transmission = True
-                    bpy.context.scene.render.bake.use_pass_emit = True
-                    # Temporarily restore the sample count
-                    functions.print_msg(f"Temporarily increasing sample count to user set {MasterOperation.orig_sample_count} for lightmap bake")
-                    bpy.context.scene.cycles.samples = MasterOperation.orig_sample_count
-
-                    # Call as though it was a CyclesBake, as Lightmap material is not emission
-                    functions.bake_operation("cyclesbake", bpy.data.images[IMGNAME])
-
-                    # Restore the original stuff
-                    bpy.context.scene.cycles.bake_type = by
-                    bpy.context.scene.render.bake.use_pass_direct = ud
-                    bpy.context.scene.render.bake.use_pass_indirect = ui
-                    bpy.context.scene.render.bake.use_pass_diffuse = udiff
-                    bpy.context.scene.render.bake.use_pass_glossy = ugloss
-                    bpy.context.scene.render.bake.use_pass_transmission = utrans
-                    bpy.context.scene.render.bake.use_pass_emit = uemit
-                    bpy.context.scene.cycles.samples = sc
-
-                else:
-                    # This is much easier
-                    functions.bake_operation("special", bpy.data.images[IMGNAME])
+                functions.bake_operation("special", bpy.data.images[IMGNAME])
 
                 # Scale if needed
                 functions.sacle_image_if_needed(bpy.data.images[IMGNAME])

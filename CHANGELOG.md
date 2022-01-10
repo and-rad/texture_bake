@@ -16,6 +16,8 @@
   This makes the code a little cleaner and easier to follow and reason about.
 
 ### Removed
+- Removed distinction between PBR bakes and Cycles bakes. The add-on uses both
+  internally, depending on the required texture map and other parameters.
 - Image name format preferences have been removed in favor of handling name
   formatting in export settings on a per-texture basis.
 

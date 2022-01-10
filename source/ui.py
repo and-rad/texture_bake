@@ -45,9 +45,6 @@ class TEXTUREBAKE_PT_main(bpy.types.Panel):
         layout = self.layout
 
         row = layout.row()
-        row.prop(context.scene.TextureBake_Props, "global_mode", text = "Bake Mode", expand = True)
-
-        row = layout.row()
         row.prop(context.scene.TextureBake_Props, "background_bake", expand = True)
 
         row = layout.row()
@@ -151,23 +148,6 @@ class TEXTUREBAKE_PT_input(TextureBakeCategoryPanel, bpy.types.Panel):
 
         row = layout.row()
         row.prop(context.scene.TextureBake_Props, "selected_curvature")
-        row.prop(context.scene.TextureBake_Props, "selected_lightmap")
-
-        if context.scene.TextureBake_Props.selected_lightmap and context.scene.TextureBake_Props.global_mode == "pbr_bake":
-            layout.row().prop(context.scene.cycles, "samples")
-
-        if context.scene.TextureBake_Props.selected_lightmap:
-            row = layout.row()
-            row.prop(context.scene.TextureBake_Props, "selected_lightmap_denoise")
-            if not context.scene.TextureBake_Props.export_textures:
-                row.enabled = False
-
-            row = layout.row()
-            row.prop(context.scene.TextureBake_Props, "lightmap_apply_colman")
-            if not context.scene.TextureBake_Props.export_textures:
-                row.enabled = False
-
-        layout.row().operator("texture_bake.import_materials", icon='ADD')
 
 
 class TEXTUREBAKE_PT_bake_settings(TextureBakeCategoryPanel, bpy.types.Panel):
@@ -203,11 +183,7 @@ class TEXTUREBAKE_PT_bake_settings(TextureBakeCategoryPanel, bpy.types.Panel):
         layout.separator()
         layout.row().prop(context.scene.TextureBake_Props, "bake_32bit_float")
         layout.row().prop(context.scene.TextureBake_Props, "use_alpha")
-
-        # For now, this is CyclesBake only
-        if context.scene.TextureBake_Props.global_mode == "cycles_bake":
-            layout.row().prop(context.scene.TextureBake_Props, "tex_per_mat")
-
+        layout.row().prop(context.scene.TextureBake_Props, "tex_per_mat")
         layout.row().prop(context.scene.TextureBake_Props, "merged_bake")
 
         if context.scene.TextureBake_Props.merged_bake:
@@ -257,11 +233,6 @@ class TEXTUREBAKE_PT_export_settings(TextureBakeCategoryPanel, bpy.types.Panel):
 
                 row = layout.row()
                 row.prop(context.scene.TextureBake_Props, "export_color_space")
-                if context.scene.TextureBake_Props.global_mode == "pbr_bake":
-                    row.enabled = context.scene.TextureBake_Props.selected_col
-
-                if context.scene.TextureBake_Props.global_mode == "cycles_bake":
-                    row.enabled = context.scene.cycles.bake_type != "NORMAL"
         else:
             layout.row().label(text="Unavailable - Blend file not saved")
 
@@ -314,11 +285,6 @@ class TEXTUREBAKE_PT_other(TextureBakeCategoryPanel, bpy.types.Panel):
             row = layout.row()
             row.prop(context.scene.TextureBake_Props, "hide_source_objects", text=text)
 
-            row = layout.row()
-            row.prop(context.scene.TextureBake_Props, "create_gltf_node")
-            if context.scene.TextureBake_Props.create_gltf_node:
-                row.prop(context.scene.TextureBake_Props, "gltf_selection", text="")
-
         row = layout.row()
         row.prop(context.scene.TextureBake_Props, "preserve_materials")
 
@@ -340,9 +306,7 @@ class TEXTUREBAKE_PT_packing(TextureBakeCategoryPanel, bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
-        if context.scene.TextureBake_Props.global_mode != "pbr_bake":
-            layout.row().label(text="Unavailable - Channel packing requires PBR bake mode")
-        elif not functions.is_blend_saved():
+        if not functions.is_blend_saved():
             layout.row().label(text="Unavailable - Blend file not saved")
         elif not context.scene.TextureBake_Props.export_textures:
             layout.row().label(text="Unavailable - You must be exporting your bakes")

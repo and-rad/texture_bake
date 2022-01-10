@@ -63,7 +63,7 @@ def refresh_bake_progress():
 
 
 def check_export_col_setting():
-    if (bpy.context.scene.cycles.bake_type == "NORMAL" or not bpy.context.scene.TextureBake_Props.export_textures) and bpy.context.scene.TextureBake_Props.export_color_space:
+    if not bpy.context.scene.TextureBake_Props.export_textures and bpy.context.scene.TextureBake_Props.export_color_space:
         bpy.context.scene.TextureBake_Props.export_color_space = False
     return 1
 
