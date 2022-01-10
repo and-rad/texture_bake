@@ -20,6 +20,7 @@
 import bpy
 from . import functions
 import os
+import random
 import shutil
 import sys
 from pathlib import Path
@@ -505,9 +506,9 @@ def specials_bake():
 
     # Firstly, let's bake the colid maps if they have been asked for
     if bpy.context.scene.TextureBake_Props.selected_col_mats:
-        col_id_map(input_width, input_height, objects, TextureBakeConstants.COLORID)
+        col_id_map(input_width, input_height, objects, constants.TEX_MAT_ID)
     if bpy.context.scene.TextureBake_Props.selected_col_vertex:
-        col_id_map(input_width, input_height, objects, TextureBakeConstants.VERTEXCOL)
+        col_id_map(input_width, input_height, objects, constants.TEX_VERT_COLOR)
 
     # Import the materials that we need, and save the returned list of specials
     ordered_specials = functions.import_needed_specials_materials()
@@ -630,39 +631,23 @@ def col_id_map(input_width, input_height, objects, mode="random"):
 
     def col_id_map_actual():
         # If we are doing a merged bake, just create one image here
-        if(merged_bake):
+        if merged_bake:
             functions.print_msg("We are doing a merged bake")
             IMGNAME = functions.gen_image_name(bpy.context.scene.TextureBake_Props.merged_bake_name, f"{mode}")
             # UDIMs
             if current_bake_op.uv_mode == "udims":
                 IMGNAME = IMGNAME+f".{udim_counter}"
-
-            if mode == TextureBakeConstants.COLORID:
-                functions.create_images(IMGNAME, TextureBakeConstants.COLORID, bpy.context.scene.TextureBake_Props.merged_bake_name)
-            else:
-                functions.create_images(IMGNAME, TextureBakeConstants.VERTEXCOL, bpy.context.scene.TextureBake_Props.merged_bake_name)
+            functions.create_images(IMGNAME, mode, bpy.context.scene.TextureBake_Props.merged_bake_name)
 
         for obj in objects:
             OBJNAME = functions.trunc_if_needed(obj.name)
             materials = obj.material_slots
 
-            if(not merged_bake):
-                # Create the image we need for this bake (Delete if exists)
-                if mode == TextureBakeConstants.COLORID:
-                    IMGNAME = functions.gen_image_name(OBJNAME, TextureBakeConstants.COLORID)
-                     # UDIMs
-                    if current_bake_op.uv_mode == "udims":
-                        IMGNAME = IMGNAME+f".{udim_counter}"
-                else:
-                    IMGNAME = functions.gen_image_name(OBJNAME, TextureBakeConstants.VERTEXCOL)
-                     # UDIMs
-                    if current_bake_op.uv_mode == "udims":
-                        IMGNAME = IMGNAME+f".{udim_counter}"
-
-                if mode == TextureBakeConstants.COLORID:
-                    functions.create_images(IMGNAME, TextureBakeConstants.COLORID, obj.name)
-                else:
-                    functions.create_images(IMGNAME, TextureBakeConstants.VERTEXCOL, obj.name)
+            if not merged_bake:
+                IMGNAME = functions.gen_image_name(OBJNAME, mode)
+                if current_bake_op.uv_mode == "udims":
+                    IMGNAME = IMGNAME+f".{udim_counter}"
+                functions.create_images(IMGNAME, mode, obj.name)
 
             for matslot in materials:
                 mat = bpy.data.materials.get(matslot.name)
@@ -675,11 +660,7 @@ def col_id_map(input_width, input_height, objects, mode="random"):
                 matslot.material = dup
                 # We want to work on dup from now on
                 mat = dup
-
-                # Make sure we are using nodes
-                if not mat.use_nodes:
-                    functions.print_msg(f"Material {mat.name} wasn't using nodes. Have enabled nodes")
-                    mat.use_nodes = True
+                mat.use_nodes = True
 
                 nodetree = mat.node_tree
                 nodes = nodetree.nodes
@@ -694,46 +675,17 @@ def col_id_map(input_width, input_height, objects, mode="random"):
                 tosocket = m_output_node.inputs[0]
                 nodetree.links.new(fromsocket, tosocket)
 
-                if mode == TextureBakeConstants.COLORID:
+                if mode == constants.TEX_MAT_ID:
                     # Have we already generated a color for this mat?
                     if mat.name in current_bake_op.mat_col_dict:
                         col = current_bake_op.mat_col_dict[mat.name]
                         emissnode.inputs["Color"].default_value = (col[0], col[1], col[2], 1.0)
-
                     else:
-
-                        import random
-
-                        # First attempt
-                        randr = random.randint(0,10) / 10
-                        randg = random.randint(0,10) / 10
-                        randb = random.randint(0,10) / 10
-
-                        min_diff = 0.6
-                        i=0
-                        giveup = False
-                        while functions.check_col_distance(randr,randg,randb, min_diff) == False and not giveup:
-                            randr = random.randint(0,10) / 10
-                            randg = random.randint(0,10) / 10
-                            randb = random.randint(0,10) / 10
-                            i=i+1
-                            if i == 100:
-                                # We've tried 100 times and got nothing, reduce required min_diff
-                                i=0
-                                min_diff = round(min_diff - 0.1,1)
-                                functions.print_msg(f"Just reduced min_diff to {min_diff}")
-
-                                # If we are now at 0, give up
-                                if min_diff == 0:
-                                    functions.print_msg("Giving up")
-                                    giveup = True
-
-
-                        emissnode.inputs["Color"].default_value = (randr, randg, randb, 1.0)
-                        # Record col for this mat
-                        current_bake_op.mat_col_dict[mat.name] = [randr, randg, randb]
-
-                # We are using vertex colors
+                        r = random.random()
+                        g = random.random()
+                        b = random.random()
+                        emissnode.inputs["Color"].default_value = (r, g, b, 1.0)
+                        current_bake_op.mat_col_dict[mat.name] = [r, g, b]
                 else:
                     # Using vertex colors
                     # Get name of active vertex colors for this object

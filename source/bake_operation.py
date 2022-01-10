@@ -28,12 +28,6 @@ class TextureBakeConstants:
     SPECIALS = "Specials"
     SPECIALS_PBR_TARGET_ONLY = "specials_pbr_targetonly"
 
-    # Specials names
-    THICKNESS = "Thickness"
-    CURVATURE = "Curvature"
-    COLORID = "Color ID"
-    VERTEXCOL = "Vertex Color"
-
 
 class BakeOperation:
     def __init__(self):
@@ -52,7 +46,6 @@ class BakeOperation:
         self.pbr_selected_bake_types = []
 
         # ColIdmap stuff
-        self.used_cols = [] #[[r,g,b],[r,g,b],[r,g,b]]
         self.mat_col_dict = {} #{matname, [r,g,b]
 
     def assemble_pbr_bake_list(self):

@@ -94,13 +94,13 @@ def gen_image_name(obj_name, baketype):
         parts.append(prefs.alpha_alias)
     elif baketype == constants.TEX_AO or baketype == constants.PBR_AO:
         parts.append(prefs.ao_alias)
-    elif baketype == TextureBakeConstants.COLORID:
+    elif baketype == constants.TEX_MAT_ID:
         parts.append(prefs.colid_alias)
-    elif baketype == TextureBakeConstants.CURVATURE:
+    elif baketype == constants.TEX_CURVATURE:
         parts.append(prefs.curvature_alias)
-    elif baketype == TextureBakeConstants.THICKNESS:
+    elif baketype == constants.TEX_THICKNESS:
         parts.append(prefs.thickness_alias)
-    elif baketype == TextureBakeConstants.VERTEXCOL:
+    elif baketype == constants.TEX_VERT_COLOR:
         parts.append(prefs.vertexcol_alias)
     elif baketype == constants.PBR_SSS:
         parts.append(prefs.sss_alias)
@@ -1131,10 +1131,10 @@ def import_needed_specials_materials():
     ordered_specials = []
     path = os.path.dirname(__file__) + "/materials/materials.blend\\Material\\"
     if bpy.context.scene.TextureBake_Props.selected_thickness:
-        if "TextureBake_" + TextureBakeConstants.THICKNESS not in bpy.data.materials:
-            material_name = "TextureBake_" + TextureBakeConstants.THICKNESS
+        if "TextureBake_" + constants.TEX_THICKNESS not in bpy.data.materials:
+            material_name = "TextureBake_" + constants.TEX_THICKNESS
             bpy.ops.wm.append(filename=material_name, directory=path)
-        ordered_specials.append(TextureBakeConstants.THICKNESS)
+        ordered_specials.append(constants.TEX_THICKNESS)
 
     if bpy.context.scene.TextureBake_Props.selected_ao:
         if "TextureBake_" + constants.TEX_AO not in bpy.data.materials:
@@ -1143,10 +1143,10 @@ def import_needed_specials_materials():
         ordered_specials.append(constants.TEX_AO)
 
     if bpy.context.scene.TextureBake_Props.selected_curvature:
-        if "TextureBake" + TextureBakeConstants.CURVATURE not in bpy.data.materials:
-            material_name = "TextureBake_" + TextureBakeConstants.CURVATURE
+        if "TextureBake" + constants.TEX_CURVATURE not in bpy.data.materials:
+            material_name = "TextureBake_" + constants.TEX_CURVATURE
             bpy.ops.wm.append(filename=material_name, directory=path)
-        ordered_specials.append(TextureBakeConstants.CURVATURE)
+        ordered_specials.append(constants.TEX_CURVATURE)
 
     return ordered_specials
 
@@ -1333,31 +1333,6 @@ def fix_invalid_material_config(obj):
         mat = slot.material
         if mat.use_nodes == False:
             mat.use_nodes = True
-
-
-def check_col_distance(r,g,b, min_diff):
-    current_bake_op = MasterOperation.current_bake_operation
-    used_cols = current_bake_op.used_cols
-
-    # Very first col gets a free pass
-    if len(used_cols) < 1:
-        # print_msg("First - free pass")
-        current_bake_op.used_cols.append([r,g,b])
-        return True
-
-    ok = True
-    for uc in used_cols:
-        if round(abs(r - uc[0]),1) > min_diff or round(abs(g - uc[1]), 1) > min_diff or round(abs(b - uc[2]),1) > min_diff:
-            pass # We passed, don't change the value
-        else:
-            ok = False # At least one rgb was too close
-
-    # If we OKd this. Add it to the used cols list
-    if ok:
-        current_bake_op.used_cols.append([r,g,b])
-
-    # Return result either way
-    return ok
 
 
 def sacle_image_if_needed(img):

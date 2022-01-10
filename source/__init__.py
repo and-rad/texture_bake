@@ -280,12 +280,12 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
     )
 
     selected_col_mats: BoolProperty(
-        name = TextureBakeConstants.COLORID,
+        name = "Material ID",
         description = "ColorID Map based on random color per material",
     )
 
     selected_col_vertex: BoolProperty(
-        name = TextureBakeConstants.VERTEXCOL,
+        name = "Vertex Color",
         description = "Bake the active vertex colors to a texture",
     )
 
@@ -295,12 +295,12 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
     )
 
     selected_thickness: BoolProperty(
-        name = TextureBakeConstants.THICKNESS,
+        name = "Thickness",
         description = "Thickness map",
     )
 
     selected_curvature: BoolProperty(
-        name = TextureBakeConstants.CURVATURE,
+        name = "Curvature",
         description = "Curvature map",
     )
 
@@ -687,10 +687,10 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
     ssscol_alias: StringProperty(name="SSS Color", default="ssscol")
 
     ao_alias: StringProperty(name="Ambient Occlusion", default="ao")
-    curvature_alias: StringProperty(name=TextureBakeConstants.CURVATURE, default="curvature")
-    thickness_alias: StringProperty(name=TextureBakeConstants.THICKNESS, default="thickness")
-    vertexcol_alias: StringProperty(name=TextureBakeConstants.VERTEXCOL, default="vertexcol")
-    colid_alias: StringProperty(name=TextureBakeConstants.COLORID, default="colid")
+    curvature_alias: StringProperty(name="Curvature", default="curvature")
+    thickness_alias: StringProperty(name="Thickness", default="thickness")
+    vertexcol_alias: StringProperty(name="Vertex Color", default="vertexcol")
+    colid_alias: StringProperty(name="Material ID", default="colid")
 
     @classmethod
     def reset_aliases(self):
