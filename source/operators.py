@@ -527,7 +527,6 @@ class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
         d["export_apply_modifiers"] = context.scene.TextureBake_Props.export_apply_modifiers
         d["use_object_list"] = context.scene.TextureBake_Props.use_object_list
         d["object_list_index"] = context.scene.TextureBake_Props.object_list_index
-        d["background_bake"] = context.scene.TextureBake_Props.background_bake
         d["memory_limit"] = context.scene.TextureBake_Props.memory_limit
         d["batch_name"] = context.scene.TextureBake_Props.batch_name
 
@@ -682,7 +681,6 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
         context.scene.TextureBake_Props.export_apply_modifiers = d["export_apply_modifiers"]
         context.scene.TextureBake_Props.use_object_list = d["use_object_list"]
         context.scene.TextureBake_Props.object_list_index = d["object_list_index"]
-        context.scene.TextureBake_Props.background_bake = d["background_bake"]
         context.scene.TextureBake_Props.memory_limit = d["memory_limit"]
         context.scene.TextureBake_Props.batch_name = d["batch_name"]
         context.scene.TextureBake_Props.prefer_existing_uvmap = d["prefer_existing_uvmap"]

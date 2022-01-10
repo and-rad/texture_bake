@@ -447,15 +447,6 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
         default = 0,
     )
 
-    background_bake: EnumProperty(
-        name="Background Bake",
-        default="fg",
-        items=[
-            ("fg", "Foreground", "Perform baking in the foreground. Blender will lock up until baking is complete"),
-            ("bg", "Background", "Perform baking in the background, leaving you free to continue to work in Blender while the baking is being carried out"),
-        ],
-    )
-
     memory_limit: EnumProperty(
         name = "GPU Memory Limit",
         description = "Limit memory usage by limiting render tile size. More memory means faster bake times, but it is possible to exceed the capabilities of your computer which will lead to a crash or slow bake times",

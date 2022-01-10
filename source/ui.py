@@ -44,18 +44,15 @@ class TEXTUREBAKE_PT_main(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
-        row = layout.row()
-        row.prop(context.scene.TextureBake_Props, "background_bake", expand = True)
-
         box = layout.box()
         row = box.row()
-        row.label(text="Background bakes")
+        row.label(text="Active Bakes")
 
         if background_bake_ops.bgops_list or background_bake_ops.bgops_list_finished:
             for p in background_bake_ops.bgops_list:
                 box.row().label(text=f"{p.name} - in progress {p.progress}%", icon='CHECKBOX_DEHLT')
         else:
-            box.row().label(text="No running or finished background bakes", icon='MONKEY')
+            box.row().label(text="No running or finished bakes", icon='SORTTIME')
 
         if len(background_bake_ops.bgops_list_finished) != 0:
             for p in background_bake_ops.bgops_list_finished:
@@ -269,21 +266,12 @@ class TEXTUREBAKE_PT_other(TextureBakeCategoryPanel, bpy.types.Panel):
         row.prop(context.scene.TextureBake_Props, "batch_name")
 
         row = layout.row()
-        if context.scene.TextureBake_Props.background_bake == "fg":
-            text = "Copy objects and apply bakes"
-        else:
-            text = "Copy objects and apply bakes (after import)"
-
-        row.prop(context.scene.TextureBake_Props, "prep_mesh", text=text)
+        row.prop(context.scene.TextureBake_Props, "prep_mesh", text="Copy objects and apply bakes (after import)")
         row.enabled = not context.scene.TextureBake_Props.tex_per_mat
 
         if (context.scene.TextureBake_Props.prep_mesh):
-            if context.scene.TextureBake_Props.background_bake == "fg":
-                text = "Hide source objects after bake"
-            else:
-                text = "Hide source objects after bake (after import)"
             row = layout.row()
-            row.prop(context.scene.TextureBake_Props, "hide_source_objects", text=text)
+            row.prop(context.scene.TextureBake_Props, "hide_source_objects", text="Hide source objects after bake (after import)")
 
         row = layout.row()
         row.prop(context.scene.TextureBake_Props, "preserve_materials")

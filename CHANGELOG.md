@@ -22,6 +22,7 @@
   internally, depending on the required texture map and other parameters.
 - Image name format preferences have been removed in favor of handling name
   formatting in export settings on a per-texture basis.
+- Foreground baking was removed. All baking happens in the background now.
 
 ### Fixed
 - Background baking progress UI refreshes properly even when the mouse does not
