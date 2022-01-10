@@ -14,6 +14,8 @@
   re-enter values.
 - Background baking parameters are stored in a class instead of a flat array.
   This makes the code a little cleaner and easier to follow and reason about.
+- Separated bake operators into baking input textures (AO, vertex color, etc.)
+  and export textures (Diffuse, Normal, ORM, etc.).
 
 ### Removed
 - Removed distinction between PBR bakes and Cycles bakes. The add-on uses both

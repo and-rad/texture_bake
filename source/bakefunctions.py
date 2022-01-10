@@ -615,8 +615,6 @@ def specials_bake():
         if "_sbspectmp_" in mat.name:
             bpy.data.materials.remove(mat)
 
-    # Call common finishing
-    # TODO===----
     common_bake_finishing()
 
 

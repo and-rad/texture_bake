@@ -54,26 +54,22 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
     bl_idname = "texture_bake.bake"
     bl_label = "Bake Textures"
 
-    def commence_bake(self, context, needed_bake_modes):
+    def bake_textures(self, context, needed_bake_modes):
         # Prepare the BakeStatus tracker for progress bar
+        BakeStatus.current_map = 0
+        BakeStatus.total_maps = 0
+
         num_of_objects = 0
         if context.scene.TextureBake_Props.use_object_list:
             num_of_objects = len(context.scene.TextureBake_Props.object_list)
         else:
             num_of_objects = len(context.selected_objects)
 
-        total_maps = 0
         for need in needed_bake_modes:
             if need == TextureBakeConstants.PBR:
-                total_maps += functions.get_num_maps_to_bake() * num_of_objects
+                BakeStatus.total_maps = functions.get_num_maps_to_bake() * num_of_objects
             if need == TextureBakeConstants.PBRS2A:
-                total_maps += functions.get_num_maps_to_bake()
-            if need == TextureBakeConstants.SPECIALS:
-                total_maps += functions.get_num_input_maps_to_bake() * num_of_objects
-            if need == TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY:
-                total_maps += functions.get_num_input_maps_to_bake()
-
-        BakeStatus.total_maps = total_maps
+                BakeStatus.total_maps = functions.get_num_maps_to_bake()
 
         MasterOperation.clear()
         MasterOperation.merged_bake = context.scene.TextureBake_Props.merged_bake
@@ -83,10 +79,8 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
         # Master list of all ops
         bops = []
         for need in needed_bake_modes:
-            # Create operation
             bop = BakeOperation()
             bop.bake_mode = need
-
             bops.append(bop)
             functions.print_msg(f"Created operation for {need}")
 
@@ -95,14 +89,9 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
             MasterOperation.this_bake_operation_num += 1
             MasterOperation.current_bake_operation = bop
             if bop.bake_mode == TextureBakeConstants.PBR:
-                functions.print_msg("Running PBR bake")
                 bakefunctions.do_bake()
             elif bop.bake_mode == TextureBakeConstants.PBRS2A:
-                functions.print_msg("Running PBR S2A bake")
                 bakefunctions.do_bake_selected_to_target()
-            elif bop.bake_mode in [TextureBakeConstants.SPECIALS, TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY]:
-                functions.print_msg("Running Specials bake")
-                bakefunctions.specials_bake()
 
         # Call channel packing
         # Only possilbe if we baked some kind of PBR. At the moment, can't have non-S2A and S2A
@@ -115,10 +104,12 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
             objects = [MasterOperation.current_bake_operation.sb_target_object]
             bakefunctions.channel_packing(objects)
 
-        return True
+        return {'FINISHED'}
 
     @classmethod
     def poll(cls,context):
+        if bpy.context.mode != "OBJECT":
+            return False
         preset = context.scene.TextureBake_Props.export_preset
         if preset == 'NONE':
             return False
@@ -132,69 +123,131 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
         else:
             needed_bake_modes.append(TextureBakeConstants.PBR)
 
-        if functions.any_specials():
-            if TextureBakeConstants.PBRS2A in needed_bake_modes:
-                needed_bake_modes.append(TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY)
-            else:
-                needed_bake_modes.append(TextureBakeConstants.SPECIALS)
-
-        # Clear the progress stuff
-        BakeStatus.current_map = 0
-        BakeStatus.total_maps = 0
-
         # If we have been called in background mode, just get on with it. Checks should be done.
         if "--background" in sys.argv:
-            if "TextureBake_Bakes" in bpy.data.collections:
-                # Remove any prior baked objects
-                bpy.data.collections.remove(bpy.data.collections["TextureBake_Bakes"])
-            ts = datetime.now()
-            self.commence_bake(context, needed_bake_modes)
-            tf = datetime.now()
-            s = (tf-ts).seconds
-            functions.print_msg(f"Bake complete, took {s} seconds ({floor(s/60)} minutes, {s%60} seconds)")
-            return {'FINISHED'}
+            return self.bake_textures(context, needed_bake_modes)
 
         # We are in foreground, do usual checks
         for mode in needed_bake_modes:
             if not functions.check_scene(context.selected_objects, mode):
                 return {"CANCELLED"}
 
-        # If the user requested background mode, fire that up now and exit
-        if context.scene.TextureBake_Props.background_bake == "bg":
-            bpy.ops.wm.save_mainfile()
-            filepath = filepath = bpy.data.filepath
-            process = subprocess.Popen(
-                [bpy.app.binary_path, "--background",filepath, "--python-expr",\
-                "import bpy;\
-                import os;\
-                from pathlib import Path;\
-                savepath=Path(bpy.data.filepath).parent / (str(os.getpid()) + \".blend\");\
-                bpy.ops.wm.save_as_mainfile(filepath=str(savepath), check_existing=False);\
-                bpy.ops.texture_bake.bake();"],
-                shell=False)
+        bpy.ops.wm.save_mainfile()
+        filepath = filepath = bpy.data.filepath
+        process = subprocess.Popen(
+            [bpy.app.binary_path, "--background",filepath, "--python-expr",\
+            "import bpy;\
+            import os;\
+            from pathlib import Path;\
+            savepath=Path(bpy.data.filepath).parent / (str(os.getpid()) + \".blend\");\
+            bpy.ops.wm.save_as_mainfile(filepath=str(savepath), check_existing=False);\
+            bpy.ops.texture_bake.bake();"],
+            shell=False)
 
-            background_bake_ops.bgops_list.append(
-                BackgroundBakeParams(
-                    process,
-                    time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
-                    context.scene.TextureBake_Props.prep_mesh,
-                    context.scene.TextureBake_Props.hide_source_objects
-                )
+        background_bake_ops.bgops_list.append(
+            BackgroundBakeParams(
+                process,
+                time.strftime("Export textures (%H:%M:%S)", time.localtime()),
+                context.scene.TextureBake_Props.prep_mesh,
+                context.scene.TextureBake_Props.hide_source_objects
             )
+        )
 
-            bpy.app.timers.register(refresh_bake_progress)
-            self.report({"INFO"}, "Background bake process started")
-            return {'FINISHED'}
+        bpy.app.timers.register(refresh_bake_progress)
+        self.report({"INFO"}, "Background bake process started")
+        return {'FINISHED'}
 
-        # If we are doing this here and now, get on with it
-        # Create a bake operation
-        ts = datetime.now()
-        self.commence_bake(context, needed_bake_modes)
-        tf = datetime.now()
-        s = (tf-ts).seconds
-        functions.print_msg(f"Time taken - {s} seconds ({floor(s/60)} minutes, {s%60} seconds)")
 
-        self.report({"INFO"}, "Bake complete")
+class TEXTUREBAKE_OT_bake_input_textures(bpy.types.Operator):
+    """Start the baking process for input textures"""
+    bl_idname = "texture_bake.bake_input_textures"
+    bl_label = "Bake Textures"
+
+    def bake_input_maps(self, context, needed_bake_modes):
+        # Prepare the BakeStatus tracker for progress bar
+        BakeStatus.current_map = 0
+        BakeStatus.total_maps = 0
+
+        num_of_objects = 0
+        if context.scene.TextureBake_Props.use_object_list:
+            num_of_objects = len(context.scene.TextureBake_Props.object_list)
+        else:
+            num_of_objects = len(context.selected_objects)
+
+        for need in needed_bake_modes:
+            if need == TextureBakeConstants.SPECIALS:
+                BakeStatus.total_maps = functions.get_num_input_maps_to_bake() * num_of_objects
+            elif need == TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY:
+                BakeStatus.total_maps = functions.get_num_input_maps_to_bake()
+
+        MasterOperation.clear()
+        MasterOperation.merged_bake = context.scene.TextureBake_Props.merged_bake
+        MasterOperation.merged_bake_name = context.scene.TextureBake_Props.merged_bake_name
+        MasterOperation.total_bake_operations = len(needed_bake_modes)
+
+        # Master list of all ops
+        bops = []
+        for need in needed_bake_modes:
+            bop = BakeOperation()
+            bop.bake_mode = need
+            bops.append(bop)
+            functions.print_msg(f"Created operation for {need}")
+
+        # Run queued operations
+        for bop in bops:
+            MasterOperation.this_bake_operation_num += 1
+            MasterOperation.current_bake_operation = bop
+            bakefunctions.specials_bake()
+
+        return {'FINISHED'}
+
+    @classmethod
+    def poll(cls,context):
+        if not functions.any_specials():
+            return False
+        if bpy.context.mode != "OBJECT":
+            return False
+        return True
+
+    def execute(self, context):
+        needed_bake_modes = []
+        if context.scene.TextureBake_Props.selected_to_target:
+            needed_bake_modes.append(TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY)
+        else:
+            needed_bake_modes.append(TextureBakeConstants.SPECIALS)
+
+        # If we have been called in background mode, just get on with it. Checks should be done.
+        if "--background" in sys.argv:
+            return self.bake_input_maps(context, needed_bake_modes)
+
+        # We are in foreground, do usual checks
+        for mode in needed_bake_modes:
+            if not functions.check_scene(context.selected_objects, mode):
+                return {"CANCELLED"}
+
+        bpy.ops.wm.save_mainfile()
+        filepath = filepath = bpy.data.filepath
+        process = subprocess.Popen(
+            [bpy.app.binary_path, "--background",filepath, "--python-expr",\
+            "import bpy;\
+            import os;\
+            from pathlib import Path;\
+            savepath=Path(bpy.data.filepath).parent / (str(os.getpid()) + \".blend\");\
+            bpy.ops.wm.save_as_mainfile(filepath=str(savepath), check_existing=False);\
+            bpy.ops.texture_bake.bake_input_textures();"],
+            shell=False)
+
+        background_bake_ops.bgops_list.append(
+            BackgroundBakeParams(
+                process,
+                time.strftime("Input maps (%H:%M:%S)", time.localtime()),
+                context.scene.TextureBake_Props.prep_mesh,
+                context.scene.TextureBake_Props.hide_source_objects
+            )
+        )
+
+        bpy.app.timers.register(refresh_bake_progress)
+        self.report({"INFO"}, "Background bake process started")
         return {'FINISHED'}
 
 

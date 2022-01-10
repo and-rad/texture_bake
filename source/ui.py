@@ -47,10 +47,6 @@ class TEXTUREBAKE_PT_main(bpy.types.Panel):
         row = layout.row()
         row.prop(context.scene.TextureBake_Props, "background_bake", expand = True)
 
-        row = layout.row()
-        row.scale_y = 1.5
-        row.operator("texture_bake.bake", icon='RENDER_RESULT')
-
         box = layout.box()
         row = box.row()
         row.label(text="Background bakes")
@@ -137,17 +133,17 @@ class TEXTUREBAKE_PT_input(TextureBakeCategoryPanel, bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-
         row = layout.row()
         row.prop(context.scene.TextureBake_Props, "selected_col_mats")
         row.prop(context.scene.TextureBake_Props, "selected_col_vertex")
-
         row = layout.row()
         row.prop(context.scene.TextureBake_Props, "selected_ao")
         row.prop(context.scene.TextureBake_Props, "selected_thickness")
-
         row = layout.row()
         row.prop(context.scene.TextureBake_Props, "selected_curvature")
+        row = layout.row()
+        row.scale_y = 1.5
+        row.operator("texture_bake.bake_input_textures", icon='RENDER_RESULT')
 
 
 class TEXTUREBAKE_PT_bake_settings(TextureBakeCategoryPanel, bpy.types.Panel):
@@ -233,6 +229,10 @@ class TEXTUREBAKE_PT_export_settings(TextureBakeCategoryPanel, bpy.types.Panel):
 
                 row = layout.row()
                 row.prop(context.scene.TextureBake_Props, "export_color_space")
+
+            row = layout.row()
+            row.scale_y = 1.5
+            row.operator("texture_bake.bake", icon='RENDER_RESULT')
         else:
             layout.row().label(text="Unavailable - Blend file not saved")
 

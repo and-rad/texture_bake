@@ -271,12 +271,6 @@ def bake_operation(thisbake, img):
 def check_scene(objects, bakemode):
     messages = []
 
-    # Check if in object mode
-    if(bpy.context.mode != "OBJECT"):
-        messages.append("ERROR: Not in object mode")
-        show_message_box(messages, "Errors occured", "ERROR")
-        return False
-
     # This is hacky. A better way to do this needs to be found TODO: why?
     advancedobj = bpy.context.scene.TextureBake_Props.use_object_list
     if advancedobj:

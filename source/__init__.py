@@ -803,6 +803,7 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
 # List of all classes that will be registered
 classes = [
     operators.TEXTUREBAKE_OT_bake,
+    operators.TEXTUREBAKE_OT_bake_input_textures,
     operators.TEXTUREBAKE_OT_reset_aliases,
     operators.TEXTUREBAKE_OT_bake_import,
     operators.TEXTUREBAKE_OT_bake_delete_individual,
