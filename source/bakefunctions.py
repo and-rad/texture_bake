@@ -34,7 +34,6 @@ from .bake_operation import (
     BakeOperation,
     MasterOperation,
     BakeStatus,
-    TextureBakeConstants,
 )
 
 
@@ -105,7 +104,7 @@ def common_bake_prep():
     lastop = (op_num == MasterOperation.total_bake_operations)
 
     # If this is a pbr bake, gather the selected maps
-    if current_bake_op.bake_mode in {TextureBakeConstants.PBR, TextureBakeConstants.PBRS2A}:
+    if current_bake_op.bake_mode in {constants.BAKE_MODE_PBR, constants.BAKE_MODE_S2A}:
         current_bake_op.assemble_pbr_bake_list()
 
     # Record batch name
@@ -169,7 +168,7 @@ def common_bake_prep():
     bpy.context.scene.render.engine = 'CYCLES'
 
     # If this is a selected to active bake (PBR or cycles), turn it on
-    if current_bake_op.bake_mode==TextureBakeConstants.PBRS2A and bpy.context.scene.TextureBake_Props.selected_to_target:
+    if current_bake_op.bake_mode == constants.BAKE_MODE_S2A and bpy.context.scene.TextureBake_Props.selected_to_target:
         bpy.context.scene.render.bake.use_selected_to_active = True
         functions.print_msg(f"Setting ray distance to {round(bpy.context.scene.TextureBake_Props.ray_distance, 2)}")
         bpy.context.scene.render.bake.max_ray_distance = bpy.context.scene.TextureBake_Props.ray_distance
@@ -393,7 +392,7 @@ def common_bake_finishing():
         bpy.context.scene.render.engine = MasterOperation.orig_engine
 
     # Reset the UDIM focus tile of all objects
-    if current_bake_op.bake_mode in [TextureBakeConstants.PBRS2A, TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY]:
+    if current_bake_op.bake_mode in [constants.BAKE_MODE_S2A, constants.BAKE_MODE_INPUTS_S2A]:
         # This was some kind of S2A bake
         functions.focus_UDIM_tile(current_bake_op.sb_target_object, 0)
     elif bpy.context.scene.TextureBake_Props.selected_to_target:
@@ -411,7 +410,7 @@ def common_bake_finishing():
     # We do this on primary run only
     if firstop:
         if(bpy.context.scene.TextureBake_Props.export_mesh or bpy.context.scene.TextureBake_Props.prep_mesh or "--background" in sys.argv):
-            if current_bake_op.bake_mode == TextureBakeConstants.PBRS2A:
+            if current_bake_op.bake_mode == constants.BAKE_MODE_S2A:
                 functions.prep_objects([current_bake_op.sb_target_object], current_bake_op.bake_mode)
             else:
                 functions.prep_objects(current_bake_op.bake_objects, current_bake_op.bake_mode)
@@ -438,7 +437,7 @@ def common_bake_finishing():
         bpy.data.materials.remove(bpy.data.materials["TextureBake_Placeholder"])
 
     # If we baked specials, add the specials to the materials, but we won't hook them up
-    if current_bake_op.bake_mode in [TextureBakeConstants.SPECIALS, TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY]:
+    if current_bake_op.bake_mode in [constants.BAKE_MODE_INPUTS, constants.BAKE_MODE_INPUTS_S2A]:
         # Not a merged bake
         if MasterOperation.merged_bake:
             nametag = "SB_merged_bake_name"
@@ -455,7 +454,7 @@ def common_bake_finishing():
             image_list = [img for img in bpy.data.images \
                 if nametag in img and "SB_globalmode" in img and  \
                 img[nametag] == name and \
-                img["SB_globalmode"] in [TextureBakeConstants.SPECIALS, TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY] ]
+                img["SB_globalmode"] in [constants.BAKE_MODE_INPUTS, constants.BAKE_MODE_INPUTS_S2A] ]
 
             print(image_list)
 
@@ -499,7 +498,7 @@ def specials_bake():
     common_bake_prep()
 
     # If we are baking S2A as the primary bake, this should focus on the target object
-    if current_bake_op.bake_mode == TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY:
+    if current_bake_op.bake_mode == constants.BAKE_MODE_INPUTS_S2A:
         objects = [bpy.context.scene.TextureBake_Props.target_object]
     else:
         objects = current_bake_op.bake_objects

@@ -56,8 +56,6 @@ from . import (
     ui,
 )
 
-from .bake_operation import TextureBakeConstants
-
 
 def tex_per_mat_update(self, context):
     if context.scene.TextureBake_Props.tex_per_mat == True:

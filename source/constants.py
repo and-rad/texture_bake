@@ -17,6 +17,11 @@
 #
 #########################################################################
 
+BAKE_MODE_PBR = 'BM_PBR'
+BAKE_MODE_S2A = 'BM_S2A'
+BAKE_MODE_INPUTS = 'BM_INPUTS'
+BAKE_MODE_INPUTS_S2A = 'BM_INPUTS_S2A'
+
 PBR_AO = 'AO_OUT'
 PBR_DIFFUSE = 'DIFFUSE'
 PBR_METAL = 'METALNESS'

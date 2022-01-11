@@ -23,7 +23,6 @@ import tempfile
 from . import functions
 from . import bakefunctions
 from .bg_bake import background_bake_ops
-from .bake_operation import TextureBakeConstants
 
 from bpy.props import StringProperty, IntProperty, CollectionProperty, PointerProperty
 from bpy.types import PropertyGroup, UIList, Operator, Panel

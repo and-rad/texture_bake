@@ -34,7 +34,6 @@ from . import (
 from .bake_operation import (
     BakeOperation,
     MasterOperation,
-    TextureBakeConstants,
 )
 
 
@@ -370,7 +369,7 @@ def check_scene(objects, bakemode):
             messages.append("You have selected the Multiple Objeccts to One Texture Set option (under Texture Settings) but you don't have multiple objects selected")
 
     # PBR Bake Checks - No S2A
-    if bakemode == TextureBakeConstants.PBR:
+    if bakemode == constants.BAKE_MODE_PBR:
         for obj in objects:
             # Are UVs OK?
             if len(obj.data.uv_layers) == 0:
@@ -390,7 +389,7 @@ def check_scene(objects, bakemode):
                         messages.append(f"ERROR: Node '{node_name}' in material '{mat.name}' on object '{obj.name}' is not valid for PBR bake. Principled BSDFs and/or Emission only!")
 
     # PBR Bake - S2A
-    if bakemode == TextureBakeConstants.PBRS2A:
+    if bakemode == constants.BAKE_MODE_S2A:
         # These checkes are done on all selected objects (not just the target)-----------
 
         # Are materials OK? Fix if not
@@ -450,14 +449,14 @@ def check_scene(objects, bakemode):
 
     # Specials Bake
     if bpy.context.scene.TextureBake_Props.selected_col_vertex:
-        if bakemode == TextureBakeConstants.SPECIALS:
+        if bakemode == constants.BAKE_MODE_INPUTS:
             for obj in objects:
                 if len(obj.data.vertex_colors) == 0:
                     messages.append(f"You are trying to bake the active vertex colors, but object {obj.name} doesn't have vertex colors")
                     show_message_box(messages, "Errors occured", "ERROR")
                     return False
 
-        if bakemode == TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY:
+        if bakemode == constants.BAKE_MODE_INPUTS_S2A:
             t = bpy.context.scene.TextureBake_Props.target_object
             if len(t.data.vertex_colors) == 0:
                 messages.append(f"You are trying to bake the active vertex colors, but object {t.name} doesn't have vertex colors")
@@ -642,7 +641,7 @@ def export_textures(image, baketype, obj):
 
     # Color management settings
     dcm_opt = bpy.context.scene.TextureBake_Props.export_color_space
-    if current_bake_op.bake_mode in [TextureBakeConstants.PBR, TextureBakeConstants.PBRS2A] and (baketype == constants.PBR_DIFFUSE or baketype == constants.PBR_EMISSION) :
+    if current_bake_op.bake_mode in [constants.BAKE_MODE_PBR, constants.BAKE_MODE_S2A] and (baketype == constants.PBR_DIFFUSE or baketype == constants.PBR_EMISSION) :
         if dcm_opt:
             print_msg("Applying color management settings from current scene for PBR diffuse or emission")
             apply_scene_col_settings(scene)
@@ -650,12 +649,12 @@ def export_textures(image, baketype, obj):
             print_msg("Applying standard color management for PBR diffuse or emission")
             scene.view_settings.view_transform = "Standard"
 
-    elif current_bake_op.bake_mode in [TextureBakeConstants.PBR, TextureBakeConstants.PBRS2A]:
+    elif current_bake_op.bake_mode in [constants.BAKE_MODE_PBR, constants.BAKE_MODE_S2A]:
         print_msg("Applying raw color space for PBR non-diffuse texture")
         scene.view_settings.view_transform = "Raw"
         scene.sequencer_colorspace_settings.name = "Non-Color"
 
-    elif current_bake_op.bake_mode in [TextureBakeConstants.SPECIALS, TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY]:
+    elif current_bake_op.bake_mode in [constants.BAKE_MODE_INPUTS, constants.BAKE_MODE_INPUTS_S2A]:
         print_msg("Raw color space for Specials")
         scene.view_settings.view_transform = "Raw"
         scene.sequencer_colorspace_settings.name = "Non-Color"
@@ -919,12 +918,12 @@ def prep_objects(objs, baketype):
                 for slot in obj.material_slots:
                     mat = slot.material
                     nodetree = mat.node_tree
-                    if baketype in {TextureBakeConstants.PBR, TextureBakeConstants.PBRS2A}:
+                    if baketype in {constants.BAKE_MODE_PBR, constants.BAKE_MODE_S2A}:
                         material_setup.create_principled_setup(nodetree, obj)
             else: # Should only have one material
                 mat = obj.material_slots[0].material
                 nodetree = mat.node_tree
-                if baketype in {TextureBakeConstants.PBR, TextureBakeConstants.PBRS2A}:
+                if baketype in {constants.BAKE_MODE_PBR, constants.BAKE_MODE_S2A}:
                     material_setup.create_principled_setup(nodetree, obj)
 
             # Change object name to avoid collisions

@@ -39,7 +39,6 @@ from .bake_operation import (
     BakeOperation,
     MasterOperation,
     BakeStatus,
-    TextureBakeConstants,
 )
 
 from .bg_bake import (
@@ -66,9 +65,9 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
             num_of_objects = len(context.selected_objects)
 
         for need in needed_bake_modes:
-            if need == TextureBakeConstants.PBR:
+            if need == constants.BAKE_MODE_PBR:
                 BakeStatus.total_maps = functions.get_num_maps_to_bake() * num_of_objects
-            if need == TextureBakeConstants.PBRS2A:
+            if need == constants.BAKE_MODE_S2A:
                 BakeStatus.total_maps = functions.get_num_maps_to_bake()
 
         MasterOperation.clear()
@@ -88,18 +87,18 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
         for bop in bops:
             MasterOperation.this_bake_operation_num += 1
             MasterOperation.current_bake_operation = bop
-            if bop.bake_mode == TextureBakeConstants.PBR:
+            if bop.bake_mode == constants.BAKE_MODE_PBR:
                 bakefunctions.do_bake()
-            elif bop.bake_mode == TextureBakeConstants.PBRS2A:
+            elif bop.bake_mode == constants.BAKE_MODE_S2A:
                 bakefunctions.do_bake_selected_to_target()
 
         # Call channel packing
         # Only possilbe if we baked some kind of PBR. At the moment, can't have non-S2A and S2A
-        if len([bop for bop in bops if bop.bake_mode == TextureBakeConstants.PBR]) > 0:
+        if len([bop for bop in bops if bop.bake_mode == constants.BAKE_MODE_PBR]) > 0:
             # Should still be active from last bake op
             objects = MasterOperation.current_bake_operation.bake_objects
             bakefunctions.channel_packing(objects)
-        if len([bop for bop in bops if bop.bake_mode == TextureBakeConstants.PBRS2A]) > 0:
+        if len([bop for bop in bops if bop.bake_mode == constants.BAKE_MODE_S2A]) > 0:
             # Should still be active from last bake op
             objects = [MasterOperation.current_bake_operation.sb_target_object]
             bakefunctions.channel_packing(objects)
@@ -119,9 +118,9 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
     def execute(self, context):
         needed_bake_modes = []
         if context.scene.TextureBake_Props.selected_to_target:
-            needed_bake_modes.append(TextureBakeConstants.PBRS2A)
+            needed_bake_modes.append(constants.BAKE_MODE_S2A)
         else:
-            needed_bake_modes.append(TextureBakeConstants.PBR)
+            needed_bake_modes.append(constants.BAKE_MODE_PBR)
 
         # If we have been called in background mode, just get on with it. Checks should be done.
         if "--background" in sys.argv:
@@ -175,9 +174,9 @@ class TEXTUREBAKE_OT_bake_input_textures(bpy.types.Operator):
             num_of_objects = len(context.selected_objects)
 
         for need in needed_bake_modes:
-            if need == TextureBakeConstants.SPECIALS:
+            if need == constants.BAKE_MODE_INPUTS:
                 BakeStatus.total_maps = functions.get_num_input_maps_to_bake() * num_of_objects
-            elif need == TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY:
+            elif need == constants.BAKE_MODE_INPUTS_S2A:
                 BakeStatus.total_maps = functions.get_num_input_maps_to_bake()
 
         MasterOperation.clear()
@@ -212,9 +211,9 @@ class TEXTUREBAKE_OT_bake_input_textures(bpy.types.Operator):
     def execute(self, context):
         needed_bake_modes = []
         if context.scene.TextureBake_Props.selected_to_target:
-            needed_bake_modes.append(TextureBakeConstants.SPECIALS_PBR_TARGET_ONLY)
+            needed_bake_modes.append(constants.BAKE_MODE_INPUTS_S2A)
         else:
-            needed_bake_modes.append(TextureBakeConstants.SPECIALS)
+            needed_bake_modes.append(constants.BAKE_MODE_INPUTS)
 
         # If we have been called in background mode, just get on with it. Checks should be done.
         if "--background" in sys.argv:

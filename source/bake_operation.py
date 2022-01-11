@@ -21,20 +21,12 @@ import bpy
 from . import functions
 
 
-class TextureBakeConstants:
-    # Constants
-    PBR = "PBR"
-    PBRS2A = "PBR StoA"
-    SPECIALS = "Specials"
-    SPECIALS_PBR_TARGET_ONLY = "specials_pbr_targetonly"
-
-
 class BakeOperation:
     def __init__(self):
         self.udim_counter = 0
 
         # Mapping of object name to active UVs
-        self.bake_mode = TextureBakeConstants.PBR
+        self.bake_mode = ""
         self.bake_objects = []
         self.active_object = None
         self.sb_target_object = None
