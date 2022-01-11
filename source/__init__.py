@@ -584,10 +584,10 @@ class TextureBakePackedTexture(PropertyGroup):
         description = "The file format to save this texture at",
         default = 'PNG',
         items = [
-            ('JPG', "JPEG", "Supports 8-bit color depth"),
-            ('EXR', "OpenEXR", "Always uses 32-bit color depth"),
+            ('JPEG', "JPEG", "Supports 8-bit color depth"),
+            ('OPEN_EXR', "OpenEXR", "Always uses 32-bit color depth"),
             ('PNG', "PNG", "Supports 8-bit and 16-bit color depth"),
-            ('TGA', "Targa", "Supports 8-bit color depth"),
+            ('TARGA', "Targa", "Supports 8-bit color depth"),
         ],
         update = export_texture_update,
     )

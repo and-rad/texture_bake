@@ -956,7 +956,7 @@ class TEXTUREBAKE_OT_reset_export_presets(bpy.types.Operator):
         item.name = "Unreal Engine"
         tex = item.textures.add()
         tex.name = "T_%OBJ%_%BATCH%_D"
-        tex.file_format = 'TGA'
+        tex.file_format = 'TARGA'
         tex.red.info = constants.PBR_DIFFUSE
         tex.green.info = constants.PBR_DIFFUSE
         tex.blue.info = constants.PBR_DIFFUSE
@@ -964,7 +964,7 @@ class TEXTUREBAKE_OT_reset_export_presets(bpy.types.Operator):
         tex.alpha.space = 'NON_COLOR'
         tex = item.textures.add()
         tex.name = "T_%OBJ%_%BATCH%_N"
-        tex.file_format = 'TGA'
+        tex.file_format = 'TARGA'
         tex.red.info = constants.PBR_NORMAL_DX
         tex.red.space = 'NON_COLOR'
         tex.green.info = constants.PBR_NORMAL_DX
@@ -973,7 +973,7 @@ class TEXTUREBAKE_OT_reset_export_presets(bpy.types.Operator):
         tex.blue.space = 'NON_COLOR'
         tex = item.textures.add()
         tex.name = "T_%OBJ%_%BATCH%_ORM"
-        tex.file_format = 'TGA'
+        tex.file_format = 'TARGA'
         tex.red.info = constants.PBR_AO
         tex.red.space = 'NON_COLOR'
         tex.green.info = constants.PBR_ROUGHNESS
@@ -1048,6 +1048,3 @@ class TEXTUREBAKE_OT_format_info(bpy.types.Operator):
         row = col.split(factor=0.25)
         row.label(text="%BATCH%")
         row.label(text="Batch name as defined in the Properties panel")
-        row = col.split(factor=0.25)
-        row.label(text="%BAKETYPE%")
-        row.label(text="Diffuse, emission, AO, etc.")
