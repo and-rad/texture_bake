@@ -47,7 +47,6 @@ class BakeOperation:
 class MasterOperation:
     bake_op = None
 
-    orig_UVs_dict = {}
     baked_textures = []
     prepared_mesh_objects = []
 
@@ -55,28 +54,15 @@ class MasterOperation:
     merged_bake_name = ""
     batch_name = ""
 
-    orig_s2A = False
-    orig_objects = []
-    orig_active_object = ""
-    orig_engine = "CYCLES"
-    orig_sample_count = 0
-    orig_tile_size = 0
-
     orig_textures_folder = False
 
     def clear():
-        MasterOperation.orig_UVs_dict = {}
         MasterOperation.bake_op = None
         MasterOperation.prepared_mesh_objects = []
         MasterOperation.baked_textures = []
         MasterOperation.merged_bake = False
         MasterOperation.merged_bake_name = ""
         MasterOperation.batch_name = ""
-        MasterOperation.orig_s2A = False
-        MasterOperation.orig_objects = []
-        MasterOperation.orig_active_object = ""
-        MasterOperation.orig_engine = "CYCLES"
-        MasterOperation.orig_sample_count = 0
         MasterOperation.orig_textures_folder = False
 
 

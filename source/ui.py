@@ -61,7 +61,7 @@ class TEXTUREBAKE_PT_main(bpy.types.Panel):
                 col = row.column()
                 col.operator("texture_bake.bake_import_individual", text="", icon='IMPORT').pnum = int(p.process.pid)
                 col = row.column()
-                col.operator("texture_bake.bake_delete_individual", text="", icon='CANCEL').pnum = int(p.process.pid)
+                col.operator("texture_bake.bake_delete_individual", text="", icon='TRASH').pnum = int(p.process.pid)
 
         row = box.row()
         row.operator("texture_bake.bake_import", text="Import all", icon='IMPORT')
@@ -249,9 +249,6 @@ class TEXTUREBAKE_PT_uv(TextureBakeCategoryPanel, bpy.types.Panel):
 
         row = layout.row()
         row.prop(context.scene.TextureBake_Props, "prefer_existing_uvmap")
-
-        row = layout.row()
-        row.prop(context.scene.TextureBake_Props, "restore_active_uvmap")
 
 
 class TEXTUREBAKE_PT_other(TextureBakeCategoryPanel, bpy.types.Panel):

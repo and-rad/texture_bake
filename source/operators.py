@@ -464,7 +464,6 @@ class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
         d["selected_thickness"] = context.scene.TextureBake_Props.selected_thickness
         d["selected_curvature"] = context.scene.TextureBake_Props.selected_curvature
         d["prefer_existing_uvmap"] = context.scene.TextureBake_Props.prefer_existing_uvmap
-        d["restore_active_uvmap"] = context.scene.TextureBake_Props.restore_active_uvmap
         d["uv_mode"] = context.scene.TextureBake_Props.uv_mode
         d["udim_tiles"] = context.scene.TextureBake_Props.udim_tiles
         d["cp_file_format"] = context.scene.TextureBake_Props.cp_file_format
@@ -618,7 +617,6 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
         context.scene.TextureBake_Props.selected_ao = d["selected_ao"]
         context.scene.TextureBake_Props.selected_thickness = d["selected_thickness"]
         context.scene.TextureBake_Props.selected_curvature = d["selected_curvature"]
-        context.scene.TextureBake_Props.restore_active_uvmap = d["restore_active_uvmap"]
         context.scene.TextureBake_Props.uv_mode = d["uv_mode"]
         context.scene.TextureBake_Props.udim_tiles = d["udim_tiles"]
         context.scene.TextureBake_Props.cp_file_format = d["cp_file_format"]

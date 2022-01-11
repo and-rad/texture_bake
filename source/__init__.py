@@ -307,12 +307,6 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
         description = "If one exists for the object being baked, use any existing UV maps called 'TextureBake' for baking (rather than the active UV map)",
     )
 
-    restore_active_uvmap: BoolProperty(
-        name = "Restore originally active UV map at end",
-        description = "If you are preferring an existing UV map called TextureBake, the UV map used for baking may not be the one you had displayed in the viewport before baking. This option restores what you had active before baking",
-        default = True,
-    )
-
     uv_mode: EnumProperty(
         name = "UV Mode",
         description = "Bake to UDIMs or normal UVs. You must be exporting your bakes to use UDIMs. You must manually create your UDIM UVs (this cannot be automated)",

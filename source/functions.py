@@ -482,39 +482,6 @@ def process_uvs():
             if("TextureBake" in obj.data.uv_layers):
                 obj.data.uv_layers["TextureBake"].active = True
 
-    # Before we finish, restore the original selected and active objects
-    bpy.ops.object.select_all(action="DESELECT")
-    for obj in current_bake_op.orig_objects:
-        obj.select_set(True)
-    bpy.context.view_layer.objects.active = current_bake_op.orig_active_object
-
-
-def restore_original_uvs():
-    current_bake_op = MasterOperation.bake_op
-
-    # First the bake objects
-    for obj in current_bake_op.bake_objects:
-        if MasterOperation.orig_UVs_dict[obj.name]: # Will be false if none
-            original_uv = MasterOperation.orig_UVs_dict[obj.name]
-            obj.data.uv_layers.active = obj.data.uv_layers[original_uv]
-
-    # Now the target objects (if any)
-    pbr_target = current_bake_op.sb_target_object
-    if pbr_target != None:
-        try:
-            original_uv = MasterOperation.orig_UVs_dict[pbr_target.name]
-            pbr_target.data.uv_layers.active = pbr_target.data.uv_layers[original_uv]
-        except KeyError:
-            print_msg(f"No original UV map found for {pbr_target.name}")
-
-    cycles_target = current_bake_op.sb_target_object
-    if cycles_target != None and MasterOperation.orig_UVs_dict[cycles_target.name] != None:
-        try:
-            original_uv = MasterOperation.orig_UVs_dict[cycles_target.name]
-            cycles_target.data.uv_layers.active = cycles_target.data.uv_layers[original_uv]
-        except KeyError:
-            print_msg(f"No original UV map found for {cycles_target.name}")
-
 
 def find_pnode(nodetree):
     nodes = nodetree.nodes
@@ -1204,9 +1171,6 @@ def write_bake_progress(current_operation, total_operations):
 # Dict obj name to tile
 currentUDIMtile = {}
 def focus_UDIM_tile(obj,desiredUDIMtile):
-    orig_active_object = bpy.context.active_object
-    orig_selected_objects = bpy.context.selected_objects
-
     global currentUDIMtile
 
     select_only_this(obj)
@@ -1235,11 +1199,6 @@ def focus_UDIM_tile(obj,desiredUDIMtile):
     me.update()
     currentUDIMtile[obj.name] = desiredUDIMtile
     bpy.ops.object.editmode_toggle()
-
-    # Restore the original selected and active objects before we leave
-    for o in orig_selected_objects:
-        o.select_set(state=True)
-    bpy.context.view_layer.objects.active = orig_active_object
 
 
 past_items_dict = {}

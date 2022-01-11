@@ -43,10 +43,6 @@ def optimize():
     input_width = bpy.context.scene.TextureBake_Props.input_width
     input_height = bpy.context.scene.TextureBake_Props.input_height
 
-    # Store the current tile sizes and sample count
-    MasterOperation.orig_tile_size = bpy.context.scene.cycles.tile_size
-    MasterOperation.orig_sample_count = bpy.context.scene.cycles.samples
-
     # Apparently small tile sizes are now always better for baking on CPU
     if bpy.context.scene.cycles.device == "CPU":
         bpy.context.scene.cycles.use_auto_tile = True
@@ -74,13 +70,6 @@ def optimize():
         bpy.context.scene.cycles.samples = 16
 
 
-def undo_optimize():
-    # Restore sample count
-    bpy.context.scene.cycles.samples = MasterOperation.orig_sample_count
-    # Restore tile sizes
-    bpy.context.scene.cycles.tile_size = MasterOperation.orig_tile_size
-
-
 def common_bake_prep():
     # --------------Set Bake Operation Variables----------------------------
 
@@ -106,8 +95,6 @@ def common_bake_prep():
     MasterOperation.batch_name = bpy.context.scene.TextureBake_Props.batch_name
 
     # Set values based on viewport selection
-    current_bake_op.orig_objects = bpy.context.selected_objects.copy()
-    current_bake_op.orig_active_object = bpy.context.active_object
     current_bake_op.bake_objects = bpy.context.selected_objects.copy()
     current_bake_op.active_object = bpy.context.active_object
 
@@ -115,9 +102,6 @@ def common_bake_prep():
         current_bake_op.bake_objects = functions.advanced_object_selection_to_list()
     if bpy.context.scene.TextureBake_Props.target_object != None:
         current_bake_op.sb_target_object = bpy.context.scene.TextureBake_Props.target_object
-
-    current_bake_op.orig_s2A = bpy.context.scene.render.bake.use_selected_to_active
-    current_bake_op.orig_engine = bpy.context.scene.render.engine
 
     # Create a new collection, and add selected objects and target objects to it
     for c in bpy.data.collections:
@@ -138,20 +122,9 @@ def common_bake_prep():
     if bpy.context.scene.TextureBake_Props.target_object:
         bpy.context.scene.TextureBake_Props.target_object.visible_camera = True
 
-    # Record original UVs for everyone
-    for obj in current_bake_op.bake_objects:
-        try:
-            MasterOperation.orig_UVs_dict[obj.name] = obj.data.uv_layers.active.name
-        except AttributeError:
-            MasterOperation.orig_UVs_dict[obj.name] = False
-
     # Although starting checks will stop if no UVs, New UVs gets a pass so we need to be careful here
     if current_bake_op.sb_target_object != None:
         obj = current_bake_op.sb_target_object
-        if obj.data.uv_layers.active != None:
-            MasterOperation.orig_UVs_dict[obj.name] = obj.data.uv_layers.active.name
-
-    MasterOperation.orig_engine = bpy.context.scene.render.engine
 
     if bpy.context.scene.TextureBake_Props.uv_mode == "udims":
         current_bake_op.uv_mode = "udims"
@@ -376,9 +349,6 @@ def common_bake_finishing():
     # Run information
     current_bake_op = MasterOperation.bake_op
 
-    # Restore the original rendering engine
-    bpy.context.scene.render.engine = MasterOperation.orig_engine
-
     # Reset the UDIM focus tile of all objects
     if current_bake_op.bake_mode in [constants.BAKE_MODE_S2A, constants.BAKE_MODE_INPUTS_S2A]:
         # This was some kind of S2A bake
@@ -390,10 +360,6 @@ def common_bake_finishing():
         for obj in current_bake_op.bake_objects:
             functions.focus_UDIM_tile(obj, 0)
 
-    bpy.context.scene.render.bake.use_selected_to_active = current_bake_op.orig_s2A
-
-    undo_optimize()
-
     # If prep mesh, or save object is selected, or running in the background, then do it
     # We do this on primary run only
     if(bpy.context.scene.TextureBake_Props.export_mesh or bpy.context.scene.TextureBake_Props.prep_mesh or "--background" in sys.argv):
@@ -401,16 +367,6 @@ def common_bake_finishing():
             functions.prep_objects([current_bake_op.sb_target_object], current_bake_op.bake_mode)
         else:
             functions.prep_objects(current_bake_op.bake_objects, current_bake_op.bake_mode)
-
-    # If the user wants it, restore the original active UV map so we don't confuse anyone
-    if bpy.context.scene.TextureBake_Props.restore_active_uvmap:
-        functions.restore_original_uvs()
-
-    # Restore the original object selection so we don't confuse anyone
-    bpy.ops.object.select_all(action="DESELECT")
-    for obj in current_bake_op.orig_objects:
-        obj.select_set(True)
-    bpy.context.view_layer.objects.active = current_bake_op.orig_active_object
 
     # Hide all the original objects
     if bpy.context.scene.TextureBake_Props.prep_mesh and bpy.context.scene.TextureBake_Props.hide_source_objects:
