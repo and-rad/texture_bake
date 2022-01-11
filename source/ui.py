@@ -199,7 +199,7 @@ class TEXTUREBAKE_PT_export_settings(TextureBakeCategoryPanel, bpy.types.Panel):
             layout.use_property_split = True
             if context.scene.TextureBake_Props.export_textures or context.scene.TextureBake_Props.export_mesh:
                 layout.separator()
-                layout.row().prop(context.scene.TextureBake_Props, "export_folder_name", text="Folder name")
+                layout.row().prop(context.scene.TextureBake_Props, "export_folder_name")
 
                 row = layout.row()
                 row.prop(context.scene.TextureBake_Props, "export_folder_per_object")

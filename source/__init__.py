@@ -71,8 +71,13 @@ def prep_mesh_update(self, context):
 
 
 def export_file_format_update(self,context):
-    if context.scene.TextureBake_Props.export_file_format == "JPEG" or context.scene.TextureBake_Props.export_file_format == "TARGA":
-        context.scene.TextureBake_Props.export_16bit = False
+    if self.export_file_format == "JPEG" or self.export_file_format == "TARGA":
+        self.export_16bit = False
+
+
+def export_folder_name_update(self, context):
+    if functions.is_blend_saved() and not self.export_folder_name.startswith("//"):
+        self.export_folder_name = bpy.path.relpath(self.export_folder_name)
 
 
 def export_textures_update(self, context):
@@ -388,10 +393,11 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
     )
 
     export_folder_name: StringProperty(
-        name = "Save folder name",
-        description = "Name of the folder to create and save the bakes/mesh into. Created in the folder where you blend file is saved. NOTE: To maintain compatibility, only MS Windows acceptable characters will be used",
-        default = "TextureBake_Bakes",
-        maxlen = 20,
+        name = "Folder Name",
+        description = "Exported textures are saved in this location. NOTE: To maintain compatibility, only MS Windows acceptable characters will be used",
+        default = "//TextureBake_Bakes",
+        subtype = 'DIR_PATH',
+        update = export_folder_name_update,
     )
 
     export_color_space: BoolProperty(

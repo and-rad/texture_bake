@@ -54,8 +54,6 @@ class MasterOperation:
     merged_bake_name = ""
     batch_name = ""
 
-    orig_textures_folder = False
-
     def clear():
         MasterOperation.bake_op = None
         MasterOperation.prepared_mesh_objects = []
@@ -63,7 +61,6 @@ class MasterOperation:
         MasterOperation.merged_bake = False
         MasterOperation.merged_bake_name = ""
         MasterOperation.batch_name = ""
-        MasterOperation.orig_textures_folder = False
 
 
 class BakeStatus:

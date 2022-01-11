@@ -21,6 +21,7 @@ import urllib.request
 from pathlib import Path
 import shutil
 import bpy
+import datetime
 import os
 import base64
 import sys
@@ -156,7 +157,7 @@ def restore_all_materials():
 
 def is_blend_saved():
     path = bpy.data.filepath
-    return path!="/" and path!=""
+    return path != "/" and path != ""
 
 
 def create_images(imgname, thisbake, objname):
@@ -292,12 +293,6 @@ def check_scene(objects, bakemode):
         if bpy.context.scene.TextureBake_Props.target_object.type != "MESH":
             messages.append(f"ERROR: Object '{bpy.context.scene.TextureBake_Props.target_object.name}' (your target object) is not mesh")
     if len(messages) > 1:
-        show_message_box(messages, "Errors occured", "ERROR")
-        return False
-
-    # Output folder cannot be called textures
-    if bpy.context.scene.TextureBake_Props.export_folder_name.lower() == "textures":
-        messages.append(f"ERROR: Unfortunately, your save folder cannot be called \"textures\" for technical reasons. Please change the name to proceed.")
         show_message_box(messages, "Errors occured", "ERROR")
         return False
 
@@ -538,40 +533,12 @@ def check_object_valid_material_config(obj):
 
 
 def get_export_folder_name(initialise = False, relative = False):
-    g_save_folder = ""
-    g_rel_save_folder = ""
-
-    if initialise:
-        fullpath = bpy.data.filepath
-        pathelements = os.path.split(fullpath)
-        workingdir = Path(pathelements[0])
-
-        if bpy.context.scene.TextureBake_Props.export_datetime:
-            from datetime import datetime
-            now = datetime.now()
-            d1 = now.strftime("%d%m%Y-%H%M")
-
-            g_rel_save_folder = clean_file_name(bpy.context.scene.TextureBake_Props.export_folder_name) + f"_{d1}"
-            savedir = workingdir / g_rel_save_folder
-
-        else:
-            g_rel_save_folder = clean_file_name(bpy.context.scene.TextureBake_Props.export_folder_name)
-            savedir = workingdir / g_rel_save_folder
-
-        g_save_folder = savedir
-        return g_save_folder
-
-    elif relative:
-        # Called for just the relative reference
-        return "//" + g_rel_save_folder
-    else:
-        # Called for full path, time to create folder
-        try:
-            os.mkdir(g_save_folder)
-        except FileExistsError:
-            pass
-
-        return g_save_folder
+    props = bpy.context.scene.TextureBake_Props
+    folder = props.export_folder_name
+    if props.export_datetime:
+        now = datetime.datetime.now()
+        folder += now.strftime("_%d%m%Y-%H%M")
+    return folder
 
 
 def get_mat_type(nodetree):
@@ -663,10 +630,8 @@ def export_textures(image, baketype, obj):
     # Work out path to save to, and remove previous file if there is one
     if bpy.context.scene.TextureBake_Props.export_folder_per_object and bpy.context.scene.TextureBake_Props.merged_bake and bpy.context.scene.TextureBake_Props.merged_bake_name != "":
         savepath = Path(str(get_export_folder_name()) + "/" + bpy.context.scene.TextureBake_Props.merged_bake_name + "/" + (clean_file_name(image.name) + "." + file_extension))
-
     elif bpy.context.scene.TextureBake_Props.export_folder_per_object and obj != None:
         savepath = Path(str(get_export_folder_name()) + "/" + obj.name + "/" + (clean_file_name(image.name) + "." + file_extension))
-
     else:
         savepath = Path(str(get_export_folder_name()) + "/" + (clean_file_name(image.name) + "." + file_extension))
 
@@ -711,14 +676,14 @@ def export_textures(image, baketype, obj):
         image.unpack(method="REMOVE")
     except:
         pass
+
     image.source = "FILE"
-    # Let's use a relative path. Shouldn't matter in the end.
     if bpy.context.scene.TextureBake_Props.export_folder_per_object and bpy.context.scene.TextureBake_Props.merged_bake and bpy.context.scene.TextureBake_Props.merged_bake_name != "":
-        image.filepath = str(get_export_folder_name(relative=True)) +"/" + bpy.context.scene.TextureBake_Props.merged_bake_name + "/" + image.name + "." + file_extension
+        image.filepath = str(get_export_folder_name()) +"/" + bpy.context.scene.TextureBake_Props.merged_bake_name + "/" + image.name + "." + file_extension
     elif bpy.context.scene.TextureBake_Props.export_folder_per_object and obj != None:
-        image.filepath = str(get_export_folder_name(relative=True)) +"/" + obj.name + "/" + image.name + "." + file_extension
+        image.filepath = str(get_export_folder_name()) +"/" + obj.name + "/" + image.name + "." + file_extension
     else:
-        image.filepath = str(get_export_folder_name(relative=True)) +"/" + image.name + "." + file_extension
+        image.filepath = str(get_export_folder_name()) +"/" + image.name + "." + file_extension
 
     # UDIMS
     if bpy.context.scene.TextureBake_Props.uv_mode == "udims":

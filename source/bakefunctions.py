@@ -84,8 +84,6 @@ def common_bake_prep():
     fullpath = bpy.data.filepath
     pathelements = os.path.split(fullpath)
     workingdir = Path(pathelements[0])
-    if os.path.isdir(str(workingdir / "textures")):
-        MasterOperation.orig_textures_folder = True
 
     # If this is a pbr bake, gather the selected maps
     if current_bake_op.bake_mode in {constants.BAKE_MODE_PBR, constants.BAKE_MODE_S2A}:
@@ -158,9 +156,6 @@ def common_bake_prep():
             bpy.context.scene.render.bake.use_cage = False
         else:
             bpy.context.scene.render.bake.use_cage = True
-
-    # Initialise the save folder in case we need it
-    functions.get_export_folder_name(initialise = True)
 
     # Clear the trunc num for this session
     functions.trunc_num = 0
@@ -273,7 +268,7 @@ def channel_packing(objects):
     for obj in objects:
         if efpo and mb:
             export_folder_name = Path(str(functions.get_export_folder_name()) + "/" + mbn)
-            obj_export_folder_names[obj.name] = export_folder_name # Ever object gets the same based on merged bake name
+            obj_export_folder_names[obj.name] = export_folder_name
         elif efpo:
             export_folder_name = Path(str(functions.get_export_folder_name()) + "/" + obj.name)
             obj_export_folder_names[obj.name] = export_folder_name
@@ -424,8 +419,6 @@ def common_bake_finishing():
     fullpath = bpy.data.filepath
     pathelements = os.path.split(fullpath)
     workingdir = Path(pathelements[0])
-    if not MasterOperation.orig_textures_folder and os.path.isdir(str(workingdir / "textures")):
-        shutil.rmtree(str(workingdir / "textures"))
 
 
 def specials_bake():
