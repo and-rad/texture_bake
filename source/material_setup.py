@@ -69,7 +69,7 @@ def wipe_labels(nodes):
 
 
 def get_image_from_tag(thisbake, objname):
-    current_bake_op = MasterOperation.current_bake_operation
+    current_bake_op = MasterOperation.bake_op
     global_mode = current_bake_op.bake_mode
     objname = functions.untrunc_if_needed(objname)
     batch_name = bpy.context.scene.TextureBake_Props.batch_name

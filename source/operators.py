@@ -22,7 +22,6 @@ import sys
 import subprocess
 import os
 import json
-import time
 import uuid
 
 from pathlib import Path
@@ -53,54 +52,35 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
     bl_idname = "texture_bake.bake"
     bl_label = "Bake Textures"
 
-    def bake_textures(self, context, needed_bake_modes):
-        # Prepare the BakeStatus tracker for progress bar
+    def bake_textures(self, context, bake_mode):
         BakeStatus.current_map = 0
         BakeStatus.total_maps = 0
 
-        num_of_objects = 0
-        if context.scene.TextureBake_Props.use_object_list:
-            num_of_objects = len(context.scene.TextureBake_Props.object_list)
-        else:
-            num_of_objects = len(context.selected_objects)
-
-        for need in needed_bake_modes:
-            if need == constants.BAKE_MODE_PBR:
-                BakeStatus.total_maps = functions.get_num_maps_to_bake() * num_of_objects
-            if need == constants.BAKE_MODE_S2A:
-                BakeStatus.total_maps = functions.get_num_maps_to_bake()
+        if bake_mode == constants.BAKE_MODE_PBR:
+            num_objects = len(context.selected_objects)
+            if context.scene.TextureBake_Props.use_object_list:
+                num_objects = len(context.scene.TextureBake_Props.object_list)
+            BakeStatus.total_maps = functions.get_num_maps_to_bake() * num_objects
+        elif bake_mode == constants.BAKE_MODE_S2A:
+            BakeStatus.total_maps = functions.get_num_maps_to_bake()
 
         MasterOperation.clear()
         MasterOperation.merged_bake = context.scene.TextureBake_Props.merged_bake
         MasterOperation.merged_bake_name = context.scene.TextureBake_Props.merged_bake_name
-        MasterOperation.total_bake_operations = len(needed_bake_modes)
+        MasterOperation.bake_op = BakeOperation()
+        MasterOperation.bake_op.bake_mode = bake_mode
 
-        # Master list of all ops
-        bops = []
-        for need in needed_bake_modes:
-            bop = BakeOperation()
-            bop.bake_mode = need
-            bops.append(bop)
-            functions.print_msg(f"Created operation for {need}")
-
-        # Run queued operations
-        for bop in bops:
-            MasterOperation.this_bake_operation_num += 1
-            MasterOperation.current_bake_operation = bop
-            if bop.bake_mode == constants.BAKE_MODE_PBR:
-                bakefunctions.do_bake()
-            elif bop.bake_mode == constants.BAKE_MODE_S2A:
-                bakefunctions.do_bake_selected_to_target()
+        if bake_mode == constants.BAKE_MODE_PBR:
+            bakefunctions.do_bake()
+        elif bake_mode == constants.BAKE_MODE_S2A:
+            bakefunctions.do_bake_selected_to_target()
 
         # Call channel packing
-        # Only possilbe if we baked some kind of PBR. At the moment, can't have non-S2A and S2A
-        if len([bop for bop in bops if bop.bake_mode == constants.BAKE_MODE_PBR]) > 0:
-            # Should still be active from last bake op
-            objects = MasterOperation.current_bake_operation.bake_objects
+        if bake_mode == constants.BAKE_MODE_PBR:
+            objects = MasterOperation.bake_op.bake_objects
             bakefunctions.channel_packing(objects)
-        if len([bop for bop in bops if bop.bake_mode == constants.BAKE_MODE_S2A]) > 0:
-            # Should still be active from last bake op
-            objects = [MasterOperation.current_bake_operation.sb_target_object]
+        elif bake_mode == constants.BAKE_MODE_S2A:
+            objects = [MasterOperation.bake_op.sb_target_object]
             bakefunctions.channel_packing(objects)
 
         return {'FINISHED'}
@@ -116,20 +96,17 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
         return [p for p in prefs.export_presets if p.uid == preset]
 
     def execute(self, context):
-        needed_bake_modes = []
+        bake_mode = constants.BAKE_MODE_PBR
         if context.scene.TextureBake_Props.selected_to_target:
-            needed_bake_modes.append(constants.BAKE_MODE_S2A)
-        else:
-            needed_bake_modes.append(constants.BAKE_MODE_PBR)
+            bake_mode = constants.BAKE_MODE_S2A
 
         # If we have been called in background mode, just get on with it. Checks should be done.
         if "--background" in sys.argv:
-            return self.bake_textures(context, needed_bake_modes)
+            return self.bake_textures(context, bake_mode)
 
         # We are in foreground, do usual checks
-        for mode in needed_bake_modes:
-            if not functions.check_scene(context.selected_objects, mode):
-                return {"CANCELLED"}
+        if not functions.check_scene(context.selected_objects, bake_mode):
+            return {"CANCELLED"}
 
         bpy.ops.wm.save_mainfile()
         filepath = filepath = bpy.data.filepath
@@ -146,7 +123,7 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
         background_bake_ops.bgops_list.append(
             BackgroundBakeParams(
                 process,
-                time.strftime("Export textures (%H:%M:%S)", time.localtime()),
+                "Export textures",
                 context.scene.TextureBake_Props.prep_mesh,
                 context.scene.TextureBake_Props.hide_source_objects
             )
@@ -162,42 +139,26 @@ class TEXTUREBAKE_OT_bake_input_textures(bpy.types.Operator):
     bl_idname = "texture_bake.bake_input_textures"
     bl_label = "Bake Textures"
 
-    def bake_input_maps(self, context, needed_bake_modes):
+    def bake_input_maps(self, context, bake_mode):
         # Prepare the BakeStatus tracker for progress bar
         BakeStatus.current_map = 0
         BakeStatus.total_maps = 0
 
-        num_of_objects = 0
-        if context.scene.TextureBake_Props.use_object_list:
-            num_of_objects = len(context.scene.TextureBake_Props.object_list)
-        else:
-            num_of_objects = len(context.selected_objects)
-
-        for need in needed_bake_modes:
-            if need == constants.BAKE_MODE_INPUTS:
-                BakeStatus.total_maps = functions.get_num_input_maps_to_bake() * num_of_objects
-            elif need == constants.BAKE_MODE_INPUTS_S2A:
-                BakeStatus.total_maps = functions.get_num_input_maps_to_bake()
+        if bake_mode == constants.BAKE_MODE_INPUTS:
+            num_objects = len(context.selected_objects)
+            if context.scene.TextureBake_Props.use_object_list:
+                num_objects = len(context.scene.TextureBake_Props.object_list)
+            BakeStatus.total_maps = functions.get_num_input_maps_to_bake() * num_objects
+        elif bake_mode == constants.BAKE_MODE_INPUTS_S2A:
+            BakeStatus.total_maps = functions.get_num_input_maps_to_bake()
 
         MasterOperation.clear()
         MasterOperation.merged_bake = context.scene.TextureBake_Props.merged_bake
         MasterOperation.merged_bake_name = context.scene.TextureBake_Props.merged_bake_name
-        MasterOperation.total_bake_operations = len(needed_bake_modes)
+        MasterOperation.bake_op = BakeOperation()
+        MasterOperation.bake_op.bake_mode = bake_mode
 
-        # Master list of all ops
-        bops = []
-        for need in needed_bake_modes:
-            bop = BakeOperation()
-            bop.bake_mode = need
-            bops.append(bop)
-            functions.print_msg(f"Created operation for {need}")
-
-        # Run queued operations
-        for bop in bops:
-            MasterOperation.this_bake_operation_num += 1
-            MasterOperation.current_bake_operation = bop
-            bakefunctions.specials_bake()
-
+        bakefunctions.specials_bake()
         return {'FINISHED'}
 
     @classmethod
@@ -209,20 +170,17 @@ class TEXTUREBAKE_OT_bake_input_textures(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        needed_bake_modes = []
+        bake_mode = constants.BAKE_MODE_INPUTS
         if context.scene.TextureBake_Props.selected_to_target:
-            needed_bake_modes.append(constants.BAKE_MODE_INPUTS_S2A)
-        else:
-            needed_bake_modes.append(constants.BAKE_MODE_INPUTS)
+            bake_mode = constants.BAKE_MODE_INPUTS_S2A
 
         # If we have been called in background mode, just get on with it. Checks should be done.
         if "--background" in sys.argv:
-            return self.bake_input_maps(context, needed_bake_modes)
+            return self.bake_input_maps(context, bake_mode)
 
         # We are in foreground, do usual checks
-        for mode in needed_bake_modes:
-            if not functions.check_scene(context.selected_objects, mode):
-                return {"CANCELLED"}
+        if not functions.check_scene(context.selected_objects, bake_mode):
+            return {"CANCELLED"}
 
         bpy.ops.wm.save_mainfile()
         filepath = filepath = bpy.data.filepath
@@ -239,7 +197,7 @@ class TEXTUREBAKE_OT_bake_input_textures(bpy.types.Operator):
         background_bake_ops.bgops_list.append(
             BackgroundBakeParams(
                 process,
-                time.strftime("Input maps (%H:%M:%S)", time.localtime()),
+                "Bake input maps",
                 context.scene.TextureBake_Props.prep_mesh,
                 context.scene.TextureBake_Props.hide_source_objects
             )

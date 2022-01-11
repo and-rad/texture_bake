@@ -38,7 +38,7 @@ from .bake_operation import (
 
 
 def optimize():
-    current_bake_op = MasterOperation.current_bake_operation
+    current_bake_op = MasterOperation.bake_op
 
     input_width = bpy.context.scene.TextureBake_Props.input_width
     input_height = bpy.context.scene.TextureBake_Props.input_height
@@ -84,7 +84,7 @@ def undo_optimize():
 def common_bake_prep():
     # --------------Set Bake Operation Variables----------------------------
 
-    current_bake_op = MasterOperation.current_bake_operation
+    current_bake_op = MasterOperation.bake_op
 
     functions.print_msg("==================================")
     functions.print_msg("--------Texture Bake Start--------")
@@ -97,11 +97,6 @@ def common_bake_prep():
     workingdir = Path(pathelements[0])
     if os.path.isdir(str(workingdir / "textures")):
         MasterOperation.orig_textures_folder = True
-
-    # Run information
-    op_num = MasterOperation.this_bake_operation_num
-    firstop = (op_num == 1)
-    lastop = (op_num == MasterOperation.total_bake_operations)
 
     # If this is a pbr bake, gather the selected maps
     if current_bake_op.bake_mode in {constants.BAKE_MODE_PBR, constants.BAKE_MODE_S2A}:
@@ -144,20 +139,19 @@ def common_bake_prep():
         bpy.context.scene.TextureBake_Props.target_object.visible_camera = True
 
     # Record original UVs for everyone
-    if firstop:
-        for obj in current_bake_op.bake_objects:
-            try:
-                MasterOperation.orig_UVs_dict[obj.name] = obj.data.uv_layers.active.name
-            except AttributeError:
-                MasterOperation.orig_UVs_dict[obj.name] = False
+    for obj in current_bake_op.bake_objects:
+        try:
+            MasterOperation.orig_UVs_dict[obj.name] = obj.data.uv_layers.active.name
+        except AttributeError:
+            MasterOperation.orig_UVs_dict[obj.name] = False
 
-        # Although starting checks will stop if no UVs, New UVs gets a pass so we need to be careful here
-        if current_bake_op.sb_target_object != None:
-            obj = current_bake_op.sb_target_object
-            if obj.data.uv_layers.active != None:
-                MasterOperation.orig_UVs_dict[obj.name] = obj.data.uv_layers.active.name
+    # Although starting checks will stop if no UVs, New UVs gets a pass so we need to be careful here
+    if current_bake_op.sb_target_object != None:
+        obj = current_bake_op.sb_target_object
+        if obj.data.uv_layers.active != None:
+            MasterOperation.orig_UVs_dict[obj.name] = obj.data.uv_layers.active.name
 
-        MasterOperation.orig_engine = bpy.context.scene.render.engine
+    MasterOperation.orig_engine = bpy.context.scene.render.engine
 
     if bpy.context.scene.TextureBake_Props.uv_mode == "udims":
         current_bake_op.uv_mode = "udims"
@@ -202,8 +196,7 @@ def common_bake_prep():
     bpy.context.scene.render.bake.use_clear = False
 
     # Do what we are doing with UVs (only if we are the primary op)
-    if firstop:
-        functions.process_uvs()
+    functions.process_uvs()
 
     optimize()
 
@@ -285,7 +278,7 @@ def do_post_processing(thisbake, IMGNAME):
 
 
 def channel_packing(objects):
-    current_bake_op = MasterOperation.current_bake_operation
+    current_bake_op = MasterOperation.bake_op
 
     # Are we doing this at all?
     if not bpy.context.scene.TextureBake_Props.export_textures:
@@ -381,15 +374,10 @@ def channel_packing(objects):
 
 def common_bake_finishing():
     # Run information
-    current_bake_op = MasterOperation.current_bake_operation
-    op_num = MasterOperation.this_bake_operation_num
-
-    firstop = (op_num == 1)
-    lastop = (op_num == MasterOperation.total_bake_operations)
+    current_bake_op = MasterOperation.bake_op
 
     # Restore the original rendering engine
-    if lastop:
-        bpy.context.scene.render.engine = MasterOperation.orig_engine
+    bpy.context.scene.render.engine = MasterOperation.orig_engine
 
     # Reset the UDIM focus tile of all objects
     if current_bake_op.bake_mode in [constants.BAKE_MODE_S2A, constants.BAKE_MODE_INPUTS_S2A]:
@@ -408,15 +396,14 @@ def common_bake_finishing():
 
     # If prep mesh, or save object is selected, or running in the background, then do it
     # We do this on primary run only
-    if firstop:
-        if(bpy.context.scene.TextureBake_Props.export_mesh or bpy.context.scene.TextureBake_Props.prep_mesh or "--background" in sys.argv):
-            if current_bake_op.bake_mode == constants.BAKE_MODE_S2A:
-                functions.prep_objects([current_bake_op.sb_target_object], current_bake_op.bake_mode)
-            else:
-                functions.prep_objects(current_bake_op.bake_objects, current_bake_op.bake_mode)
+    if(bpy.context.scene.TextureBake_Props.export_mesh or bpy.context.scene.TextureBake_Props.prep_mesh or "--background" in sys.argv):
+        if current_bake_op.bake_mode == constants.BAKE_MODE_S2A:
+            functions.prep_objects([current_bake_op.sb_target_object], current_bake_op.bake_mode)
+        else:
+            functions.prep_objects(current_bake_op.bake_objects, current_bake_op.bake_mode)
 
     # If the user wants it, restore the original active UV map so we don't confuse anyone
-    if bpy.context.scene.TextureBake_Props.restore_active_uvmap and lastop:
+    if bpy.context.scene.TextureBake_Props.restore_active_uvmap:
         functions.restore_original_uvs()
 
     # Restore the original object selection so we don't confuse anyone
@@ -426,14 +413,14 @@ def common_bake_finishing():
     bpy.context.view_layer.objects.active = current_bake_op.orig_active_object
 
     # Hide all the original objects
-    if bpy.context.scene.TextureBake_Props.prep_mesh and bpy.context.scene.TextureBake_Props.hide_source_objects and lastop:
+    if bpy.context.scene.TextureBake_Props.prep_mesh and bpy.context.scene.TextureBake_Props.hide_source_objects:
         for obj in current_bake_op.bake_objects:
             obj.hide_set(True)
         if bpy.context.scene.TextureBake_Props.selected_to_target:
             current_bake_op.sb_target_object.hide_set(True)
 
     # Delete placeholder material
-    if lastop and "TextureBake_Placeholder" in bpy.data.materials:
+    if "TextureBake_Placeholder" in bpy.data.materials:
         bpy.data.materials.remove(bpy.data.materials["TextureBake_Placeholder"])
 
     # If we baked specials, add the specials to the materials, but we won't hook them up
@@ -478,12 +465,11 @@ def common_bake_finishing():
         bpy.data.collections.remove(bpy.data.collections["TextureBake_Working"])
 
     # If we didn't have one before, and we do now, remove the confusing textures folder on last run
-    if lastop:
-        fullpath = bpy.data.filepath
-        pathelements = os.path.split(fullpath)
-        workingdir = Path(pathelements[0])
-        if not MasterOperation.orig_textures_folder and os.path.isdir(str(workingdir / "textures")):
-            shutil.rmtree(str(workingdir / "textures"))
+    fullpath = bpy.data.filepath
+    pathelements = os.path.split(fullpath)
+    workingdir = Path(pathelements[0])
+    if not MasterOperation.orig_textures_folder and os.path.isdir(str(workingdir / "textures")):
+        shutil.rmtree(str(workingdir / "textures"))
 
 
 def specials_bake():
@@ -492,7 +478,7 @@ def specials_bake():
     input_width = bpy.context.scene.TextureBake_Props.input_width
     input_height = bpy.context.scene.TextureBake_Props.input_height
 
-    current_bake_op = MasterOperation.current_bake_operation
+    current_bake_op = MasterOperation.bake_op
 
     # Common bake prep
     common_bake_prep()
@@ -619,7 +605,7 @@ def specials_bake():
 
 
 def col_id_map(input_width, input_height, objects, mode="random"):
-    current_bake_op = MasterOperation.current_bake_operation
+    current_bake_op = MasterOperation.bake_op
 
     functions.print_msg(f"Baking ColorID map")
 
@@ -758,7 +744,7 @@ def col_id_map(input_width, input_height, objects, mode="random"):
 
 
 def do_bake():
-    current_bake_op = MasterOperation.current_bake_operation
+    current_bake_op = MasterOperation.bake_op
 
     # Do the prep we need to do for all bake types
     common_bake_prep()
@@ -918,7 +904,7 @@ def do_bake():
 
 
 def do_bake_selected_to_target():
-    current_bake_op = MasterOperation.current_bake_operation
+    current_bake_op = MasterOperation.bake_op
 
     # Do the prep, as usual
     common_bake_prep()

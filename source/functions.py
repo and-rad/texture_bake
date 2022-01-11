@@ -161,7 +161,7 @@ def is_blend_saved():
 
 def create_images(imgname, thisbake, objname):
     # thisbake is subtype e.g. diffuse, ao, etc.
-    current_bake_op = MasterOperation.current_bake_operation
+    current_bake_op = MasterOperation.bake_op
     global_mode = current_bake_op.bake_mode
     batch = MasterOperation.batch_name
 
@@ -474,7 +474,7 @@ def check_scene(objects, bakemode):
 
 def process_uvs():
     original_uvs = {}
-    current_bake_op = MasterOperation.current_bake_operation
+    current_bake_op = MasterOperation.bake_op
 
     if bpy.context.scene.TextureBake_Props.prefer_existing_uvmap:
         print_msg("We are preferring existing UV maps called TextureBake. Setting them to active")
@@ -490,7 +490,7 @@ def process_uvs():
 
 
 def restore_original_uvs():
-    current_bake_op = MasterOperation.current_bake_operation
+    current_bake_op = MasterOperation.bake_op
 
     # First the bake objects
     for obj in current_bake_op.bake_objects:
@@ -633,7 +633,7 @@ def export_textures(image, baketype, obj):
         scene.view_settings.gamma = bpy.context.scene.view_settings.gamma
         scene.sequencer_colorspace_settings.name = bpy.context.scene.sequencer_colorspace_settings.name
 
-    current_bake_op = MasterOperation.current_bake_operation
+    current_bake_op = MasterOperation.bake_op
 
     # We want to control the bit depth, so we need a new scene
     scene = bpy.data.scenes.new('TextureBakeTempScene')
@@ -804,7 +804,7 @@ def export_textures(image, baketype, obj):
 
 
 def prep_objects(objs, baketype):
-    current_bake_op = MasterOperation.current_bake_operation
+    current_bake_op = MasterOperation.bake_op
 
     print_msg("Creating prepared object")
     # First we prepare objectes

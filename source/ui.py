@@ -45,7 +45,7 @@ class TEXTUREBAKE_PT_main(bpy.types.Panel):
 
         box = layout.box()
         row = box.row()
-        row.label(text="Active Bakes")
+        row.label(text="Active Processes")
 
         if background_bake_ops.bgops_list or background_bake_ops.bgops_list_finished:
             for p in background_bake_ops.bgops_list:
@@ -57,7 +57,7 @@ class TEXTUREBAKE_PT_main(bpy.types.Panel):
             for p in background_bake_ops.bgops_list_finished:
                 row = box.row()
                 col = row.column()
-                col.label(text=f"{p.name} - finished", icon='CHECKBOX_HLT')
+                col.label(text=f"{p.name} - done", icon='CHECKBOX_HLT')
                 col = row.column()
                 col.operator("texture_bake.bake_import_individual", text="", icon='IMPORT').pnum = int(p.process.pid)
                 col = row.column()

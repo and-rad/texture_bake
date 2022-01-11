@@ -45,9 +45,7 @@ class BakeOperation:
 
 
 class MasterOperation:
-    current_bake_operation = None
-    total_bake_operations = 0
-    this_bake_operation_num = 0
+    bake_op = None
 
     orig_UVs_dict = {}
     baked_textures = []
@@ -68,9 +66,7 @@ class MasterOperation:
 
     def clear():
         MasterOperation.orig_UVs_dict = {}
-        MasterOperation.total_bake_operations = 0
-        MasterOperation.current_bake_operation = None
-        MasterOperation.this_bake_operation_num = 0
+        MasterOperation.bake_op = None
         MasterOperation.prepared_mesh_objects = []
         MasterOperation.baked_textures = []
         MasterOperation.merged_bake = False
