@@ -8,6 +8,8 @@
   - Presets can be modified, added, and removed
 - Default export presets for
   - Unreal Engine
+  - Normal maps (DirectX & OpenGL)
+
 ### Changed
 - Setting the input texture size no longer overrides output texture size. The
   previous behavior was inconvenient and would cause users to constantly

@@ -755,6 +755,33 @@ class TEXTUREBAKE_OT_reset_export_presets(bpy.types.Operator):
         tex.blue.info = constants.PBR_METAL
         tex.blue.space = 'NON_COLOR'
 
+        # Normal maps
+        item = presets.add()
+        item.uid = "52819e17-c9e2-454c-8be8-e75c2b04e1cd"
+        item.name = "Normal Map (DirectX)"
+        tex = item.textures.add()
+        tex.name = "%OBJ%_%BATCH%_Normal_DX"
+        tex.file_format = 'PNG'
+        tex.red.info = constants.PBR_NORMAL_DX
+        tex.red.space = 'NON_COLOR'
+        tex.green.info = constants.PBR_NORMAL_DX
+        tex.green.space = 'NON_COLOR'
+        tex.blue.info = constants.PBR_NORMAL_DX
+        tex.blue.space = 'NON_COLOR'
+
+        item = presets.add()
+        item.uid = "6711b4ef-064f-42fb-be00-fd8662cf4382"
+        item.name = "Normal Map (OpenGL)"
+        tex = item.textures.add()
+        tex.name = "%OBJ%_%BATCH%_Normal_OGL"
+        tex.file_format = 'PNG'
+        tex.red.info = constants.PBR_NORMAL_OGL
+        tex.red.space = 'NON_COLOR'
+        tex.green.info = constants.PBR_NORMAL_OGL
+        tex.green.space = 'NON_COLOR'
+        tex.blue.info = constants.PBR_NORMAL_OGL
+        tex.blue.space = 'NON_COLOR'
+
         bpy.ops.wm.save_userpref()
         return {'FINISHED'}
 
