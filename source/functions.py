@@ -1160,3 +1160,23 @@ def get_num_input_maps_to_bake():
         total += 1
 
     return total
+
+
+def replace_image(old_img, new_img):
+    def traverse(tree, img_name):
+        for node in tree.nodes:
+            if hasattr(node, "node_tree"):
+                yield from traverse(node.node_tree, img_name)
+            if hasattr(node, "image"):
+                if node.image and node.image.name == img_name:
+                    yield node
+
+    old_name = old_img.name
+    if old_img.users:
+        for mat in bpy.data.materials:
+            if mat.use_nodes:
+                for node in traverse(mat.node_tree, old_name):
+                    node.image = new_img
+
+    bpy.data.images.remove(old_img)
+    new_img.name = old_name

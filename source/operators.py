@@ -25,7 +25,6 @@ import json
 import uuid
 
 from pathlib import Path
-from datetime import datetime
 from math import floor
 
 from . import (
@@ -253,11 +252,12 @@ class TEXTUREBAKE_OT_bake_import_individual(bpy.types.Operator):
         background_bake_ops.bgops_list_finished.remove(p)
 
         # Replace previous versions of the imported textures
-        for imgname in textures:
-            dup = imgname + ".001"
-            if dup in bpy.data.images:
-                bpy.data.images.remove(bpy.data.images[imgname])
-                bpy.data.images[dup].name = imgname
+        for img_id in textures:
+            dup_id = img_id + ".001"
+            if dup_id in bpy.data.images:
+                old_img = bpy.data.images[img_id]
+                new_img = bpy.data.images[dup_id]
+                functions.replace_image(old_img, new_img)
 
         self.report({"INFO"}, f"Import complete, {len(textures)} textures imported")
         return {'FINISHED'}

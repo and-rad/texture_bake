@@ -27,6 +27,8 @@
 ### Fixed
 - Background baking progress UI refreshes properly even when the mouse does not
   move.
+- Baked textures no longer lose their association with shaders after being
+  baked repeatedly.
 
 ## [0.9.0] - 2021-12-26
 
