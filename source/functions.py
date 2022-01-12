@@ -1192,37 +1192,6 @@ def focus_UDIM_tile(obj,desiredUDIMtile):
     bpy.ops.object.editmode_toggle()
 
 
-past_items_dict = {}
-def spot_new_items(initialise=True, item_type="images"):
-    global past_items_dict
-
-    if item_type == "images":
-        source = bpy.data.images
-    elif item_type == "objects":
-        source = bpy.data.objects
-    elif item_type == "collections":
-        source = bpy.data.collections
-
-    # First run
-    if initialise:
-        # Set to empty list for this item type
-        past_items_dict[item_type] = []
-
-        for source_item in source:
-            past_items_dict[item_type].append(source_item.name)
-        return True
-
-    else:
-        # Get the list of items for this item type from the dict
-        past_items_list = past_items_dict[item_type]
-        new_item_list_names = []
-
-        for source_item in source:
-            if source_item.name not in past_items_list:
-                new_item_list_names.append(source_item.name)
-        return new_item_list_names
-
-
 def check_for_connected_viewer_node(mat):
     mat.use_nodes = True
     node_tree = mat.node_tree
@@ -1344,6 +1313,7 @@ def get_maps_to_bake():
 def get_num_maps_to_bake():
     """Returns the number of maps that should be baked under the selected export preset"""
     return len(get_maps_to_bake())
+
 
 def get_num_input_maps_to_bake():
     props = bpy.context.scene.TextureBake_Props

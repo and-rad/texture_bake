@@ -223,80 +223,17 @@ class TEXTUREBAKE_OT_bake_import(bpy.types.Operator):
     bl_label = "Import baked objects previously baked in the background"
     bl_options = {'INTERNAL'}
 
+    @classmethod
+    def poll(cls,context):
+        return context.mode == "OBJECT"
+
     def execute(self, context):
-        if context.mode != "OBJECT":
-            self.report({"ERROR"}, "You must be in object mode")
-            return {'CANCELLED'}
-
-        for p in background_bake_ops.bgops_list_finished:
-            savepath = Path(bpy.data.filepath).parent
-            pid_str = str(p.process.pid)
-            path = savepath / (pid_str + ".blend")
-            path = str(path) + "\\Collection\\"
-
-            # Record the objects and collections before append (as append doesn't give us a reference to the new stuff)
-            functions.spot_new_items(initialise=True, item_type="objects")
-            functions.spot_new_items(initialise=True, item_type="collections")
-            functions.spot_new_items(initialise=True, item_type="images")
-
-            # Append
-            bpy.ops.wm.append(filename="TextureBake_Bakes", directory=path, use_recursive=False, active_collection=False)
-
-            # If we didn't actually want the objects, delete them
-            if not p.copy_objects:
-                # Delete objects we just imported (leaving only textures)
-                for obj_name in functions.spot_new_items(initialise=False, item_type = "objects"):
-                    bpy.data.objects.remove(bpy.data.objects[obj_name])
-                for col_name in functions.spot_new_items(initialise=False, item_type = "collections"):
-                    bpy.data.collections.remove(bpy.data.collections[col_name])
-
-            # If we have to hide the source objects, do it
-            if p.hide_source:
-                # Get the newly introduced objects:
-                objects_before_names = functions.spot_new_items(initialise=False, item_type="objects")
-
-                for obj_name in objects_before_names:
-                    # Try this in case there are issues with long object names.. better than a crash
-                    try:
-                        bpy.data.objects[obj_name.replace("_Baked", "")].hide_set(True)
-                    except:
-                        pass
-
-            # Delete the temp blend file
-            try:
-                os.remove(str(savepath / pid_str) + ".blend")
-                os.remove(str(savepath / pid_str) + ".blend1")
-            except:
-                pass
-
-        # Clear list for next time
-        background_bake_ops.bgops_list_finished = []
-
-        # Confirm back to user
-        self.report({"INFO"}, "Import complete")
-
-        messagelist = []
-        messagelist.append(f"{len(functions.spot_new_items(initialise=False, item_type='objects'))} objects imported")
-        messagelist.append(f"{len(functions.spot_new_items(initialise=False, item_type='images'))} textures imported")
-        functions.show_message_box(messagelist, "Import complete", icon = 'INFO')
-
-        # If we imported an image, and we already had an image with the same name, get rid of the original in favour of the imported
-        new_images_names = functions.spot_new_items(initialise=False, item_type="images")
-
-        # Find any .001s
-        for imgname in new_images_names:
-            try:
-                int(imgname[-3:])
-
-                # Delete the existing version
-                bpy.data.images.remove(bpy.data.images[imgname[0:-4]])
-
-                # Rename our version
-                bpy.data.images[imgname].name = imgname[0:-4]
-
-            except ValueError:
-                pass
-
+        num_textures = 0
+        while background_bake_ops.bgops_list_finished:
+            pid = background_bake_ops.bgops_list_finished[0].process.pid
+            bpy.ops.texture_bake.bake_import_individual(pnum = pid)
+            num_textures += len(functions.read_baked_textures(pid))
+        self.report({"INFO"}, f"Import complete, {num_textures} textures imported")
         return {'FINISHED'}
 
 
@@ -308,108 +245,49 @@ class TEXTUREBAKE_OT_bake_import_individual(bpy.types.Operator):
 
     pnum: bpy.props.IntProperty()
 
+    @classmethod
+    def poll(cls, context):
+        return context.mode == "OBJECT"
+
     def execute(self, context):
-        if context.mode != "OBJECT":
-            self.report({"ERROR"}, "You must be in object mode")
-            return {'CANCELLED'}
-
-        # Need to get the actual SINGLE entry from the list
+        # Import textures and delete blend file
         p = ([p for p in background_bake_ops.bgops_list_finished if p.process.pid == self.pnum])[0]
+        path = Path(bpy.data.filepath).parent / (str(p.process.pid) + ".blend")
+        textures = functions.read_baked_textures(p.process.pid)
 
-        savepath = Path(bpy.data.filepath).parent
-        pid_str = str(p.process.pid)
-        path = savepath / (pid_str + ".blend")
-        path = str(path) + "\\Collection\\"
+        with bpy.data.libraries.load(str(path), link=False) as (data_from, data_to):
+            data_to.images = [name for name in data_from.images if name in textures]
 
-        # Record the objects and collections before append (as append doesn't give us a reference to the new stuff)
-        functions.spot_new_items(initialise=True, item_type="objects")
-        functions.spot_new_items(initialise=True, item_type="collections")
-        functions.spot_new_items(initialise=True, item_type="images")
+        path.unlink()
+        path.with_suffix(".blend1").unlink()
+        background_bake_ops.bgops_list_finished.remove(p)
 
-        # Append
-        bpy.ops.wm.append(filename="TextureBake_Bakes", directory=path, use_recursive=False, active_collection=False)
+        # Replace previous versions of the imported textures
+        for imgname in textures:
+            dup = imgname + ".001"
+            if dup in bpy.data.images:
+                bpy.data.images.remove(bpy.data.images[imgname])
+                bpy.data.images[dup].name = imgname
 
-        # If we didn't actually want the objects, delete them
-        if not p.copy_objects:
-            for obj_name in functions.spot_new_items(initialise=False, item_type = "objects"):
-                bpy.data.objects.remove(bpy.data.objects[obj_name])
-            for col_name in functions.spot_new_items(initialise=False, item_type = "collections"):
-                bpy.data.collections.remove(bpy.data.collections[col_name])
-
-        # If we have to hide the source objects, do it
-        if p.hide_source:
-            # Get the newly introduced objects:
-            objects_before_names = functions.spot_new_items(initialise=False, item_type="objects")
-
-            for obj_name in objects_before_names:
-                # Try this in case there are issues with long object names.. better than a crash
-                try:
-                    bpy.data.objects[obj_name.replace("_Baked", "")].hide_set(True)
-                except:
-                    pass
-
-        # Delete the temp blend file
-        try:
-            os.remove(str(savepath / pid_str) + ".blend")
-            os.remove(str(savepath / pid_str) + ".blend1")
-        except:
-            pass
-
-        # Remove this P from the list
-        background_bake_ops.bgops_list_finished = [p for p in background_bake_ops.bgops_list_finished if p.process.pid != self.pnum]
-
-        # Confirm back to user
-        self.report({"INFO"}, "Import complete")
-
-        messagelist = []
-        messagelist.append(f"{len(functions.spot_new_items(initialise=False, item_type='objects'))} objects imported")
-        messagelist.append(f"{len(functions.spot_new_items(initialise=False, item_type='images'))} textures imported")
-
-        functions.show_message_box(messagelist, "Import complete", icon = 'INFO')
-
-        # If we imported an image, and we already had an image with the same name, get rid of the original in favour of the imported
-        new_images_names = functions.spot_new_items(initialise=False, item_type="images")
-
-        # Find any .001s
-        for imgname in new_images_names:
-            try:
-                int(imgname[-3:])
-
-                # Delete the existing version
-                bpy.data.images.remove(bpy.data.images[imgname[0:-4]])
-
-                # Rename our version
-                bpy.data.images[imgname].name = imgname[0:-4]
-
-            except ValueError:
-                pass
-
+        self.report({"INFO"}, f"Import complete, {len(textures)} textures imported")
         return {'FINISHED'}
 
 
 class TEXTUREBAKE_OT_bake_delete(bpy.types.Operator):
-    """Delete the background bakes because you don't want to import them into Blender. NOTE: If you chose to save bakes or FBX externally, these are safe and NOT deleted. This is just if you don't want to import into this Blender session"""
+    """Delete all background bakes without importing the results into Blender. Exported textures are not deleted and remain on disk"""
     bl_idname = "texture_bake.bake_delete"
     bl_label = "Delete the background bakes"
     bl_options = {'INTERNAL'}
 
     def execute(self, context):
-        savepath = Path(bpy.data.filepath).parent
-
-        for p in background_bake_ops.bgops_list_finished:
-            pid_str = str(p.process.pid)
-            try:
-                os.remove(str(savepath / pid_str) + ".blend")
-                os.remove(str(savepath / pid_str) + ".blend1")
-            except:
-                pass
-
-        background_bake_ops.bgops_list_finished = []
+        while background_bake_ops.bgops_list_finished:
+            pid = background_bake_ops.bgops_list_finished[0].process.pid
+            bpy.ops.texture_bake.bake_delete_individual(pnum = pid)
         return {'FINISHED'}
 
 
 class TEXTUREBAKE_OT_bake_delete_individual(bpy.types.Operator):
-    """Delete this individual background bake because you don't want to import the results into Blender. NOTE: If you chose to save bakes or FBX externally, these are safe and NOT deleted. This is just if you don't want to import into this Blender session"""
+    """Delete this individual background bake without importing the results into Blender. Exported textures are not deleted and remain on disk"""
     bl_idname = "texture_bake.bake_delete_individual"
     bl_label = "Delete the individual background bake"
     bl_options = {'INTERNAL'}
@@ -417,13 +295,9 @@ class TEXTUREBAKE_OT_bake_delete_individual(bpy.types.Operator):
     pnum: bpy.props.IntProperty()
 
     def execute(self, context):
-        pid_str = str(self.pnum)
-        savepath = Path(bpy.data.filepath).parent
-        try:
-            os.remove(str(savepath / pid_str) + ".blend")
-            os.remove(str(savepath / pid_str) + ".blend1")
-        except:
-            pass
+        path = Path(bpy.data.filepath).parent / (str(self.pnum) + ".blend")
+        path.with_suffix(".blend1").unlink()
+        path.unlink()
 
         background_bake_ops.bgops_list_finished = [p for p in background_bake_ops.bgops_list_finished if p.process.pid != self.pnum]
         return {'FINISHED'}

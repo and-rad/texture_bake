@@ -49,7 +49,7 @@ class TEXTUREBAKE_PT_main(bpy.types.Panel):
 
         if background_bake_ops.bgops_list or background_bake_ops.bgops_list_finished:
             for p in background_bake_ops.bgops_list:
-                box.row().label(text=f"{p.name} - in progress {p.progress}%", icon='CHECKBOX_DEHLT')
+                box.row().label(text=f"{p.name} - {p.progress}%", icon='CHECKBOX_DEHLT')
         else:
             box.row().label(text="No running or finished bakes", icon='SORTTIME')
 
