@@ -119,12 +119,7 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
             shell=False)
 
         background_bake_ops.bgops_list.append(
-            BackgroundBakeParams(
-                process,
-                "Export textures",
-                context.scene.TextureBake_Props.prep_mesh,
-                context.scene.TextureBake_Props.hide_source_objects
-            )
+            BackgroundBakeParams(process, "Export textures")
         )
 
         bpy.app.timers.register(refresh_bake_progress)
@@ -193,12 +188,7 @@ class TEXTUREBAKE_OT_bake_input_textures(bpy.types.Operator):
             shell=False)
 
         background_bake_ops.bgops_list.append(
-            BackgroundBakeParams(
-                process,
-                "Bake input maps",
-                context.scene.TextureBake_Props.prep_mesh,
-                context.scene.TextureBake_Props.hide_source_objects
-            )
+            BackgroundBakeParams(process, "Bake input maps")
         )
 
         bpy.app.timers.register(refresh_bake_progress)
@@ -328,7 +318,6 @@ class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
         d["bake_32bit_float"] = context.scene.TextureBake_Props.bake_32bit_float
         d["use_alpha"] = context.scene.TextureBake_Props.use_alpha
         d["rough_glossy_switch"] = context.scene.TextureBake_Props.rough_glossy_switch
-        d["normal_format_switch"] = context.scene.TextureBake_Props.normal_format_switch
         d["tex_per_mat"] = context.scene.TextureBake_Props.tex_per_mat
         d["selected_col_mats"] = context.scene.TextureBake_Props.selected_col_mats
         d["selected_col_vertex"] = context.scene.TextureBake_Props.selected_col_vertex
@@ -340,18 +329,11 @@ class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
         d["udim_tiles"] = context.scene.TextureBake_Props.udim_tiles
         d["export_textures"] = context.scene.TextureBake_Props.export_textures
         d["export_folder_per_object"] = context.scene.TextureBake_Props.export_folder_per_object
-        d["export_mesh"] = context.scene.TextureBake_Props.export_mesh
-        d["fbx_name"] = context.scene.TextureBake_Props.fbx_name
-        d["prep_mesh"] = context.scene.TextureBake_Props.prep_mesh
-        d["hide_source_objects"] = context.scene.TextureBake_Props.hide_source_objects
-        d["preserve_materials"] = context.scene.TextureBake_Props.preserve_materials
         d["export_16bit"] = context.scene.TextureBake_Props.export_16bit
         d["export_file_format"] = context.scene.TextureBake_Props.export_file_format
         d["export_folder_name"] = context.scene.TextureBake_Props.export_folder_name
         d["export_color_space"] = context.scene.TextureBake_Props.export_color_space
         d["export_datetime"] = context.scene.TextureBake_Props.export_datetime
-        d["run_denoise"] = context.scene.TextureBake_Props.run_denoise
-        d["export_apply_modifiers"] = context.scene.TextureBake_Props.export_apply_modifiers
         d["use_object_list"] = context.scene.TextureBake_Props.use_object_list
         d["object_list_index"] = context.scene.TextureBake_Props.object_list_index
         d["memory_limit"] = context.scene.TextureBake_Props.memory_limit
@@ -466,7 +448,6 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
         context.scene.TextureBake_Props.bake_32bit_float = d["bake_32bit_float"]
         context.scene.TextureBake_Props.use_alpha = d["use_alpha"]
         context.scene.TextureBake_Props.rough_glossy_switch = d["rough_glossy_switch"]
-        context.scene.TextureBake_Props.normal_format_switch = d["normal_format_switch"]
         context.scene.TextureBake_Props.tex_per_mat = d["tex_per_mat"]
         context.scene.TextureBake_Props.selected_col_mats = d["selected_col_mats"]
         context.scene.TextureBake_Props.selected_col_vertex = d["selected_col_vertex"]
@@ -477,18 +458,11 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
         context.scene.TextureBake_Props.udim_tiles = d["udim_tiles"]
         context.scene.TextureBake_Props.export_textures = d["export_textures"]
         context.scene.TextureBake_Props.export_folder_per_object = d["export_folder_per_object"]
-        context.scene.TextureBake_Props.export_mesh = d["export_mesh"]
-        context.scene.TextureBake_Props.fbx_name = d["fbx_name"]
-        context.scene.TextureBake_Props.prep_mesh = d["prep_mesh"]
-        context.scene.TextureBake_Props.hide_source_objects = d["hide_source_objects"]
-        context.scene.TextureBake_Props.preserve_materials = d["preserve_materials"]
         context.scene.TextureBake_Props.export_16bit = d["export_16bit"]
         context.scene.TextureBake_Props.export_file_format = d["export_file_format"]
         context.scene.TextureBake_Props.export_folder_name = d["export_folder_name"]
         context.scene.TextureBake_Props.export_color_space = d["export_color_space"]
         context.scene.TextureBake_Props.export_datetime = d["export_datetime"]
-        context.scene.TextureBake_Props.run_denoise = d["run_denoise"]
-        context.scene.TextureBake_Props.export_apply_modifiers = d["export_apply_modifiers"]
         context.scene.TextureBake_Props.use_object_list = d["use_object_list"]
         context.scene.TextureBake_Props.object_list_index = d["object_list_index"]
         context.scene.TextureBake_Props.memory_limit = d["memory_limit"]

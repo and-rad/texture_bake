@@ -31,11 +31,9 @@ class background_bake_ops():
 
 
 class BackgroundBakeParams:
-    def __init__(self, proc, name, cp_obj, hide_src):
+    def __init__(self, proc, name):
         self.process = proc
         self.name = name if name else "Untitled"
-        self.copy_objects = cp_obj
-        self.hide_source = hide_src
         self.progress = 0
 
 

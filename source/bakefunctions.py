@@ -80,11 +80,6 @@ def common_bake_prep():
     functions.print_msg(f"{current_bake_op.bake_mode}")
     functions.print_msg("==================================")
 
-    # Record if a textures folder existed at start of the bake
-    fullpath = bpy.data.filepath
-    pathelements = os.path.split(fullpath)
-    workingdir = Path(pathelements[0])
-
     # If this is a pbr bake, gather the selected maps
     if current_bake_op.bake_mode in {constants.BAKE_MODE_PBR, constants.BAKE_MODE_S2A}:
         current_bake_op.assemble_pbr_bake_list()
@@ -356,21 +351,6 @@ def common_bake_finishing():
         for obj in current_bake_op.bake_objects:
             functions.focus_UDIM_tile(obj, 0)
 
-    # If prep mesh, or save object is selected, or running in the background, then do it
-    # We do this on primary run only
-    if(bpy.context.scene.TextureBake_Props.export_mesh or bpy.context.scene.TextureBake_Props.prep_mesh or "--background" in sys.argv):
-        if current_bake_op.bake_mode == constants.BAKE_MODE_S2A:
-            functions.prep_objects([current_bake_op.sb_target_object], current_bake_op.bake_mode)
-        else:
-            functions.prep_objects(current_bake_op.bake_objects, current_bake_op.bake_mode)
-
-    # Hide all the original objects
-    if bpy.context.scene.TextureBake_Props.prep_mesh and bpy.context.scene.TextureBake_Props.hide_source_objects:
-        for obj in current_bake_op.bake_objects:
-            obj.hide_set(True)
-        if bpy.context.scene.TextureBake_Props.selected_to_target:
-            current_bake_op.sb_target_object.hide_set(True)
-
     # Delete placeholder material
     if "TextureBake_Placeholder" in bpy.data.materials:
         bpy.data.materials.remove(bpy.data.materials["TextureBake_Placeholder"])
@@ -415,11 +395,6 @@ def common_bake_finishing():
     # Remove the temp collection
     if "TextureBake_Working" in bpy.data.collections:
         bpy.data.collections.remove(bpy.data.collections["TextureBake_Working"])
-
-    # If we didn't have one before, and we do now, remove the confusing textures folder on last run
-    fullpath = bpy.data.filepath
-    pathelements = os.path.split(fullpath)
-    workingdir = Path(pathelements[0])
 
 
 def specials_bake():

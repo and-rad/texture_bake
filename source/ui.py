@@ -194,10 +194,9 @@ class TEXTUREBAKE_PT_export_settings(TextureBakeCategoryPanel, bpy.types.Panel):
             layout.row().prop(context.scene.TextureBake_Props, "export_preset", text="Preset")
             row = layout.row()
             row.prop(context.scene.TextureBake_Props, "export_textures")
-            row.prop(context.scene.TextureBake_Props, "export_mesh")
 
             layout.use_property_split = True
-            if context.scene.TextureBake_Props.export_textures or context.scene.TextureBake_Props.export_mesh:
+            if context.scene.TextureBake_Props.export_textures:
                 layout.separator()
                 layout.row().prop(context.scene.TextureBake_Props, "export_folder_name")
 
@@ -205,15 +204,7 @@ class TEXTUREBAKE_PT_export_settings(TextureBakeCategoryPanel, bpy.types.Panel):
                 row.prop(context.scene.TextureBake_Props, "export_folder_per_object")
                 row.enabled = context.scene.TextureBake_Props.export_textures
 
-                if context.scene.TextureBake_Props.export_mesh:
-                    layout.row().prop(context.scene.TextureBake_Props, "export_apply_modifiers")
-                    layout.row().prop(context.scene.TextureBake_Props, "export_apply_transforms")
-
                 layout.row().prop(context.scene.TextureBake_Props, "export_datetime")
-
-                if context.scene.TextureBake_Props.export_mesh and not context.scene.TextureBake_Props.export_folder_per_object:
-                    layout.row().prop(context.scene.TextureBake_Props, "fbx_name")
-
                 layout.row().prop(context.scene.TextureBake_Props, "export_file_format", text="Format")
 
                 row = layout.row()
@@ -260,17 +251,6 @@ class TEXTUREBAKE_PT_other(TextureBakeCategoryPanel, bpy.types.Panel):
 
         row=layout.row()
         row.prop(context.scene.TextureBake_Props, "batch_name")
-
-        row = layout.row()
-        row.prop(context.scene.TextureBake_Props, "prep_mesh", text="Copy objects and apply bakes (after import)")
-        row.enabled = not context.scene.TextureBake_Props.tex_per_mat
-
-        if (context.scene.TextureBake_Props.prep_mesh):
-            row = layout.row()
-            row.prop(context.scene.TextureBake_Props, "hide_source_objects", text="Hide source objects after bake (after import)")
-
-        row = layout.row()
-        row.prop(context.scene.TextureBake_Props, "preserve_materials")
 
         if context.preferences.addons["cycles"].preferences.has_active_device():
             row = layout.row()

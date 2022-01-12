@@ -57,19 +57,6 @@ from . import (
 )
 
 
-def tex_per_mat_update(self, context):
-    if context.scene.TextureBake_Props.tex_per_mat == True:
-        context.scene.TextureBake_Props.prep_mesh = False
-        context.scene.TextureBake_Props.hide_source_objects = False
-
-
-def prep_mesh_update(self, context):
-    if context.scene.TextureBake_Props.prep_mesh == False:
-        context.scene.TextureBake_Props.hide_source_objects = False
-    else:
-        context.scene.TextureBake_Props.hide_source_objects = True
-
-
 def export_file_format_update(self,context):
     if self.export_file_format == "JPEG" or self.export_file_format == "TARGA":
         self.export_16bit = False
@@ -83,7 +70,6 @@ def export_folder_name_update(self, context):
 def export_textures_update(self, context):
     if context.scene.TextureBake_Props.export_textures == False:
         context.scene.TextureBake_Props.export_16bit = False
-        context.scene.TextureBake_Props.run_denoise = False
         context.scene.TextureBake_Props.export_folder_per_object = False
         context.scene.TextureBake_Props.uv_mode = "normal"
 
@@ -228,20 +214,9 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
         ],
     )
 
-    normal_format_switch: EnumProperty(
-        name = "",
-        description = "Switch between OpenGL and DirectX formats for normal map. NOTE: Opengl is the default for Blender so, if you change this, texture probably won't look right when used in Blender",
-        default = "opengl",
-        items = [
-            ("opengl", "OpenGL", ""),
-            ("directx", "DirectX", ""),
-        ],
-    )
-
     tex_per_mat: BoolProperty(
         name = "Texture per material",
         description = "Bake each material into its own texture (for export to virtual worlds like Second Life",
-        update = tex_per_mat_update,
     )
 
     selected_col_mats: BoolProperty(
@@ -303,37 +278,6 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
         default = False,
     )
 
-    export_mesh: BoolProperty(
-        name = "Export mesh",
-        description = "Export your mesh as a .fbx file with a single texture and the UV map used for baking (i.e. ready for import somewhere else. File is saved in the folder specified below, under the folder where your blend file is saved. Not available if .blend file not saved",
-        default = False,
-    )
-
-    fbx_name: StringProperty(
-        name = "FBX name",
-        description = "File name of the fbx. NOTE: To maintain compatibility, only MS Windows acceptable characters will be used",
-        default = "Export",
-        maxlen = 20,
-    )
-
-    prep_mesh: BoolProperty(
-        name = "Copy objects and apply bakes",
-        description = "Create a copy of your selected objects in Blender (or target object if baking to a target) and apply the baked textures to it. If you are baking in the background, this happens after you import",
-        default = False,
-        update = prep_mesh_update,
-    )
-
-    hide_source_objects: BoolProperty(
-        name = "Hide source objects after bake",
-        description = "Hide the source object that you baked from in the viewport after baking. If you are baking in the background, this happens after you import",
-        default = False,
-    )
-
-    preserve_materials: BoolProperty(
-        name = "Preserve object original materials (BETA)",
-        description = "Preserve original material assignments for baked objects (NOTE: all materials will be identical, and point to the baked texture set, but face assignments for each material will be preserved)",
-    )
-
     export_16bit: BoolProperty(
         name = "All exports 16bit",
         description = "Normal maps are always exported as 16bit, but this option causes all images to be exported 16bit. This should probably stay enabled unless file sizes are an issue",
@@ -372,24 +316,6 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
         name = "Append date and time to folder",
         description = "Append date and time to folder name. If you turn this off, previous bakes with the same name will be overwritten",
         default = True,
-    )
-
-    run_denoise: BoolProperty(
-        name = "Denoise",
-        description = "Run baked images through the compositor. Your blend file must be saved, and you must be exporting your bakes",
-        default = False,
-    )
-
-    export_apply_modifiers: BoolProperty(
-        name = "Apply object modifiers",
-        description = "Apply modifiers to object on export of the mesh to FBX",
-        default = True,
-    )
-
-    export_apply_transforms: BoolProperty(
-        name = "Apply transformation",
-        description = "Use the 'Apply Transformation' option when exporting to FBX",
-        default = False,
     )
 
     use_object_list: BoolProperty(
