@@ -94,44 +94,6 @@ def presets_list_update(self,context):
     context.scene.TextureBake_Props.preset_name = item.name
 
 
-def cp_list_index_update(self, context):
-    index = context.scene.TextureBake_Props.cp_list_index
-    cpt = context.scene.TextureBake_Props.cp_list[index]
-
-    messages = []
-    context.scene.TextureBake_Props.cp_file_format = cpt.file_format
-    try:
-        context.scene.TextureBake_Props.cptex_R = cpt.R
-    except:
-        messages.append(f"WARNING: {cpt.name} depends on {cpt.R} for the Red channel, but you are not baking it")
-        messages.append("You can enable the required bake, or change the bake for that channel")
-    try:
-        context.scene.TextureBake_Props.cptex_G = cpt.G
-    except:
-        messages.append(f"WARNING: {cpt.name} depends on {cpt.G} for the Green channel, but you are not baking it")
-        messages.append("You can enable the required bake, or change the bake for that channel")
-    try:
-        context.scene.TextureBake_Props.cptex_B = cpt.B
-    except:
-        messages.append(f"WARNING: {cpt.name} depends on {cpt.B} for the Blue channel, but you are not baking it")
-        messages.append("You can enable the required bake, or change the bake for that channel")
-    try:
-        context.scene.TextureBake_Props.cptex_A = cpt.A
-    except:
-        messages.append(f"WARNING: {cpt.name} depends on {cpt.A} for the Alpha channel, but you are not baking it")
-        messages.append("You can enable the required bake, or change the bake for that channel")
-
-    context.scene.TextureBake_Props.cp_name = cpt.name
-
-    # Show messages
-    if len(messages)>0:
-        functions.show_message_box(messages, title = "Warning", icon = "ERROR")
-
-
-def get_selected_bakes_dropdown(self, context):
-    return [("none", "None","")]
-
-
 def get_export_presets_enum(self, context):
     items = [('NONE', "None", "")]
     prefs = context.preferences.addons[__package__].preferences
@@ -484,55 +446,6 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
         maxlen = 20,
     )
 
-    cptex_R: EnumProperty(
-        description = "Bake type to use for the Red channel of the channel packed image",
-        items = get_selected_bakes_dropdown,
-    )
-
-    cptex_G: EnumProperty(
-        description = "Bake type to use for the Greeb channel of the channel packed image",
-        items = get_selected_bakes_dropdown,
-    )
-
-    cptex_B: EnumProperty(
-        description = "Bake type to use for the Blue channel of the channel packed image",
-        items = get_selected_bakes_dropdown,
-    )
-
-    cptex_A: EnumProperty(
-        description = "Bake type to use for the Alpha channel of the channel packed image",
-        items = get_selected_bakes_dropdown,
-    )
-
-    cp_name: StringProperty(
-        name = "Name",
-        description = "List of Channel Packed Textures", # TODO: this might not belong here
-        default = "PackedTex",
-        maxlen = 30,
-    )
-
-    cp_list: CollectionProperty(
-        name = "CP Textures",
-        description = "CP Textures",
-        type = ui.TextureBakePackedTextureItem,
-    )
-
-    cp_list_index: IntProperty(
-        name = "Index for CP Textures list",
-        default = 0,
-        update = cp_list_index_update,
-    )
-
-    cp_file_format: EnumProperty(
-        name = "Export File Format for Channel Packing",
-        default = "OPEN_EXR",
-        items = [
-            ("PNG", "PNG", ""),
-            ("TARGA", "TGA", ""),
-            ("OPEN_EXR", "Open EXR", "Offers the most constent and reliable channel packing at the cost of memory"),
-        ],
-    )
-
 
 class TextureBakeTextureChannel(PropertyGroup):
     """Group of properties representing a texture channel."""
@@ -806,7 +719,6 @@ classes = [
     operators.TEXTUREBAKE_OT_decrease_bake_res,
     operators.TEXTUREBAKE_OT_increase_output_res,
     operators.TEXTUREBAKE_OT_decrease_output_res,
-    operators.TEXTUREBAKE_OT_add_packed_texture,
     operators.TEXTUREBAKE_OT_add_export_preset,
     operators.TEXTUREBAKE_OT_delete_export_preset,
     operators.TEXTUREBAKE_OT_reset_export_presets,
@@ -821,7 +733,6 @@ classes = [
     ui.TEXTUREBAKE_PT_export_settings,
     ui.TEXTUREBAKE_PT_uv,
     ui.TEXTUREBAKE_PT_other,
-    ui.TEXTUREBAKE_PT_packing,
     ui.TEXTUREBAKE_UL_object_list,
     ui.TEXTUREBAKE_OT_add_object,
     ui.TEXTUREBAKE_OT_remove_object,

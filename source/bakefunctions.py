@@ -177,11 +177,12 @@ def do_post_processing(thisbake, IMGNAME):
 
     # DirectX vs OpenGL normal map format
     if thisbake == constants.PBR_NORMAL_DX:
-        post_processing.post_process(internal_img_name="SB_Temp_Img",\
-        save=False, mode="1to1",\
-            input_img=bpy.data.images[IMGNAME],\
-            invert_g_input=True\
-            )
+        post_processing.post_process(
+            internal_img_name="SB_Temp_Img",
+            input_img=bpy.data.images[IMGNAME],
+            mode="1to1",
+            invert_g=True,
+        )
 
         # Replace our existing image with the processed one
         old = bpy.data.images[IMGNAME]
@@ -205,11 +206,12 @@ def do_post_processing(thisbake, IMGNAME):
 
     # Roughness vs Glossy
     if thisbake == constants.PBR_ROUGHNESS and bpy.context.scene.TextureBake_Props.rough_glossy_switch == "glossy":
-        post_processing.post_process(internal_img_name="SB_Temp_Img",\
-        save=False, mode="1to1",\
-            input_img=bpy.data.images[IMGNAME],\
-            invert_combined=True\
-            )
+        post_processing.post_process(
+            internal_img_name="SB_Temp_Img",
+            input_img=bpy.data.images[IMGNAME],
+            mode="1to1",
+            invert_all=True,
+        )
 
         # Replace our existing image with the processed one
         old = bpy.data.images[IMGNAME]
@@ -248,16 +250,6 @@ def do_post_processing(thisbake, IMGNAME):
 def channel_packing(objects):
     current_bake_op = MasterOperation.bake_op
 
-    # Are we doing this at all?
-    if not bpy.context.scene.TextureBake_Props.export_textures:
-        functions.print_msg("No channel packing")
-        return False
-    if len(bpy.context.scene.TextureBake_Props.cp_list) == 0:
-        functions.print_msg("No channel packing")
-        return False
-
-    functions.print_msg("Creating channel packed images")
-
     # Figure out the save folder for each object
     efpo = bpy.context.scene.TextureBake_Props.export_folder_per_object
     mb = bpy.context.scene.TextureBake_Props.merged_bake
@@ -276,51 +268,46 @@ def channel_packing(objects):
             export_folder_name = Path(str(functions.get_export_folder_name()))
             obj_export_folder_names[obj.name] = export_folder_name
 
-    # Need to look at all baked textures
     baked_textures = MasterOperation.baked_textures
-
-    # Work though each requested CP texture for each object
-    cp_list = bpy.context.scene.TextureBake_Props.cp_list
+    prefs = bpy.context.preferences.addons[__package__].preferences
+    preset_id = bpy.context.scene.TextureBake_Props.export_preset
+    preset = ([p for p in prefs.export_presets if p.uid == preset_id])[0]
 
     for obj in objects:
-
-        # Hacky
+        objname = obj.name
         if bpy.context.scene.TextureBake_Props.merged_bake:
             objname = bpy.context.scene.TextureBake_Props.merged_bake_name
-        else:
-            objname = obj.name
 
-        for cpt in cp_list:
-            file_format = cpt.file_format
-            cpt_name = cpt.name
-
-            functions.print_msg(f"Creating packed texture \"{cpt_name}\" for object \"{objname}\" with format {file_format}")
-            r_type = cpt.R
-            g_type = cpt.G
-            b_type = cpt.B
-            a_type = cpt.A
-
+        for tex in preset.textures:
             # Find the actual images that we need
-            if r_type == "none": r_img = None
-            else: r_img = [img for img in baked_textures if img["SB_thisbake"] == r_type and img["SB_objname"] == objname][0] # Should be a list of 1
-            if g_type == "none": g_img = None
-            else: g_img = [img for img in baked_textures if img["SB_thisbake"] == g_type and img["SB_objname"] == objname][0] # Should be a list of 1
-            if b_type == "none": b_img = None
-            else: b_img = [img for img in baked_textures if img["SB_thisbake"] == b_type and img["SB_objname"] == objname][0] # Should be a list of 1
-            if a_type == "none": a_img = None
-            else: a_img = [img for img in baked_textures if img["SB_thisbake"] == a_type and img["SB_objname"] == objname][0] # Should be a list of 1
+            red = None
+            if tex.red.info != 'NONE':
+                red = [img for img in baked_textures if img["SB_thisbake"] == tex.red.info and img["SB_objname"] == objname][0]
+
+            green = None
+            if tex.green.info != 'NONE':
+                green = [img for img in baked_textures if img["SB_thisbake"] == tex.green.info and img["SB_objname"] == objname][0]
+
+            blue = None
+            if tex.blue.info != 'NONE':
+                blue = [img for img in baked_textures if img["SB_thisbake"] == tex.blue.info and img["SB_objname"] == objname][0]
+
+            alpha = None
+            if tex.alpha.info != 'NONE':
+                alpha = [img for img in baked_textures if img["SB_thisbake"] == tex.alpha.info and img["SB_objname"] == objname][0]
 
             # Determine transparency mode
-            if file_format == "PNG" or file_format == "TARGA":
+            alpha_convert = False
+            file_format = tex.file_format
+            if file_format == 'PNG' or file_format == 'TARGA':
                 alpha_convert = "premul"
-            else:
-                alpha_convert = False
 
             # Create the texture
-            imgname = f"{objname}_{cpt.name}_ChannelPack"
+            imgname = functions.gen_export_texture_name(tex.name, objname)
+            functions.print_msg(f"Creating packed texture {imgname} for object {objname} with format {file_format}")
 
             # Isolate
-            if r_type == "diffuse" and g_type == "diffuse" and b_type == "diffuse":
+            if tex.red.info == 'DIFFUSE' and tex.green.info == 'DIFFUSE' and tex.blue.info == 'DIFFUSE':
                 isolate_input_r=True
                 isolate_input_g=True
                 isolate_input_b=True
@@ -329,13 +316,25 @@ def channel_packing(objects):
                 isolate_input_g=False
                 isolate_input_b=False
 
-            post_processing.post_process(imgname, input_r=r_img, input_g=g_img, input_b=b_img,\
-                input_a=a_img, save=True, mode="3to1", path_dir=obj_export_folder_names[obj.name],\
-                path_filename=Path(imgname), file_format=file_format, alpha_convert=alpha_convert,\
-                isolate_input_r=isolate_input_r, isolate_input_g=isolate_input_g, isolate_input_b=isolate_input_b,\
-                remove_internal=True)
+            post_processing.post_process(
+                internal_img_name = imgname,
+                remove_internal = True,
+                save = True,
+                mode = "3to1",
+                input_r = red,
+                input_g = green,
+                input_b = blue,
+                input_a = alpha,
+                alpha_convert = alpha_convert,
+                isolate_input_r = isolate_input_r,
+                isolate_input_g = isolate_input_g,
+                isolate_input_b = isolate_input_b,
+                path_dir = obj_export_folder_names[obj.name],
+                path_filename = Path(imgname),
+                file_format = file_format,
+            )
 
-            # Hacky - If this is a merged_bake, break out of the loop
+            # Hacky - If this is a merged_bake, break out of the loop TODO: this looks like it belongs in the outer loop
             if bpy.context.scene.TextureBake_Props.merged_bake:
                 break
 
@@ -807,27 +806,17 @@ def do_bake():
                 functions.restore_all_materials()
                 functions.print_msg("Restore complete")
 
-                # Last thing we do with this image is scale it (as long as not a merged baked - if it is we will scale later)
                 if not MasterOperation.merged_bake:
                     functions.sacle_image_if_needed(bpy.data.images[IMGNAME])
-
-                # If we are saving externally, and this isn't a merged bake
-                if not MasterOperation.merged_bake:
-                    # Always do post processing
                     IMGNAME = do_post_processing(thisbake=thisbake, IMGNAME=IMGNAME)
-                    # Save external if we are saving
                     if bpy.context.scene.TextureBake_Props.export_textures:
                         functions.print_msg("Saving baked images externally")
                         functions.export_textures(bpy.data.images[IMGNAME], thisbake, obj)
 
             # If we did a merged bake, and we are saving externally, then save here
             if MasterOperation.merged_bake:
-                # Scale the image now we are done with it
                 functions.sacle_image_if_needed(bpy.data.images[IMGNAME])
-
-                # Always do post processing
                 IMGNAME = do_post_processing(thisbake=thisbake, IMGNAME=IMGNAME)
-                # Save external if we are saving
                 if bpy.context.scene.TextureBake_Props.export_textures:
                     functions.print_msg("Saving merged baked image externally")
                     functions.export_textures(bpy.data.images[IMGNAME], thisbake, None)
@@ -973,9 +962,6 @@ def do_bake_selected_to_target():
             # Bake the object for this bake mode
             functions.bake_operation(thisbake, bpy.data.images[IMGNAME])
 
-            # Scale if needed
-            functions.sacle_image_if_needed(bpy.data.images[IMGNAME])
-
             # Update tracking
             BakeStatus.current_map+=1
             functions.print_msg(f"Bake maps {BakeStatus.current_map} of {BakeStatus.total_maps} complete")
@@ -992,11 +978,8 @@ def do_bake_selected_to_target():
                     if node.label == "TextureBake":
                         mat.node_tree.nodes.remove(node)
 
-            # Always do post processing
+            functions.sacle_image_if_needed(bpy.data.images[IMGNAME])
             IMGNAME = do_post_processing(thisbake=thisbake, IMGNAME=IMGNAME)
-
-
-            # If we are saving externally, save
             if(bpy.context.scene.TextureBake_Props.export_textures):
                 functions.print_msg("Saving baked images externally")
                 functions.export_textures(bpy.data.images[IMGNAME], thisbake, current_bake_op.sb_target_object)

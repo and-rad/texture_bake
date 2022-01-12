@@ -64,6 +64,16 @@ def does_object_have_bakes(obj):
         return "SB_objname" in img # SB_objname is always set. Even for merged_bake
 
 
+def gen_export_texture_name(name_format, obj_name):
+    name_format = name_format.replace("%OBJ%", obj_name)
+
+    batch_name = bpy.context.scene.TextureBake_Props.batch_name
+    if batch_name:
+        name_format = name_format.replace("%BATCH%", batch_name)
+
+    return name_format
+
+
 def gen_image_name(obj_name, baketype):
     parts = [obj_name]
     if bpy.context.scene.TextureBake_Props.batch_name:

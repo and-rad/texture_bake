@@ -76,12 +76,10 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
             bakefunctions.do_bake_selected_to_target()
 
         # Call channel packing
-        if bake_mode == constants.BAKE_MODE_PBR:
-            objects = MasterOperation.bake_op.bake_objects
-            bakefunctions.channel_packing(objects)
-        elif bake_mode == constants.BAKE_MODE_S2A:
+        objects = MasterOperation.bake_op.bake_objects
+        if bake_mode == constants.BAKE_MODE_S2A:
             objects = [MasterOperation.bake_op.sb_target_object]
-            bakefunctions.channel_packing(objects)
+        bakefunctions.channel_packing(objects)
 
         return {'FINISHED'}
 
@@ -466,7 +464,6 @@ class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
         d["prefer_existing_uvmap"] = context.scene.TextureBake_Props.prefer_existing_uvmap
         d["uv_mode"] = context.scene.TextureBake_Props.uv_mode
         d["udim_tiles"] = context.scene.TextureBake_Props.udim_tiles
-        d["cp_file_format"] = context.scene.TextureBake_Props.cp_file_format
         d["export_textures"] = context.scene.TextureBake_Props.export_textures
         d["export_folder_per_object"] = context.scene.TextureBake_Props.export_folder_per_object
         d["export_mesh"] = context.scene.TextureBake_Props.export_mesh
@@ -512,21 +509,6 @@ class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
             d["cage_object"] = context.scene.render.bake.cage_object.name
         else:
             d["cage_object"] = None
-
-        # Channel packed images
-        cp_images_dict = {}
-        for cpi in context.scene.TextureBake_Props.cp_list:
-            thiscpi_dict = {}
-            thiscpi_dict["R"] = cpi.R
-            thiscpi_dict["G"] = cpi.G
-            thiscpi_dict["B"] = cpi.B
-            thiscpi_dict["A"] = cpi.A
-
-            thiscpi_dict["file_format"] = cpi.file_format
-
-            cp_images_dict[cpi.name] = thiscpi_dict
-        if len(cp_images_dict)>0:
-            d["channel_packed_images"] = cp_images_dict
 
         # Find where we want to save
         p = Path(bpy.utils.script_path_user())
@@ -619,7 +601,6 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
         context.scene.TextureBake_Props.selected_curvature = d["selected_curvature"]
         context.scene.TextureBake_Props.uv_mode = d["uv_mode"]
         context.scene.TextureBake_Props.udim_tiles = d["udim_tiles"]
-        context.scene.TextureBake_Props.cp_file_format = d["cp_file_format"]
         context.scene.TextureBake_Props.export_textures = d["export_textures"]
         context.scene.TextureBake_Props.export_folder_per_object = d["export_folder_per_object"]
         context.scene.TextureBake_Props.export_mesh = d["export_mesh"]
@@ -653,27 +634,6 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
         context.scene.render.bake.normal_b = d["render.bake.normal_b"]
         context.scene.render.bake.use_pass_color = d["use_pass_color"]
         context.scene.render.bake.margin = d["bake.margin"]
-
-        # Channel packing images
-        if "channel_packed_images" in d:
-            channel_packed_images = d["channel_packed_images"]
-
-            if len(channel_packed_images) > 0:
-                context.scene.TextureBake_Props.cp_list.clear()
-
-            for imgname in channel_packed_images:
-                thiscpi_dict = channel_packed_images[imgname]
-
-                # Create the list item
-                li = context.scene.TextureBake_Props.cp_list.add()
-                li.name = imgname
-
-                # Set the list item properies
-                li.R = thiscpi_dict["R"]
-                li.G = thiscpi_dict["G"]
-                li.B = thiscpi_dict["B"]
-                li.A = thiscpi_dict["A"]
-                li.file_format = thiscpi_dict["file_format"]
 
         # And now the objects, if they are here
         context.scene.TextureBake_Props.object_list.clear()
@@ -865,40 +825,6 @@ class TEXTUREBAKE_OT_decrease_output_res(bpy.types.Operator):
         context.scene.TextureBake_Props.output_height = result
 
         functions.auto_set_bake_margin()
-        return {'FINISHED'}
-
-
-class TEXTUREBAKE_OT_add_packed_texture(bpy.types.Operator):
-    """Add a TextureBake CP Texture item"""
-    bl_idname = "texture_bake.add_packed_texture"
-    bl_label = "Add"
-    bl_options = {'INTERNAL'}
-
-    @classmethod
-    def poll(cls,context):
-        return context.scene.TextureBake_Props.cp_name != ""
-
-    def execute(self, context):
-        cp_list = context.scene.TextureBake_Props.cp_list
-        name = functions.clean_file_name(context.scene.TextureBake_Props.cp_name)
-
-        if name in cp_list:
-            # Delete it
-            index = context.scene.TextureBake_Props.cp_list.find(name)
-            context.scene.TextureBake_Props.cp_list.remove(index)
-
-        li = cp_list.add()
-        li.name = name
-
-        li.R = context.scene.TextureBake_Props.cptex_R
-        li.G = context.scene.TextureBake_Props.cptex_G
-        li.B = context.scene.TextureBake_Props.cptex_B
-        li.A = context.scene.TextureBake_Props.cptex_A
-        li.file_format = context.scene.TextureBake_Props.cp_file_format
-
-        context.scene.TextureBake_Props.cp_list_index = context.scene.TextureBake_Props.cp_list.find(name)
-
-        self.report({"INFO"}, "CP texture saved")
         return {'FINISHED'}
 
 

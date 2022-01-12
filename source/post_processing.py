@@ -29,29 +29,29 @@ def post_process(internal_img_name, path_dir="", path_filename="", file_format="
     path = os.path.dirname(__file__) + "/compositing/compositing.blend\\Scene\\"
 
     if mode == "1to1":
-        if "SBCompositing_1to1" in bpy.data.scenes:
-            bpy.data.scenes.remove(bpy.data.scenes["SBCompositing_1to1"])
-        bpy.ops.wm.append(filename="SBCompositing_1to1", directory=path)
+        if "TBCompositing_1to1" in bpy.data.scenes:
+            bpy.data.scenes.remove(bpy.data.scenes["TBCompositing_1to1"])
+        bpy.ops.wm.append(filename="TBCompositing_1to1", directory=path)
 
-        scene = bpy.data.scenes["SBCompositing_1to1"]
+        scene = bpy.data.scenes["TBCompositing_1to1"]
         nodes = scene.node_tree.nodes
 
         # Set the input
         nodes["input_img"].image = args["input_img"]
 
         # The inverts all start muted
-        if "invert_r_input" in args and args["invert_r_input"]: nodes["invert_r_input"].mute = False
-        if "invert_g_input" in args and args["invert_g_input"]: nodes["invert_g_input"].mute = False
-        if "invert_b_input" in args and args["invert_b_input"]: nodes["invert_b_input"].mute = False
-        if "invert_a_input" in args and args["invert_a_input"]: nodes["invert_a_input"].mute = False
-        if "invert_combined" in args and args["invert_combined"]: nodes["invert_combined"].mute=False
+        if "invert_r" in args and args["invert_r"]: nodes["invert_r"].mute = False
+        if "invert_g" in args and args["invert_g"]: nodes["invert_g"].mute = False
+        if "invert_b" in args and args["invert_b"]: nodes["invert_b"].mute = False
+        if "invert_a" in args and args["invert_a"]: nodes["invert_a"].mute = False
+        if "invert_all" in args and args["invert_all"]: nodes["invert_all"].mute=False
 
     if mode == "3to1":
-        if "SBCompositing_3to1" in bpy.data.scenes:
-            bpy.data.scenes.remove(bpy.data.scenes["SBCompositing_3to1"])
-        bpy.ops.wm.append(filename="SBCompositing_3to1", directory=path)
+        if "TBCompositing_3to1" in bpy.data.scenes:
+            bpy.data.scenes.remove(bpy.data.scenes["TBCompositing_3to1"])
+        bpy.ops.wm.append(filename="TBCompositing_3to1", directory=path)
 
-        scene = bpy.data.scenes["SBCompositing_3to1"]
+        scene = bpy.data.scenes["TBCompositing_3to1"]
         node_tree = scene.node_tree
         nodes = node_tree.nodes
 

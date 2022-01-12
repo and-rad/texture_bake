@@ -283,57 +283,6 @@ class TEXTUREBAKE_PT_other(TextureBakeCategoryPanel, bpy.types.Panel):
             row.label(text="No valid GPU device in Blender Preferences. Using CPU.")
 
 
-class TEXTUREBAKE_PT_packing(TextureBakeCategoryPanel, bpy.types.Panel):
-    bl_label = "Channel Packing"
-    bl_parent_id = "TEXTUREBAKE_PT_main"
-
-    def draw(self, context):
-        layout = self.layout
-
-        if not functions.is_blend_saved():
-            layout.row().label(text="Unavailable - Blend file not saved")
-        elif not context.scene.TextureBake_Props.export_textures:
-            layout.row().label(text="Unavailable - You must be exporting your bakes")
-        else:
-            row = layout.row()
-            col = row.column()
-            col.template_list("TEXTUREBAKE_UL_packed_textures", "", context.scene.TextureBake_Props,
-                                "cp_list", context.scene.TextureBake_Props, "cp_list_index")
-
-            layout.row().prop(context.scene.TextureBake_Props, "cp_name")
-            layout.row().prop(context.scene.TextureBake_Props, "cp_file_format", text="Format")
-            layout.row().prop(context.scene.TextureBake_Props, "cptex_R", text="R")
-            layout.row().prop(context.scene.TextureBake_Props, "cptex_G", text="G")
-            layout.row().prop(context.scene.TextureBake_Props, "cptex_B", text="B")
-            layout.row().prop(context.scene.TextureBake_Props, "cptex_A", text="A")
-
-            cp_list = context.scene.TextureBake_Props.cp_list
-            current_name = context.scene.TextureBake_Props.cp_name
-            if current_name in cp_list: # Editing a cpt that is already there
-                index = cp_list.find(current_name)
-                cpt = cp_list[index]
-
-                if (cpt.R != context.scene.TextureBake_Props.cptex_R
-                    or cpt.G != context.scene.TextureBake_Props.cptex_G
-                    or cpt.B != context.scene.TextureBake_Props.cptex_B
-                    or cpt.A != context.scene.TextureBake_Props.cptex_A
-                    or cpt.file_format != context.scene.TextureBake_Props.cp_file_format):
-                    row = layout.row()
-                    row.alert=True
-                    text = f"Update {current_name} (!!not saved!!)"
-                    row.operator("texture_bake.add_packed_texture", text=text, icon='ADD')
-                else: # No changes, no button
-                    text = f"Editing {current_name}"
-                    row = layout.row()
-                    row.label(text=text)
-                    row.alignment = 'CENTER'
-            else: # New item
-                row = layout.row()
-                text = "Add new (!!not saved!!)"
-                row.alert = True
-                row.operator("texture_bake.add_packed_texture", text=text, icon='ADD')
-
-
 class TEXTUREBAKE_UL_object_list(UIList):
     """List type to display objects selected for baking"""
 
