@@ -47,7 +47,7 @@ def refresh_bake_progress():
 
     for p in background_bake_ops.bgops_list:
         t = Path(tempfile.gettempdir())
-        t = t / f"TextureBake_background_bake_{str(p.process.pid)}"
+        t = t / f"TextureBake_propgress_{str(p.process.pid)}"
         try:
             with open(str(t), "r") as progfile:
                 p.progress = int(progfile.readline())

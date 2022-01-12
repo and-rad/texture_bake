@@ -1138,9 +1138,25 @@ def show_message_box(messageitems_list, title, icon = 'INFO'):
 def write_bake_progress(current_operation, total_operations):
     progress = int((current_operation / total_operations) * 100)
     t = Path(tempfile.gettempdir())
-    t = t / f"TextureBake_background_bake_{os.getpid()}"
+    t = t / f"TextureBake_propgress_{os.getpid()}"
     with open(str(t), "w") as progfile:
         progfile.write(str(progress))
+
+
+def write_baked_texture(texture_name):
+    t = Path(tempfile.gettempdir())
+    t = t / f"TextureBake_bakes_{os.getpid()}"
+    with open(str(t), "a") as progfile:
+        progfile.write(f"{texture_name}\n")
+
+
+def read_baked_textures(pid):
+    textures = []
+    t = Path(tempfile.gettempdir()) / f"TextureBake_bakes_{str(pid)}"
+    with open(str(t), "r") as texfile:
+        textures = texfile.readlines()
+        textures = [tex.rstrip() for tex in textures]
+    return textures
 
 
 # Dict obj name to tile

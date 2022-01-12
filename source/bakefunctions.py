@@ -334,6 +334,8 @@ def channel_packing(objects):
                 file_format = file_format,
             )
 
+            functions.write_baked_texture(imgname)
+
             # Hacky - If this is a merged_bake, break out of the loop TODO: this looks like it belongs in the outer loop
             if bpy.context.scene.TextureBake_Props.merged_bake:
                 break
@@ -514,6 +516,7 @@ def specials_bake():
                 BakeStatus.current_map+=1
                 functions.print_msg(f"Bake maps {BakeStatus.current_map} of {BakeStatus.total_maps} complete")
                 functions.write_bake_progress(BakeStatus.current_map, BakeStatus.total_maps)
+                functions.write_baked_texture(IMGNAME)
 
                 # Restore all materials
                 for matslot in materials:
@@ -657,6 +660,7 @@ def col_id_map(input_width, input_height, objects, mode="random"):
             BakeStatus.current_map+=1
             functions.print_msg(f"Bake maps {BakeStatus.current_map} of {BakeStatus.total_maps} complete")
             functions.write_bake_progress(BakeStatus.current_map, BakeStatus.total_maps)
+            functions.write_baked_texture(IMGNAME)
 
             # Restore the original materials
             functions.restore_all_materials()
@@ -800,6 +804,7 @@ def do_bake():
                 BakeStatus.current_map+=1
                 functions.print_msg(f"Bake maps {BakeStatus.current_map} of {BakeStatus.total_maps} complete")
                 functions.write_bake_progress(BakeStatus.current_map, BakeStatus.total_maps)
+                functions.write_baked_texture(IMGNAME)
 
                 # Restore the original materials
                 functions.print_msg("Restoring original materials")
@@ -966,6 +971,7 @@ def do_bake_selected_to_target():
             BakeStatus.current_map+=1
             functions.print_msg(f"Bake maps {BakeStatus.current_map} of {BakeStatus.total_maps} complete")
             functions.write_bake_progress(BakeStatus.current_map, BakeStatus.total_maps)
+            functions.write_baked_texture(IMGNAME)
 
             # Restore the original materials
             functions.restore_all_materials()
