@@ -69,6 +69,8 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
         MasterOperation.bake_op = BakeOperation()
         MasterOperation.bake_op.bake_mode = bake_mode
 
+        bakefunctions.common_bake_prep()
+
         if bake_mode == constants.BAKE_MODE_PBR:
             bakefunctions.do_bake()
         elif bake_mode == constants.BAKE_MODE_S2A:
@@ -79,6 +81,8 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
         if bake_mode == constants.BAKE_MODE_S2A:
             objects = [MasterOperation.bake_op.sb_target_object]
         bakefunctions.channel_packing(objects)
+
+        bakefunctions.common_bake_finishing()
 
         return {'FINISHED'}
 
@@ -150,7 +154,10 @@ class TEXTUREBAKE_OT_bake_input_textures(bpy.types.Operator):
         MasterOperation.bake_op = BakeOperation()
         MasterOperation.bake_op.bake_mode = bake_mode
 
+        bakefunctions.common_bake_prep()
         bakefunctions.specials_bake()
+        bakefunctions.common_bake_finishing()
+
         return {'FINISHED'}
 
     @classmethod

@@ -24,7 +24,7 @@ import os
 from pathlib import Path
 
 
-def post_process(internal_img_name, path_dir="", path_filename="", file_format="OPEN_EXR", save=False, mode="3to1", remove_internal=False, **args):
+def post_process(internal_img_name, path_dir="", path_filename="", file_format="OPEN_EXR", save=False, mode="3to1", **args):
     # Import the compositing scene that we need
     path = os.path.dirname(__file__) + "/compositing/compositing.blend\\Scene\\"
 
@@ -154,6 +154,7 @@ def post_process(internal_img_name, path_dir="", path_filename="", file_format="
 
     # Pack image, so we don't lose it when we delete the temp file
     img.pack()
+    img.use_fake_user = True
 
     # Rename internal image
     img.name = internal_img_name
@@ -191,7 +192,3 @@ def post_process(internal_img_name, path_dir="", path_filename="", file_format="
 
     # Delete the new scene
     bpy.data.scenes.remove(scene)
-
-    if remove_internal:
-    # Remove the internal image
-        bpy.data.images.remove(img)

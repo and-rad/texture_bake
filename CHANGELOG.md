@@ -18,6 +18,9 @@
   This makes the code a little cleaner and easier to follow and reason about.
 - Separated bake operators into baking input textures (AO, vertex color, etc.)
   and export textures (Diffuse, Normal, ORM, etc.).
+- Channel packing does no longer require the "Export textures" property to be
+  active. Channel packed textures are imported into Blender along with the
+  other baked textures, saving to disk is now optional.
 
 ### Removed
 - Removed distinction between PBR bakes and Cycles bakes. The add-on uses both

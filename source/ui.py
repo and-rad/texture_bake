@@ -192,10 +192,9 @@ class TEXTUREBAKE_PT_export_settings(TextureBakeCategoryPanel, bpy.types.Panel):
 
         if functions.is_blend_saved():
             layout.row().prop(context.scene.TextureBake_Props, "export_preset", text="Preset")
-            row = layout.row()
-            row.prop(context.scene.TextureBake_Props, "export_textures")
-
             layout.use_property_split = True
+            layout.row().prop(context.scene.TextureBake_Props, "export_textures")
+
             if context.scene.TextureBake_Props.export_textures:
                 layout.separator()
                 layout.row().prop(context.scene.TextureBake_Props, "export_folder_name")

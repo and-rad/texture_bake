@@ -60,12 +60,6 @@ def refresh_bake_progress():
     return 1
 
 
-def check_export_col_setting():
-    if not bpy.context.scene.TextureBake_Props.export_textures and bpy.context.scene.TextureBake_Props.export_color_space:
-        bpy.context.scene.TextureBake_Props.export_color_space = False
-    return 1
-
-
 def clean_object_list():
     """Removes deleted objects from the list of objects to bake"""
     object_list = bpy.context.scene.TextureBake_Props.object_list
@@ -82,5 +76,4 @@ def clean_object_list():
     return 1
 
 
-bpy.app.timers.register(check_export_col_setting, persistent=True)
 bpy.app.timers.register(clean_object_list, persistent=True)

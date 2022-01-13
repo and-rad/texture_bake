@@ -239,16 +239,15 @@ def do_post_processing(thisbake, IMGNAME):
         # Add to master list
         MasterOperation.baked_textures.append(new)
 
-    return IMGNAME
-
 
 def channel_packing(objects):
     current_bake_op = MasterOperation.bake_op
+    props = bpy.context.scene.TextureBake_Props
 
     # Figure out the save folder for each object
-    efpo = bpy.context.scene.TextureBake_Props.export_folder_per_object
-    mb = bpy.context.scene.TextureBake_Props.merged_bake
-    mbn = bpy.context.scene.TextureBake_Props.merged_bake_name
+    efpo = props.export_folder_per_object
+    mb = props.merged_bake
+    mbn = props.merged_bake_name
 
     obj_export_folder_names = {}
 
@@ -265,13 +264,13 @@ def channel_packing(objects):
 
     baked_textures = MasterOperation.baked_textures
     prefs = bpy.context.preferences.addons[__package__].preferences
-    preset_id = bpy.context.scene.TextureBake_Props.export_preset
+    preset_id = props.export_preset
     preset = ([p for p in prefs.export_presets if p.uid == preset_id])[0]
 
     for obj in objects:
         objname = obj.name
-        if bpy.context.scene.TextureBake_Props.merged_bake:
-            objname = bpy.context.scene.TextureBake_Props.merged_bake_name
+        if props.merged_bake:
+            objname = props.merged_bake_name
 
         for tex in preset.textures:
             # Find the actual images that we need
@@ -313,8 +312,7 @@ def channel_packing(objects):
 
             post_processing.post_process(
                 internal_img_name = imgname,
-                remove_internal = True,
-                save = True,
+                save = props.export_textures,
                 mode = "3to1",
                 input_r = red,
                 input_g = green,
@@ -332,7 +330,7 @@ def channel_packing(objects):
             functions.write_baked_texture(imgname)
 
             # Hacky - If this is a merged_bake, break out of the loop TODO: this looks like it belongs in the outer loop
-            if bpy.context.scene.TextureBake_Props.merged_bake:
+            if props.merged_bake:
                 break
 
 
@@ -404,9 +402,6 @@ def specials_bake():
     input_height = bpy.context.scene.TextureBake_Props.input_height
 
     current_bake_op = MasterOperation.bake_op
-
-    # Common bake prep
-    common_bake_prep()
 
     # If we are baking S2A as the primary bake, this should focus on the target object
     if current_bake_op.bake_mode == constants.BAKE_MODE_INPUTS_S2A:
@@ -498,16 +493,6 @@ def specials_bake():
                     if "_sbspectmp_" + special in matslot.name:
                         matslot.material = bpy.data.materials[matslot.name.replace("_sbspectmp_" + special, "")]
 
-                # If we are saving per object (not merged bake) - do that here
-                if(bpy.context.scene.TextureBake_Props.export_textures and not MasterOperation.merged_bake):
-                    functions.print_msg("Saving baked images externally")
-                    functions.export_textures(bpy.data.images[IMGNAME], special, obj)
-
-            # If we did a merged bake, and we are saving externally, then save here
-            if MasterOperation.merged_bake and bpy.context.scene.TextureBake_Props.export_textures:
-                functions.print_msg("Saving merged baked image externally")
-                functions.export_textures(bpy.data.images[IMGNAME], special, None)
-
     # Bake at least once
     specials_bake_actual()
     current_bake_op.udim_counter = current_bake_op.udim_counter + 1
@@ -526,8 +511,6 @@ def specials_bake():
     for mat in bpy.data.materials:
         if "_sbspectmp_" in mat.name:
             bpy.data.materials.remove(mat)
-
-    common_bake_finishing()
 
 
 def col_id_map(input_width, input_height, objects, mode="random"):
@@ -640,16 +623,6 @@ def col_id_map(input_width, input_height, objects, mode="random"):
             # Restore the original materials
             functions.restore_all_materials()
 
-            # If we are saving externally, and this is not a merged bake, save
-            if(bpy.context.scene.TextureBake_Props.export_textures and not merged_bake):
-                functions.print_msg("Saving baked images externally")
-                functions.export_textures(bpy.data.images[IMGNAME], "special", obj)
-
-        # If we did a merged bake, and we are saving externally, then save here
-        if merged_bake and bpy.context.scene.TextureBake_Props.export_textures:
-            functions.print_msg("Saving merged baked image externally")
-            functions.export_textures(bpy.data.images[IMGNAME], "special", None)
-
     # Bake at least once
     col_id_map_actual()
     udim_counter = udim_counter + 1
@@ -672,9 +645,6 @@ def col_id_map(input_width, input_height, objects, mode="random"):
 
 def do_bake():
     current_bake_op = MasterOperation.bake_op
-
-    # Do the prep we need to do for all bake types
-    common_bake_prep()
 
     # Loop over the bake modes we are using
     def do_bake_actual():
@@ -788,18 +758,12 @@ def do_bake():
 
                 if not MasterOperation.merged_bake:
                     functions.sacle_image_if_needed(bpy.data.images[IMGNAME])
-                    IMGNAME = do_post_processing(thisbake=thisbake, IMGNAME=IMGNAME)
-                    if bpy.context.scene.TextureBake_Props.export_textures:
-                        functions.print_msg("Saving baked images externally")
-                        functions.export_textures(bpy.data.images[IMGNAME], thisbake, obj)
+                    do_post_processing(thisbake=thisbake, IMGNAME=IMGNAME)
 
             # If we did a merged bake, and we are saving externally, then save here
             if MasterOperation.merged_bake:
                 functions.sacle_image_if_needed(bpy.data.images[IMGNAME])
-                IMGNAME = do_post_processing(thisbake=thisbake, IMGNAME=IMGNAME)
-                if bpy.context.scene.TextureBake_Props.export_textures:
-                    functions.print_msg("Saving merged baked image externally")
-                    functions.export_textures(bpy.data.images[IMGNAME], thisbake, None)
+                do_post_processing(thisbake=thisbake, IMGNAME=IMGNAME)
 
     # Do the bake at least once
     do_bake_actual()
@@ -817,19 +781,9 @@ def do_bake():
 
             current_bake_op.udim_counter = current_bake_op.udim_counter + 1
 
-    # Finished baking. Perform wind down actions
-    common_bake_finishing()
-
 
 def do_bake_selected_to_target():
     current_bake_op = MasterOperation.bake_op
-
-    # Do the prep, as usual
-    common_bake_prep()
-
-    # Always set the ray distance to the one selected in TextureBake
-    # functions.print_msg(f"Setting ray distance to {round(bpy.context.scene.TextureBake_Props.ray_distance, 2)}")
-    # bpy.context.scene.render.bake.cage_extrusion = bpy.context.scene.TextureBake_Props.ray_distance
 
     # Info
     functions.print_msg("Baking PBR maps to target mesh: " + current_bake_op.sb_target_object.name)
@@ -960,10 +914,7 @@ def do_bake_selected_to_target():
                         mat.node_tree.nodes.remove(node)
 
             functions.sacle_image_if_needed(bpy.data.images[IMGNAME])
-            IMGNAME = do_post_processing(thisbake=thisbake, IMGNAME=IMGNAME)
-            if(bpy.context.scene.TextureBake_Props.export_textures):
-                functions.print_msg("Saving baked images externally")
-                functions.export_textures(bpy.data.images[IMGNAME], thisbake, current_bake_op.sb_target_object)
+            do_post_processing(thisbake=thisbake, IMGNAME=IMGNAME)
 
     # Do the bake at least once
     do_bake_selected_to_target_actual()
@@ -979,6 +930,3 @@ def do_bake_selected_to_target():
 
             do_bake_selected_to_target_actual()
             current_bake_op.udim_counter = current_bake_op.udim_counter + 1
-
-    # Finished baking all bake modes. Perform wind down actions
-    common_bake_finishing()

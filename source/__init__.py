@@ -266,7 +266,7 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
     )
 
     export_textures: BoolProperty(
-        name = "Export bakes",
+        name = "Save to Disk",
         description = "Export your bakes to the folder specified below, under the same folder where your .blend file is saved. Not available if .blend file not saved",
         default = False,
         update = export_textures_update,

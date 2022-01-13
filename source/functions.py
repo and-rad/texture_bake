@@ -190,7 +190,6 @@ def create_images(imgname, thisbake, objname):
     alpha = bpy.context.scene.TextureBake_Props.use_alpha
 
     all32 = bpy.context.scene.TextureBake_Props.bake_32bit_float
-    export = bpy.context.scene.TextureBake_Props.export_textures
     all16 = bpy.context.scene.TextureBake_Props.export_16bit
 
     # Create image 32 bit or not 32 bit
@@ -351,13 +350,13 @@ def check_scene(objects, bakemode):
         return False
 
     for obj in objects:
-        if obj.name != clean_file_name(obj.name) and bpy.context.scene.TextureBake_Props.export_textures:
+        props = bpy.context.scene.TextureBake_Props
+        if props.export_textures and obj.name != clean_file_name(obj.name):
             prefs = bpy.context.preferences.addons[__package__].preferences
-            textures = prefs.export_presets[prefs.export_presets_index].textures
-            for t in textures:
-                if "%OBJ%" in t.name:
-                    messages.append(f"ERROR: You are trying to save external images, but object with name \"{obj.name}\" contains invalid characters for saving externally.")
-                    break
+            presets = [p for p in prefs.export_presets if p.uid == props.export_preset]
+            if presets and [t for t in presets[0].textures if "%OBJ" in t.name]:
+                messages.append(f"ERROR: You are trying to save external images, but object with name \"{obj.name}\" contains invalid characters for saving externally.")
+                break
 
     if bpy.context.scene.TextureBake_Props.merged_bake and bpy.context.scene.TextureBake_Props.merged_bake_name == "":
         messages.append(f"ERROR: You are baking multiple objects to one texture set, but the texture name is blank")
