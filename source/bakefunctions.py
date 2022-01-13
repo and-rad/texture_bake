@@ -480,7 +480,7 @@ def specials_bake():
                 functions.bake_operation("special", bpy.data.images[IMGNAME])
 
                 # Scale if needed
-                functions.sacle_image_if_needed(bpy.data.images[IMGNAME])
+                functions.scale_image_if_needed(bpy.data.images[IMGNAME])
 
                 # Update tracking
                 BakeStatus.current_map+=1
@@ -612,7 +612,7 @@ def col_id_map(input_width, input_height, objects, mode="random"):
             functions.bake_operation("Emission", bpy.data.images[IMGNAME])
 
             # Scale if needed
-            functions.sacle_image_if_needed(bpy.data.images[IMGNAME])
+            functions.scale_image_if_needed(bpy.data.images[IMGNAME])
 
             # Update tracking
             BakeStatus.current_map+=1
@@ -757,12 +757,12 @@ def do_bake():
                 functions.print_msg("Restore complete")
 
                 if not MasterOperation.merged_bake:
-                    functions.sacle_image_if_needed(bpy.data.images[IMGNAME])
+                    functions.scale_image_if_needed(bpy.data.images[IMGNAME])
                     do_post_processing(thisbake=thisbake, IMGNAME=IMGNAME)
 
             # If we did a merged bake, and we are saving externally, then save here
             if MasterOperation.merged_bake:
-                functions.sacle_image_if_needed(bpy.data.images[IMGNAME])
+                functions.scale_image_if_needed(bpy.data.images[IMGNAME])
                 do_post_processing(thisbake=thisbake, IMGNAME=IMGNAME)
 
     # Do the bake at least once
@@ -913,7 +913,7 @@ def do_bake_selected_to_target():
                     if node.label == "TextureBake":
                         mat.node_tree.nodes.remove(node)
 
-            functions.sacle_image_if_needed(bpy.data.images[IMGNAME])
+            functions.scale_image_if_needed(bpy.data.images[IMGNAME])
             do_post_processing(thisbake=thisbake, IMGNAME=IMGNAME)
 
     # Do the bake at least once

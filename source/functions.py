@@ -279,46 +279,42 @@ def bake_operation(thisbake, img):
 
 def check_scene(objects, bakemode):
     messages = []
+    props = bpy.context.scene.TextureBake_Props
 
-    # This is hacky. A better way to do this needs to be found TODO: why?
-    advancedobj = bpy.context.scene.TextureBake_Props.use_object_list
-    if advancedobj:
+    # Are objects selected for baking?
+    if props.use_object_list:
         objects = advanced_object_selection_to_list()
-
-    # Is anything seleccted at all for bake?
     if len(objects) == 0:
         messages.append("ERROR: Nothing selected for bake")
-        if advancedobj:
-            messages.append("NOTE: You have advanced object selection turned on, so you have to add bake objects at the top of the TextureBake panel")
-            messages.append("If you want to select objects for baking in the viewport, turn off advanced object selection")
+        if props.use_object_list:
+            messages.append("Add objects to the list in the Objects panel or deactivate advanced object selection.")
         show_message_box(messages, "Errors occured", "ERROR")
         return False
 
     # Check everything selected (or target) is mesh
     for obj in objects:
         if obj.type != "MESH":
-            messages.append(f"ERROR: Object '{obj.name}' is not mesh")
-    if bpy.context.scene.TextureBake_Props.selected_to_target and bpy.context.scene.TextureBake_Props.target_object != None:
-        if bpy.context.scene.TextureBake_Props.target_object.type != "MESH":
-            messages.append(f"ERROR: Object '{bpy.context.scene.TextureBake_Props.target_object.name}' (your target object) is not mesh")
+            messages.append(f"ERROR: Object '{obj.name}' is not a mesh")
+    if props.selected_to_target and props.target_object and props.target_object.type != "MESH":
+        messages.append(f"ERROR: Target object '{props.target_object.name}' is not a mesh")
     if len(messages) > 1:
         show_message_box(messages, "Errors occured", "ERROR")
         return False
 
     # Check object visibility
     obj_test_list = objects.copy()
-    if bpy.context.scene.TextureBake_Props.selected_to_target and bpy.context.scene.TextureBake_Props.target_object != None:
-        obj_test_list.append(bpy.context.scene.TextureBake_Props.target_object)
+    if props.selected_to_target and props.target_object:
+        obj_test_list.append(props.target_object)
 
     for obj in obj_test_list:
         if obj.hide_viewport == True:
-            messages.append(f"Object '{obj.name}' is hidden in viewport (monitor icon in outliner)")
+            messages.append(f"Object '{obj.name}' is hidden in viewport")
         if obj.hide_render == True:
-            messages.append(f"Object '{obj.name}' is hidden for render (camera icon in outliner)")
+            messages.append(f"Object '{obj.name}' is hidden for render")
         if obj.hide_get() == True:
-            messages.append(f"Object '{obj.name}' is hidden in viewport eye (eye icon in outliner)")
+            messages.append(f"Object '{obj.name}' is hidden in viewport eye")
         if obj.hide_select == True:
-            messages.append(f"Object '{obj.name}' is hidden for selection (arrow icon in outliner)")
+            messages.append(f"Object '{obj.name}' is hidden for selection")
     if len(messages)>0:
         show_message_box(messages, "Errors occured", "ERROR")
         return False
@@ -327,8 +323,8 @@ def check_scene(objects, bakemode):
     for obj in objects:
         if len(obj.data.polygons) < 1:
             messages.append(f"ERROR: Object '{obj.name}' has no faces")
-    if bpy.context.scene.TextureBake_Props.selected_to_target and bpy.context.scene.TextureBake_Props.target_object != None:
-        obj = bpy.context.scene.TextureBake_Props.target_object
+    if props.selected_to_target and props.target_object:
+        obj = props.target_object
         if len(obj.data.polygons) < 1:
             messages.append(f"ERROR: Object '{obj.name}' has no faces")
     if len(messages) > 1:
@@ -339,54 +335,50 @@ def check_scene(objects, bakemode):
     for obj in objects:
         for slot in obj.material_slots:
             mat = slot.material
-            if mat != None: # It'll get a placeholder material later on if it's none
+            if mat != None:
                 if check_for_connected_viewer_node(mat):
                     messages.append(f"ERROR: Material '{mat.name}' on object '{obj.name}' has a Viewer node connected to the Material Output")
                     show_message_box(messages, "Errors occured", "ERROR")
                     return False
-
     if len(messages) > 1:
         show_message_box(messages, "Errors occured", "ERROR")
         return False
 
+    # Invalid character in exported names
     for obj in objects:
-        props = bpy.context.scene.TextureBake_Props
         if props.export_textures and obj.name != clean_file_name(obj.name):
             prefs = bpy.context.preferences.addons[__package__].preferences
             presets = [p for p in prefs.export_presets if p.uid == props.export_preset]
             if presets and [t for t in presets[0].textures if "%OBJ" in t.name]:
-                messages.append(f"ERROR: You are trying to save external images, but object with name \"{obj.name}\" contains invalid characters for saving externally.")
+                messages.append(f"ERROR: You are trying to save external images, but \"{obj.name}\" contains invalid characters for saving externally.")
                 break
 
-    if bpy.context.scene.TextureBake_Props.merged_bake and bpy.context.scene.TextureBake_Props.merged_bake_name == "":
+    if props.merged_bake and props.merged_bake_name == "":
         messages.append(f"ERROR: You are baking multiple objects to one texture set, but the texture name is blank")
 
-    if (bpy.context.scene.TextureBake_Props.merged_bake_name != clean_file_name(bpy.context.scene.TextureBake_Props.merged_bake_name)) and bpy.context.scene.TextureBake_Props.export_textures:
-        messages.append(f"ERROR: The texture name you inputted for baking multiple objects to one texture set (\"{bpy.context.scene.TextureBake_Props.merged_bake_name}\") contains invalid characters for saving externally.")
+    if props.merged_bake_name != clean_file_name(props.merged_bake_name) and props.export_textures:
+        messages.append(f"ERROR: The texture name for baking multiple objects to one texture set \"{props.merged_bake_name}\" contains invalid characters for saving externally.")
 
-    # Merged bake stuff
-    if bpy.context.scene.TextureBake_Props.merged_bake:
-        if bpy.context.scene.TextureBake_Props.selected_to_target: messages.append("You can't use the Bake Multiple Objects to One Texture Set option when baking to target")
-        if bpy.context.scene.TextureBake_Props.tex_per_mat: messages.append("You can't use the Bake Multiple Objects to One Texture Set option with the Texture Per Material option")
-
-        if (bpy.context.scene.TextureBake_Props.use_object_list and len(bpy.context.scene.TextureBake_Props.object_list)<2) or ((not bpy.context.scene.TextureBake_Props.use_object_list) and len(bpy.context.selected_objects)<2):
-            messages.append("You have selected the Multiple Objeccts to One Texture Set option (under Texture Settings) but you don't have multiple objects selected")
+    # Merged bakes
+    if props.merged_bake:
+        if props.selected_to_target:
+            messages.append("You can't use the Bake Multiple Objects to One Texture Set option when baking to target")
+        if props.tex_per_mat:
+            messages.append("You can't use the Bake Multiple Objects to One Texture Set option with the Texture Per Material option")
 
     # PBR Bake Checks - No S2A
     if bakemode == constants.BAKE_MODE_PBR:
         for obj in objects:
-            # Are UVs OK?
             if len(obj.data.uv_layers) == 0:
                 messages.append(f"ERROR: Object {obj.name} has no UVs")
                 continue
 
-            # Are materials OK? Fix if not
+            # Are materials OK?
             if not check_object_valid_material_config(obj):
-                fix_invalid_material_config(obj)
+                messages.append(f"ERROR: Object {obj.name} has invalid material setup. Check that there is a material in every slot and all of them use nodes")
 
             # Do all materials have valid PBR config?
-            for slot in obj.material_slots:
-                mat = slot.material
+            for mat in [slot.material for slot in obj.material_slots if slot.material]:
                 result = check_mats_valid_for_pbr(mat)
                 if len(result) > 0:
                     for node_name in result:
@@ -394,86 +386,62 @@ def check_scene(objects, bakemode):
 
     # PBR Bake - S2A
     if bakemode == constants.BAKE_MODE_S2A:
-        # These checkes are done on all selected objects (not just the target)-----------
-
-        # Are materials OK? Fix if not
+        # Are materials OK?
         for obj in objects:
             if not check_object_valid_material_config(obj):
-                print_msg(f"{obj.name} has invalid material config - fixing")
-                fix_invalid_material_config(obj)
+                messages.append(f"ERROR: Object {obj.name} has invalid material setup. Check that there is a material in every slot and all of them use nodes")
+
+            for mat in [slot.material for slot in obj.material_slots if slot.material]:
+                result = check_mats_valid_for_pbr(mat)
+                if len(result) > 0:
+                    for node_name in result:
+                        messages.append(f"ERROR: Node '{node_name}' in material '{mat.name}' on object '{obj.name}' is not valid for PBR bake. Principled BSDFs and/or Emission only!")
+
         # Check the taget object too
-        target = bpy.context.scene.TextureBake_Props.target_object
+        target = props.target_object
+        if not target:
+            messages.append("ERROR: You are trying to bake to a target object, but you have not selected one in the Texture Bake panel")
+            show_message_box(messages, "Errors occured", "ERROR")
+            return False
+
+        # Do we have selected more than just the target object?
+        if len(objects) == 1 and objects[0] == target:
+            messages.append("ERROR: You are trying to bake to a target object, but the only object you have selected is your target")
+            show_message_box(messages, "Errors occured", "ERROR")
+            return False
+
+        # Are UVs OK?
+        if len(target.data.uv_layers) == 0:
+            messages.append(f"ERROR: Object {target.name} has no UVs")
+            show_message_box(messages, "Errors occured", "ERROR")
+            return False
+
         if not check_object_valid_material_config(target):
-            fix_invalid_material_config(target)
+            messages.append(f"ERROR: Object {obj.name} has invalid material setup. Check that there is a material in every slot and all of them use nodes")
+            show_message_box(messages, "Errors occured", "ERROR")
+            return False
 
-        # Do all materials have valid PBR config?
-        if len(messages) == 0:
-            for obj in objects:
-                for slot in obj.material_slots:
-                    mat = slot.material
-                    result = check_mats_valid_for_pbr(mat)
-                    if len(result) > 0:
-                        for node_name in result:
-                            messages.append(f"ERROR: Node '{node_name}' in material '{mat.name}' on object '{obj.name}' is not valid for PBR bake. Principled BSDFs and/or Emission only!")
-
-        # -------------------------------------------------------------------------
-
-        if len(messages) == 0:
-            # From this point onward, we only care about the target object
-            obj = bpy.context.scene.TextureBake_Props.target_object
-
-            # Do we have a target object?
-            if bpy.context.scene.TextureBake_Props.target_object == None:
-                messages.append("ERROR: You are trying to bake to a target object with PBR Bake, but you have not selected one in the TextureBake panel")
-                show_message_box(messages, "Errors occured", "ERROR")
-                return False
-
-            # Have we got more selected than just the target object?
-            if len(objects) == 1 and objects[0] == obj:
-                messages.append("ERROR: You are trying to bake to a target object with PBR Bake, but the only object you have selected is your target")
-                show_message_box(messages, "Errors occured", "ERROR")
-                return False
-
-            # Are UVs OK?
-            if len(obj.data.uv_layers) == 0:
-                messages.append(f"ERROR: Object {obj.name} has no UVs")
-                show_message_box(messages, "Errors occured", "ERROR")
-                return False
-
-            # All existing materials must use nodes
-            for slot in obj.material_slots:
-                if slot.material != None:
-                    if not slot.material.use_nodes:
-                        slot.material.use_nodes = True
-
-                # Are materials OK? Fix if not
-                if not check_object_valid_material_config(obj):
-                    print_msg(f"{obj.name} (target) has invalid material config - fixing")
-                    fix_invalid_material_config(obj)
-
-    # Specials Bake
-    if bpy.context.scene.TextureBake_Props.selected_col_vertex:
+    # Input textures
+    if props.selected_col_vertex:
         if bakemode == constants.BAKE_MODE_INPUTS:
             for obj in objects:
-                if len(obj.data.vertex_colors) == 0:
-                    messages.append(f"You are trying to bake the active vertex colors, but object {obj.name} doesn't have vertex colors")
+                if not obj.data.vertex_colors:
+                    messages.append(f"You are trying to bake the active vertex colors, but {obj.name} doesn't have vertex colors")
                     show_message_box(messages, "Errors occured", "ERROR")
                     return False
 
         if bakemode == constants.BAKE_MODE_INPUTS_S2A:
-            t = bpy.context.scene.TextureBake_Props.target_object
-            if len(t.data.vertex_colors) == 0:
-                messages.append(f"You are trying to bake the active vertex colors, but object {t.name} doesn't have vertex colors")
+            t = props.target_object
+            if not t.data.vertex_colors:
+                messages.append(f"You are trying to bake the active vertex colors, but {t.name} doesn't have vertex colors")
                 show_message_box(messages, "Errors occured", "ERROR")
                 return False
 
-    # Let's report back (if we haven't already)
     if len(messages) != 0:
         show_message_box(messages, "Errors occured", "ERROR")
         return False
-    else:
-        # If we get here then everything looks good
-        return True
+
+    return True
 
 
 def process_uvs():
@@ -537,7 +505,7 @@ def check_object_valid_material_config(obj):
     for slot in obj.material_slots:
         if slot.material.use_nodes == False:
             return False
-    # If we get here, everything looks good
+
     return True
 
 
@@ -1057,31 +1025,7 @@ def advanced_object_selection_to_list():
     return [i.obj for i in bpy.context.scene.TextureBake_Props.object_list]
 
 
-def fix_invalid_material_config(obj):
-    if "TextureBake_Placeholder" in bpy.data.materials:
-        mat = bpy.data.materials["TextureBake_Placeholder"]
-    else:
-        mat = bpy.data.materials.new("TextureBake_Placeholder")
-        bpy.data.materials["TextureBake_Placeholder"].use_nodes = True
-
-    # Assign it to object
-    if len(obj.material_slots) > 0:
-        # Assign it to every empty slot
-        for slot in obj.material_slots:
-            if slot.material == None:
-                slot.material = mat
-    else:
-        # no slots
-        obj.data.materials.append(mat)
-
-    # All materials must use nodes
-    for slot in obj.material_slots:
-        mat = slot.material
-        if mat.use_nodes == False:
-            mat.use_nodes = True
-
-
-def sacle_image_if_needed(img):
+def scale_image_if_needed(img):
     print_msg("Scaling images if needed")
 
     context = bpy.context
