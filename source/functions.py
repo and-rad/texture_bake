@@ -105,7 +105,7 @@ def gen_image_name(obj_name, baketype):
     elif baketype == constants.TEX_AO or baketype == constants.PBR_AO:
         parts.append(prefs.ao_alias)
     elif baketype == constants.TEX_MAT_ID:
-        parts.append(prefs.colid_alias)
+        parts.append(prefs.matid_alias)
     elif baketype == constants.TEX_CURVATURE:
         parts.append(prefs.curvature_alias)
     elif baketype == constants.TEX_THICKNESS:

@@ -37,7 +37,7 @@ class BakeOperation:
         # pbr stuff
         self.pbr_selected_bake_types = []
 
-        # ColIdmap stuff
+        # Material id map stuff
         self.mat_col_dict = {} #{matname, [r,g,b]
 
     def assemble_pbr_bake_list(self):

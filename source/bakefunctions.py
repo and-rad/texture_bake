@@ -414,7 +414,7 @@ def specials_bake():
     else:
         objects = current_bake_op.bake_objects
 
-    # Firstly, let's bake the colid maps if they have been asked for
+    # Firstly, let's bake the matid maps if they have been asked for
     if bpy.context.scene.TextureBake_Props.selected_col_mats:
         col_id_map(input_width, input_height, objects, constants.TEX_MAT_ID)
     if bpy.context.scene.TextureBake_Props.selected_col_vertex:

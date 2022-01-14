@@ -107,6 +107,14 @@ def export_texture_update(self, context):
     bpy.ops.wm.save_userpref()
 
 
+def texture_channel_info_update(self, context):
+    if self.info in [constants.PBR_DIFFUSE, constants.PBR_EMISSION]:
+        self.space = 'sRGB'
+    else:
+        self.space = 'Non-Color'
+    bpy.ops.wm.save_userpref()
+
+
 class TextureBakeObjectProperty(bpy.types.PropertyGroup):
     """Group of properties representing an object selected for baking."""
 
@@ -358,7 +366,7 @@ class TextureBakeTextureChannel(PropertyGroup):
             (constants.PBR_OPACITY, "Opacity", ""),
             (constants.PBR_ROUGHNESS, "Roughness", ""),
         ],
-        update = export_texture_update,
+        update = texture_channel_info_update,
     )
 
     space: EnumProperty(
@@ -493,7 +501,7 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
     curvature_alias: StringProperty(name="Curvature", default="curvature")
     thickness_alias: StringProperty(name="Thickness", default="thickness")
     vertexcol_alias: StringProperty(name="Vertex Color", default="vertexcol")
-    colid_alias: StringProperty(name="Material ID", default="colid")
+    matid_alias: StringProperty(name="Material ID", default="matid")
 
     @classmethod
     def reset_aliases(self):
@@ -515,7 +523,7 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
         prefs.property_unset("curvature_alias")
         prefs.property_unset("thickness_alias")
         prefs.property_unset("vertexcol_alias")
-        prefs.property_unset("colid_alias")
+        prefs.property_unset("matid_alias")
         bpy.ops.wm.save_userpref()
 
     def draw(self, context):
@@ -543,27 +551,38 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
 
             if 0 <= preset.textures_index and preset.textures_index < len(preset.textures):
                 texture = preset.textures[preset.textures_index]
-                row = box.row()
-                row.prop(texture, "file_format", text="")
-                row.prop(texture, "depth", text="")
                 col = box.column()
+
+                row = col.split(factor=0.1)
+                row.label(text="Format:")
+                if texture.file_format == 'PNG':
+                    row = row.split(factor=0.7)
+                    row.prop(texture, "file_format", text="")
+                    row.prop(texture, "depth", text="")
+                else:
+                    row.prop(texture, "file_format", text="")
+
+                col.separator()
                 row = col.split(factor=0.1)
                 row.label(text="Red:")
                 row = row.split(factor=0.7)
                 row.prop(texture.red, "info", text="")
                 row.prop(texture.red, "space", text="")
+
                 row = col.split(factor=0.1)
                 row.label(text="Green:")
                 row = row.split(factor=0.7)
                 row.prop(texture.green, "info", text="")
                 row.prop(texture.green, "space", text="")
+
                 row = col.split(factor=0.1)
                 row.label(text="Blue:")
                 row = row.split(factor=0.7)
                 row.prop(texture.blue, "info", text="")
                 row.prop(texture.blue, "space", text="")
+
                 row = col.split(factor=0.1)
-                row.enabled = texture.file_format != 'JPG'
+                row.enabled = texture.file_format != 'JPEG'
                 row.label(text="Alpha:")
                 row = row.split(factor=0.7)
                 row.prop(texture.alpha, "info", text="")
@@ -571,7 +590,7 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
 
         # Aliases
         box = layout.box()
-        box.row().label(text="Aliases")
+        box.row().label(text="Texture Aliases")
         box.row().prop(self, "diffuse_alias")
         box.row().prop(self, "metal_alias")
         box.row().prop(self, "sss_alias")
@@ -590,7 +609,7 @@ class TextureBakePreferences(bpy.types.AddonPreferences):
         box.row().prop(self, "curvature_alias")
         box.row().prop(self, "thickness_alias")
         box.row().prop(self, "vertexcol_alias")
-        box.row().prop(self, "colid_alias")
+        box.row().prop(self, "matid_alias")
         box.row().operator("texture_bake.reset_aliases")
 
 
