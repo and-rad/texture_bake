@@ -189,32 +189,16 @@ class TEXTUREBAKE_PT_export_settings(TextureBakeCategoryPanel, bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         layout.use_property_decorate = False
+        layout.use_property_split = True
 
         if functions.is_blend_saved():
             layout.row().prop(context.scene.TextureBake_Props, "export_preset", text="Preset")
-            layout.use_property_split = True
             layout.row().prop(context.scene.TextureBake_Props, "export_textures")
 
             if context.scene.TextureBake_Props.export_textures:
-                layout.separator()
                 layout.row().prop(context.scene.TextureBake_Props, "export_folder_name")
-
-                row = layout.row()
-                row.prop(context.scene.TextureBake_Props, "export_folder_per_object")
-                row.enabled = context.scene.TextureBake_Props.export_textures
-
+                layout.row().prop(context.scene.TextureBake_Props, "export_folder_per_object")
                 layout.row().prop(context.scene.TextureBake_Props, "export_datetime")
-                layout.row().prop(context.scene.TextureBake_Props, "export_file_format", text="Format")
-
-                row = layout.row()
-                row.prop(context.scene.TextureBake_Props, "export_16bit")
-                if (not context.scene.TextureBake_Props.export_textures
-                    or context.scene.TextureBake_Props.export_file_format == "JPEG"
-                    or context.scene.TextureBake_Props.export_file_format == "TARGA"):
-                    row.enabled = False
-
-                row = layout.row()
-                row.prop(context.scene.TextureBake_Props, "export_color_space")
 
             row = layout.row()
             row.scale_y = 1.5

@@ -24,7 +24,7 @@ import os
 from pathlib import Path
 
 
-def post_process(internal_img_name, path_dir="", path_filename="", file_format="OPEN_EXR", save=False, mode="3to1", **args):
+def post_process(internal_img_name, mode="3to1", save=False, **args):
     # Import the compositing scene that we need
     path = os.path.dirname(__file__) + "/compositing/compositing.blend\\Scene\\"
 
@@ -59,25 +59,25 @@ def post_process(internal_img_name, path_dir="", path_filename="", file_format="
         if ("input_r" in args) and args["input_r"]!=None:
             nodes["input_r"].image = args["input_r"]
             input_r_orig_colspace = args["input_r"].colorspace_settings.name
-            if file_format == "PNG":
+            if args["file_format"] == "PNG":
                 args["input_r"].colorspace_settings.name = "sRGB"
 
         if ("input_g" in args) and args["input_g"]!=None:
             nodes["input_g"].image = args["input_g"]
             input_g_orig_colspace = args["input_g"].colorspace_settings.name
-            if file_format == "PNG":
+            if args["file_format"] == "PNG":
                 args["input_g"].colorspace_settings.name = "sRGB"
 
         if ("input_b" in args) and args["input_b"]!=None:
             nodes["input_b"].image = args["input_b"]
             input_b_orig_colspace = args["input_b"].colorspace_settings.name
-            if file_format == "PNG":
+            if args["file_format"] == "PNG":
                 args["input_b"].colorspace_settings.name = "sRGB"
 
         if ("input_a" in args) and args["input_a"]!=None:
             nodes["input_a"].image = args["input_a"]
             input_a_orig_colspace = args["input_a"].colorspace_settings.name
-            if file_format == "PNG":
+            if args["file_format"] == "PNG":
                 args["input_a"].colorspace_settings.name = "sRGB"
 
         # Clear the alpha connection unless we have an alpha texture
@@ -138,47 +138,30 @@ def post_process(internal_img_name, path_dir="", path_filename="", file_format="
     # Set the output resolution of the scene to the texture size we are using
     scene.render.resolution_y = bpy.context.scene.TextureBake_Props.input_height
     scene.render.resolution_x = bpy.context.scene.TextureBake_Props.input_width
-
-    # Render to temp file for the internal image
-    tmpdir = Path(tempfile.mkdtemp())
-    scene.render.filepath = str(tmpdir / path_filename)
-    # Let's always do this an EXR
+    scene.render.filepath = tempfile.mkdtemp()
     scene.render.image_settings.file_format = "OPEN_EXR"
     bpy.ops.render.render(animation=False, write_still=True, use_viewport=False, scene=scene.name)
 
     # Reload the temp file into an internal image again
-    img = bpy.data.images.load(str(tmpdir / path_filename)+"."+"exr")
-
-    # Make sure that image is non-color for now
+    img = bpy.data.images.load(scene.render.filepath+"."+"exr")
     img.colorspace_settings.name = "Non-Color"
-
-    # Pack image, so we don't lose it when we delete the temp file
-    img.pack()
-    img.use_fake_user = True
-
-    # Rename internal image
     img.name = internal_img_name
+    img.use_fake_user = True
+    img.pack()
 
     # Delete the external tmp file
-    shutil.rmtree(str(tmpdir))
+    shutil.rmtree(scene.render.filepath)
 
     if save:
-        # Render to output file, if we are saving extnerally
-        scene.render.filepath = str(path_dir / path_filename)
-
-        # Set file format to requested
-        scene.render.image_settings.file_format = file_format
-
-        # Turn off compression and adjust other settings
+        scene.render.filepath = str(args["path_dir"] / args["path_filename"])
+        scene.render.image_settings.file_format = args["file_format"]
         scene.render.image_settings.color_mode = "RGBA"
-
-        # Always use the max bit depth that we can
-        if file_format == "OPEN_EXR":
-            scene.render.image_settings.color_depth = "32"
-
-        elif file_format != "TARGA": # TGA cannot be 16bit. But PNG can.
-            scene.render.image_settings.color_depth = "16"
         scene.render.image_settings.compression = 0
+        scene.render.image_settings.color_depth = args["color_depth"]
+        if args["file_format"] == "OPEN_EXR":
+            scene.render.image_settings.color_depth = "32"
+        elif args["file_format"] in ["JPEG", "TARGA"]:
+            scene.render.image_settings.color_depth = "8"
 
         # Save
         bpy.ops.render.render(animation=False, write_still=True, use_viewport=False, scene=scene.name)

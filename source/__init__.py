@@ -57,11 +57,6 @@ from . import (
 )
 
 
-def export_file_format_update(self,context):
-    if self.export_file_format == "JPEG" or self.export_file_format == "TARGA":
-        self.export_16bit = False
-
-
 def export_folder_name_update(self, context):
     if functions.is_blend_saved() and not self.export_folder_name.startswith("//"):
         self.export_folder_name = bpy.path.relpath(self.export_folder_name)
@@ -69,8 +64,6 @@ def export_folder_name_update(self, context):
 
 def export_textures_update(self, context):
     if context.scene.TextureBake_Props.export_textures == False:
-        context.scene.TextureBake_Props.export_16bit = False
-        context.scene.TextureBake_Props.export_folder_per_object = False
         context.scene.TextureBake_Props.uv_mode = "normal"
 
 
@@ -273,29 +266,9 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
     )
 
     export_folder_per_object: BoolProperty(
-        name = "Sub-folder per object",
-        description = "Create a sub-folder for the textures and FBX of each baked object. Only available if you are exporting bakes",
+        name = "Subfolder per object",
+        description = "Create a subfolder for the textures of each baked object",
         default = False,
-    )
-
-    export_16bit: BoolProperty(
-        name = "All exports 16bit",
-        description = "Normal maps are always exported as 16bit, but this option causes all images to be exported 16bit. This should probably stay enabled unless file sizes are an issue",
-        default = True,
-    )
-
-    export_file_format: EnumProperty(
-        name = "Export File Format",
-        description = "Select the file format for exported bakes",
-        default = "PNG",
-        items = [
-            ("PNG", "PNG", ""),
-            ("JPEG", "JPG", ""),
-            ("TIFF", "TIFF", ""),
-            ("TARGA", "TGA", ""),
-            ("OPEN_EXR", "Open EXR", "Color management settings are not supported by the EXR format"),
-        ],
-        update = export_file_format_update,
     )
 
     export_folder_name: StringProperty(

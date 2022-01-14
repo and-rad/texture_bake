@@ -183,14 +183,12 @@ def create_images(imgname, thisbake, objname):
     input_width = bpy.context.scene.TextureBake_Props.input_width
 
     # If it already exists, remove it.
-    if(imgname in bpy.data.images):
+    if imgname in bpy.data.images:
         bpy.data.images.remove(bpy.data.images[imgname])
 
     # Either way, create the new image
     alpha = bpy.context.scene.TextureBake_Props.use_alpha
-
     all32 = bpy.context.scene.TextureBake_Props.bake_32bit_float
-    all16 = bpy.context.scene.TextureBake_Props.export_16bit
 
     # Create image 32 bit or not 32 bit
     if thisbake == constants.PBR_NORMAL_DX or thisbake == constants.PBR_NORMAL_OGL:

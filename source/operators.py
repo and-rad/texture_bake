@@ -336,10 +336,7 @@ class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
         d["udim_tiles"] = context.scene.TextureBake_Props.udim_tiles
         d["export_textures"] = context.scene.TextureBake_Props.export_textures
         d["export_folder_per_object"] = context.scene.TextureBake_Props.export_folder_per_object
-        d["export_16bit"] = context.scene.TextureBake_Props.export_16bit
-        d["export_file_format"] = context.scene.TextureBake_Props.export_file_format
         d["export_folder_name"] = context.scene.TextureBake_Props.export_folder_name
-        d["export_color_space"] = context.scene.TextureBake_Props.export_color_space
         d["export_datetime"] = context.scene.TextureBake_Props.export_datetime
         d["use_object_list"] = context.scene.TextureBake_Props.use_object_list
         d["object_list_index"] = context.scene.TextureBake_Props.object_list_index
@@ -465,10 +462,7 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
         context.scene.TextureBake_Props.udim_tiles = d["udim_tiles"]
         context.scene.TextureBake_Props.export_textures = d["export_textures"]
         context.scene.TextureBake_Props.export_folder_per_object = d["export_folder_per_object"]
-        context.scene.TextureBake_Props.export_16bit = d["export_16bit"]
-        context.scene.TextureBake_Props.export_file_format = d["export_file_format"]
         context.scene.TextureBake_Props.export_folder_name = d["export_folder_name"]
-        context.scene.TextureBake_Props.export_color_space = d["export_color_space"]
         context.scene.TextureBake_Props.export_datetime = d["export_datetime"]
         context.scene.TextureBake_Props.use_object_list = d["use_object_list"]
         context.scene.TextureBake_Props.object_list_index = d["object_list_index"]

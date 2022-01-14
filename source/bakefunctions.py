@@ -174,8 +174,8 @@ def do_post_processing(thisbake, IMGNAME):
     if thisbake == constants.PBR_NORMAL_DX:
         post_processing.post_process(
             internal_img_name="SB_Temp_Img",
-            input_img=bpy.data.images[IMGNAME],
             mode="1to1",
+            input_img=bpy.data.images[IMGNAME],
             invert_g=True,
         )
 
@@ -203,8 +203,8 @@ def do_post_processing(thisbake, IMGNAME):
     if thisbake == constants.PBR_ROUGHNESS and bpy.context.scene.TextureBake_Props.rough_glossy_switch == "glossy":
         post_processing.post_process(
             internal_img_name="SB_Temp_Img",
-            input_img=bpy.data.images[IMGNAME],
             mode="1to1",
+            input_img=bpy.data.images[IMGNAME],
             invert_all=True,
         )
 
@@ -312,8 +312,12 @@ def channel_packing(objects):
 
             post_processing.post_process(
                 internal_img_name = imgname,
-                save = props.export_textures,
                 mode = "3to1",
+                save = props.export_textures,
+                path_dir = obj_export_folder_names[obj.name],
+                path_filename = Path(imgname),
+                file_format = file_format,
+                color_depth = tex.depth,
                 input_r = red,
                 input_g = green,
                 input_b = blue,
@@ -322,9 +326,6 @@ def channel_packing(objects):
                 isolate_input_r = isolate_input_r,
                 isolate_input_g = isolate_input_g,
                 isolate_input_b = isolate_input_b,
-                path_dir = obj_export_folder_names[obj.name],
-                path_filename = Path(imgname),
-                file_format = file_format,
             )
 
             functions.write_baked_texture(imgname)
