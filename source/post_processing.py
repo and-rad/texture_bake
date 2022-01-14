@@ -56,32 +56,29 @@ def post_process(internal_img_name, mode="3to1", save=False, **args):
         nodes = node_tree.nodes
 
         # Set the inputs
-        if ("input_r" in args) and args["input_r"]!=None:
+        if "input_r" in args and args["input_r"]:
             nodes["input_r"].image = args["input_r"]
             input_r_orig_colspace = args["input_r"].colorspace_settings.name
-            if args["file_format"] == "PNG":
-                args["input_r"].colorspace_settings.name = "sRGB"
+            args["input_r"].colorspace_settings.name = args["space_r"]
 
-        if ("input_g" in args) and args["input_g"]!=None:
+        if "input_g" in args and args["input_g"]:
             nodes["input_g"].image = args["input_g"]
             input_g_orig_colspace = args["input_g"].colorspace_settings.name
-            if args["file_format"] == "PNG":
-                args["input_g"].colorspace_settings.name = "sRGB"
+            args["input_g"].colorspace_settings.name = args["space_g"]
 
-        if ("input_b" in args) and args["input_b"]!=None:
+        if "input_b" in args and args["input_b"]:
             nodes["input_b"].image = args["input_b"]
             input_b_orig_colspace = args["input_b"].colorspace_settings.name
-            if args["file_format"] == "PNG":
-                args["input_b"].colorspace_settings.name = "sRGB"
+            args["input_b"].colorspace_settings.name = args["space_b"]
 
-        if ("input_a" in args) and args["input_a"]!=None:
+        if "input_a" in args and args["input_a"]:
             nodes["input_a"].image = args["input_a"]
             input_a_orig_colspace = args["input_a"].colorspace_settings.name
-            if args["file_format"] == "PNG":
-                args["input_a"].colorspace_settings.name = "sRGB"
+            args["input_a"].colorspace_settings.name = args["space_a"]
 
         # Clear the alpha connection unless we have an alpha texture
-        if (not "input_a" in args) or args["input_a"]==None: node_tree.links.remove(nodes["Combine RGBA"].inputs[3].links[0])
+        if not "input_a" in args or not args["input_a"]:
+            node_tree.links.remove(nodes["Combine RGBA"].inputs[3].links[0])
 
         # Alpha Premul
         if "alpha_convert" in args and args["alpha_convert"] == "straight":

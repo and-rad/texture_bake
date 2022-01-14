@@ -279,14 +279,8 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
         update = export_folder_name_update,
     )
 
-    export_color_space: BoolProperty(
-        name = "Export color space settings",
-        description = "Apply color space settings (exposure, gamma etc.) from current scene when saving the diffuse image externally. Only available if you are exporting baked images. Will be ignored if exporting to EXR files as these don't support color management",
-        default = False,
-    )
-
     export_datetime: BoolProperty(
-        name = "Append date and time to folder",
+        name = "Append date and time",
         description = "Append date and time to folder name. If you turn this off, previous bakes with the same name will be overwritten",
         default = True,
     )
@@ -370,12 +364,11 @@ class TextureBakeTextureChannel(PropertyGroup):
     space: EnumProperty(
         name = "Color Space",
         description = "The color space for this channel",
-        default = 'SRGB',
+        default = 'Non-Color',
         items = [
-            ('SRGB', "sRGB", ""),
-            ('LINEAR', "Linear", ""),
-            ('NON_COLOR', "Non-Color", ""),
-            ('RAW', "Raw", ""),
+            ('sRGB', "sRGB", ""),
+            ('Linear', "Linear", ""),
+            ('Non-Color', "Non-Color", ""),
         ],
         update = export_texture_update,
     )

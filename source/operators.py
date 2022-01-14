@@ -729,59 +729,84 @@ class TEXTUREBAKE_OT_reset_export_presets(bpy.types.Operator):
         item = presets.add()
         item.uid = "6a8abd21-609f-4219-9268-b5c6656a501b"
         item.name = "Unreal Engine"
+
         tex = item.textures.add()
         tex.name = "T_%OBJ%_%BATCH%_D"
         tex.file_format = 'TARGA'
+        tex.depth = '8'
         tex.red.info = constants.PBR_DIFFUSE
+        tex.red.space = 'sRGB'
         tex.green.info = constants.PBR_DIFFUSE
+        tex.green.space = 'sRGB'
         tex.blue.info = constants.PBR_DIFFUSE
+        tex.blue.space = 'sRGB'
         tex.alpha.info = constants.PBR_OPACITY
-        tex.alpha.space = 'NON_COLOR'
+        tex.alpha.space = 'Non-Color'
+
+        tex = item.textures.add()
+        tex.name = "T_%OBJ%_%BATCH%_E"
+        tex.file_format = 'TARGA'
+        tex.depth = '8'
+        tex.red.info = constants.PBR_EMISSION
+        tex.red.space = 'sRGB'
+        tex.green.info = constants.PBR_EMISSION
+        tex.green.space = 'sRGB'
+        tex.blue.info = constants.PBR_EMISSION
+        tex.blue.space = 'sRGB'
+
         tex = item.textures.add()
         tex.name = "T_%OBJ%_%BATCH%_N"
         tex.file_format = 'TARGA'
+        tex.depth = '8'
         tex.red.info = constants.PBR_NORMAL_DX
-        tex.red.space = 'NON_COLOR'
+        tex.red.space = 'Non-Color'
         tex.green.info = constants.PBR_NORMAL_DX
-        tex.green.space = 'NON_COLOR'
+        tex.green.space = 'Non-Color'
         tex.blue.info = constants.PBR_NORMAL_DX
-        tex.blue.space = 'NON_COLOR'
+        tex.blue.space = 'Non-Color'
+
         tex = item.textures.add()
         tex.name = "T_%OBJ%_%BATCH%_ORM"
         tex.file_format = 'TARGA'
+        tex.depth = '8'
         tex.red.info = constants.PBR_AO
-        tex.red.space = 'NON_COLOR'
+        tex.red.space = 'Non-Color'
         tex.green.info = constants.PBR_ROUGHNESS
-        tex.green.space = 'NON_COLOR'
+        tex.green.space = 'Non-Color'
         tex.blue.info = constants.PBR_METAL
-        tex.blue.space = 'NON_COLOR'
+        tex.blue.space = 'Non-Color'
 
-        # Normal maps
+        # Normal map DirectX
         item = presets.add()
         item.uid = "52819e17-c9e2-454c-8be8-e75c2b04e1cd"
         item.name = "Normal Map (DirectX)"
+
         tex = item.textures.add()
         tex.name = "%OBJ%_%BATCH%_Normal_DX"
         tex.file_format = 'PNG'
+        tex.depth = '16'
         tex.red.info = constants.PBR_NORMAL_DX
-        tex.red.space = 'NON_COLOR'
+        tex.red.space = 'Non-Color'
         tex.green.info = constants.PBR_NORMAL_DX
-        tex.green.space = 'NON_COLOR'
+        tex.green.space = 'Non-Color'
         tex.blue.info = constants.PBR_NORMAL_DX
-        tex.blue.space = 'NON_COLOR'
+        tex.blue.space = 'Non-Color'
 
+        # Normal map OpenGL
         item = presets.add()
         item.uid = "6711b4ef-064f-42fb-be00-fd8662cf4382"
         item.name = "Normal Map (OpenGL)"
+
         tex = item.textures.add()
         tex.name = "%OBJ%_%BATCH%_Normal_OGL"
         tex.file_format = 'PNG'
+        tex.depth = '16'
         tex.red.info = constants.PBR_NORMAL_OGL
-        tex.red.space = 'NON_COLOR'
+        tex.red.space = 'Non-Color'
         tex.green.info = constants.PBR_NORMAL_OGL
-        tex.green.space = 'NON_COLOR'
+        tex.green.space = 'Non-Color'
         tex.blue.info = constants.PBR_NORMAL_OGL
-        tex.blue.space = 'NON_COLOR'
+        tex.blue.space = 'Non-Color'
 
         bpy.ops.wm.save_userpref()
         return {'FINISHED'}
