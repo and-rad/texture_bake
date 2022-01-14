@@ -248,15 +248,18 @@ class TEXTUREBAKE_OT_bake_import_individual(bpy.types.Operator):
     def execute(self, context):
         # Import textures and delete blend file
         p = ([p for p in background_bake_ops.bgops_list_finished if p.process.pid == self.pnum])[0]
+        background_bake_ops.bgops_list_finished.remove(p)
         path = Path(bpy.data.filepath).parent / (str(p.process.pid) + ".blend")
         textures = functions.read_baked_textures(p.process.pid)
 
         with bpy.data.libraries.load(str(path), link=False) as (data_from, data_to):
             data_to.images = [name for name in data_from.images if name in textures]
 
-        path.unlink()
-        path.with_suffix(".blend1").unlink()
-        background_bake_ops.bgops_list_finished.remove(p)
+        try:
+            path.unlink()
+            path.with_suffix(".blend1").unlink()
+        except:
+            pass
 
         # Replace previous versions of the imported textures
         for img_id in textures:
@@ -292,9 +295,12 @@ class TEXTUREBAKE_OT_bake_delete_individual(bpy.types.Operator):
     pnum: bpy.props.IntProperty()
 
     def execute(self, context):
-        path = Path(bpy.data.filepath).parent / (str(self.pnum) + ".blend")
-        path.with_suffix(".blend1").unlink()
-        path.unlink()
+        try:
+            path = Path(bpy.data.filepath).parent / (str(self.pnum) + ".blend")
+            path.unlink()
+            path.with_suffix(".blend1").unlink()
+        except:
+            pass
 
         background_bake_ops.bgops_list_finished = [p for p in background_bake_ops.bgops_list_finished if p.process.pid != self.pnum]
         return {'FINISHED'}
