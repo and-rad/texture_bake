@@ -36,6 +36,8 @@
   move.
 - Baked textures no longer lose their association with shaders after being
   baked repeatedly.
+- Fixed various issues with channel packing. All kinds of textures can now be
+  packed reliably.
 
 ## [0.9.0] - 2021-12-26
 

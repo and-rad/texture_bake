@@ -88,50 +88,6 @@ def post_process(internal_img_name, mode="3to1", save=False, **args):
             nodes["alpha_convert"].mute = False
             nodes["alpha_convert"].mapping = "STRAIGHT_TO_PREMUL"
 
-        # The inverts all start muted
-        if "invert_r_input_r" in args and args["invert_r_input_r"]: nodes["invert_r_input_r"].mute = False
-        if "invert_r_input_g" in args and args["invert_r_input_g"]: nodes["invert_r_input_g"].mute = False
-        if "invert_r_input_b" in args and args["invert_r_input_b"]: nodes["invert_r_input_b"].mute = False
-        if "invert_r_input_a" in args and args["invert_r_input_a"]: nodes["invert_r_input_a"].mute = False
-
-        if "invert_g_input_r" in args and args["invert_g_input_r"]: nodes["invert_g_input_r"].mute = False
-        if "invert_g_input_g" in args and args["invert_g_input_g"]: nodes["invert_g_input_g"].mute = False
-        if "invert_g_input_b" in args and args["invert_g_input_b"]: nodes["invert_g_input_b"].mute = False
-        if "invert_g_input_a" in args and args["invert_g_input_a"]: nodes["invert_g_input_a"].mute = False
-
-        if "invert_b_input_r" in args and args["invert_b_input_r"]: nodes["invert_b_input_r"].mute = False
-        if "invert_b_input_g" in args and args["invert_b_input_g"]: nodes["invert_b_input_g"].mute = False
-        if "invert_b_input_b" in args and args["invert_b_input_b"]: nodes["invert_b_input_b"].mute = False
-        if "invert_b_input_a" in args and args["invert_b_input_a"]: nodes["invert_b_input_a"].mute = False
-
-        if "invert_a_input_r" in args and args["invert_a_input_r"]: nodes["invert_a_input_r"].mute = False
-        if "invert_a_input_g" in args and args["invert_a_input_g"]: nodes["invert_a_input_g"].mute = False
-        if "invert_a_input_b" in args and args["invert_a_input_b"]: nodes["invert_a_input_b"].mute = False
-        if "invert_a_input_a" in args and args["invert_a_input_a"]: nodes["invert_a_input_a"].mute = False
-
-        # Isolate the input channels
-        if "isolate_input_r" in args and args["isolate_input_r"]:
-            node_tree.links.remove(nodes["Combine RGBA.002"].inputs["G"].links[0])
-            node_tree.links.remove(nodes["Combine RGBA.002"].inputs["B"].links[0])
-            node_tree.links.remove(nodes["Combine RGBA.002"].inputs["A"].links[0])
-            nodes["Combine RGBA.002"].mute=True
-        if "isolate_input_g" in args and args["isolate_input_g"]:
-            node_tree.links.remove(nodes["Combine RGBA.003"].inputs["R"].links[0])
-            node_tree.links.remove(nodes["Combine RGBA.003"].inputs["B"].links[0])
-            node_tree.links.remove(nodes["Combine RGBA.003"].inputs["A"].links[0])
-            nodes["Combine RGBA.003"].mute=True
-        if "isolate_input_b" in args and args["isolate_input_b"]:
-            node_tree.links.remove(nodes["Combine RGBA.004"].inputs["R"].links[0])
-            node_tree.links.remove(nodes["Combine RGBA.004"].inputs["G"].links[0])
-            node_tree.links.remove(nodes["Combine RGBA.004"].inputs["A"].links[0])
-            nodes["Combine RGBA.004"].mute=True
-
-    # Disable the BW nodes
-    if "mute_bws" in args and args["mute_bws"]:
-        bw_nodes = [node for node in nodes if node.bl_idname == "CompositorNodeRGBToBW"]
-        for node in bw_nodes:
-            node.mute=True
-
     # Set the output resolution of the scene to the texture size we are using
     scene.render.resolution_y = bpy.context.scene.TextureBake_Props.input_height
     scene.render.resolution_x = bpy.context.scene.TextureBake_Props.input_width

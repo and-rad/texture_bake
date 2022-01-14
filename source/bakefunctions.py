@@ -300,16 +300,6 @@ def channel_packing(objects):
             imgname = functions.gen_export_texture_name(tex.name, objname)
             functions.print_msg(f"Creating packed texture {imgname} for object {objname} with format {file_format}")
 
-            # Isolate
-            if tex.red.info == 'DIFFUSE' and tex.green.info == 'DIFFUSE' and tex.blue.info == 'DIFFUSE':
-                isolate_input_r=True
-                isolate_input_g=True
-                isolate_input_b=True
-            else:
-                isolate_input_r=False
-                isolate_input_g=False
-                isolate_input_b=False
-
             post_processing.post_process(
                 internal_img_name = imgname,
                 mode = "3to1",
@@ -327,9 +317,6 @@ def channel_packing(objects):
                 space_b = tex.blue.space,
                 space_a = tex.alpha.space,
                 alpha_convert = alpha_convert,
-                isolate_input_r = isolate_input_r,
-                isolate_input_g = isolate_input_g,
-                isolate_input_b = isolate_input_b,
             )
 
             functions.write_baked_texture(imgname)
