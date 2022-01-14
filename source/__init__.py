@@ -199,12 +199,6 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
         default = False,
     )
 
-    use_alpha: BoolProperty(
-        name = "Use Alpha",
-        description = "Baked images have a transparent background (else Black)",
-        default = False,
-    )
-
     rough_glossy_switch: EnumProperty(
         name = "",
         description = "Switch between roughness and glossiness (inverts of each other). NOTE: Roughness is the default for Blender so, if you change this, texture probably won't look right when used in Blender",

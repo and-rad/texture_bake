@@ -174,7 +174,6 @@ class TEXTUREBAKE_PT_bake_settings(TextureBakeCategoryPanel, bpy.types.Panel):
 
         layout.separator()
         layout.row().prop(context.scene.TextureBake_Props, "bake_32bit_float")
-        layout.row().prop(context.scene.TextureBake_Props, "use_alpha")
         layout.row().prop(context.scene.TextureBake_Props, "tex_per_mat")
         layout.row().prop(context.scene.TextureBake_Props, "merged_bake")
 

@@ -187,14 +187,15 @@ def create_images(imgname, thisbake, objname):
         bpy.data.images.remove(bpy.data.images[imgname])
 
     # Either way, create the new image
-    alpha = bpy.context.scene.TextureBake_Props.use_alpha
     if bpy.context.scene.TextureBake_Props.bake_32bit_float:
-        image = bpy.data.images.new(imgname, input_width, input_height, alpha=alpha, float_buffer=True)
+        image = bpy.data.images.new(imgname, input_width, input_height, float_buffer=True)
     else:
-        image = bpy.data.images.new(imgname, input_width, input_height, alpha=alpha, float_buffer=False)
+        image = bpy.data.images.new(imgname, input_width, input_height, float_buffer=False)
 
-    if alpha:
-        image.generated_color = (0,0,0,0)
+    if thisbake in [constants.PBR_NORMAL_DX, constants.PBR_NORMAL_OGL]:
+        image.generated_color = (0.5,0.5,1.0,1.0)
+    elif thisbake in [constants.PBR_DIFFUSE, constants.PBR_ROUGHNESS]:
+        image.generated_color = (0.5,0.5,0.5,1.0)
 
     # Set tags
     image["SB_objname"] = objname
@@ -210,9 +211,7 @@ def create_images(imgname, thisbake, objname):
     else:
         image["SB_udims"] = False
 
-    # Always mark new images fake user when generated in the background
-    if "--background" in sys.argv:
-        image.use_fake_user = True
+    image.use_fake_user = True
 
     # Store it at bake operation level
     MasterOperation.baked_textures.append(image)

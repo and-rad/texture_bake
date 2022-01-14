@@ -329,7 +329,6 @@ class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
         d["output_height"] = context.scene.TextureBake_Props.output_height
         d["output_width"] = context.scene.TextureBake_Props.output_width
         d["bake_32bit_float"] = context.scene.TextureBake_Props.bake_32bit_float
-        d["use_alpha"] = context.scene.TextureBake_Props.use_alpha
         d["rough_glossy_switch"] = context.scene.TextureBake_Props.rough_glossy_switch
         d["tex_per_mat"] = context.scene.TextureBake_Props.tex_per_mat
         d["selected_col_mats"] = context.scene.TextureBake_Props.selected_col_mats
@@ -456,7 +455,6 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
         context.scene.TextureBake_Props.output_height = d["output_height"]
         context.scene.TextureBake_Props.output_width = d["output_width"]
         context.scene.TextureBake_Props.bake_32bit_float = d["bake_32bit_float"]
-        context.scene.TextureBake_Props.use_alpha = d["use_alpha"]
         context.scene.TextureBake_Props.rough_glossy_switch = d["rough_glossy_switch"]
         context.scene.TextureBake_Props.tex_per_mat = d["tex_per_mat"]
         context.scene.TextureBake_Props.selected_col_mats = d["selected_col_mats"]
