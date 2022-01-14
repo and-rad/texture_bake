@@ -188,12 +188,7 @@ def create_images(imgname, thisbake, objname):
 
     # Either way, create the new image
     alpha = bpy.context.scene.TextureBake_Props.use_alpha
-    all32 = bpy.context.scene.TextureBake_Props.bake_32bit_float
-
-    # Create image 32 bit or not 32 bit
-    if thisbake == constants.PBR_NORMAL_DX or thisbake == constants.PBR_NORMAL_OGL:
-        image = bpy.data.images.new(imgname, input_width, input_height, alpha=alpha, float_buffer=True)
-    elif all32:
+    if bpy.context.scene.TextureBake_Props.bake_32bit_float:
         image = bpy.data.images.new(imgname, input_width, input_height, alpha=alpha, float_buffer=True)
     else:
         image = bpy.data.images.new(imgname, input_width, input_height, alpha=alpha, float_buffer=False)

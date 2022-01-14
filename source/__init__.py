@@ -186,8 +186,8 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
     )
 
     bake_32bit_float: BoolProperty(
-        name = "All internal 32bit float",
-        description = "Normal maps are always created as 32bit float images, but this option causes all images to be created as 32bit float. Image quality is theoretically increased, but often not noticably. Images must be exported as EXR to preserve 32bit quality",
+        name = "32-bit Color Depth",
+        description = "All images will be saved with full 32-bit floating-point color precision internally. This increases image quality at the cost of significantly higher memory usage and rendering time",
         default = False,
     )
 
