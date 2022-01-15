@@ -64,7 +64,7 @@ def export_folder_name_update(self, context):
 
 def export_textures_update(self, context):
     if context.scene.TextureBake_Props.export_textures == False:
-        context.scene.TextureBake_Props.uv_mode = "normal"
+        context.scene.TextureBake_Props.bake_udims = False
 
 
 def presets_list_update(self,context):
@@ -158,13 +158,13 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
     )
 
     merged_bake: BoolProperty(
-        name = "Multiple objects to one texture set",
+        name = "Merge Baked Textures",
         default = False,
         description = "Bake multiple objects to one set of textures. You must have more than one object selected for baking. You will need to manually make sure their UVs don't overlap",
     )
 
     merged_bake_name: StringProperty(
-        name = "Texture name for multiple bake",
+        name = "Merge Name",
         description = "When baking one object at a time, the object's name is used in the texture name. Baking multiple objects to one texture set, however requires you to proivde a name for the textures",
         default = "merged_bake",
     )
@@ -210,7 +210,7 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
     )
 
     tex_per_mat: BoolProperty(
-        name = "Texture per material",
+        name = "One Texture Per Material",
         description = "Bake each material into its own texture (for export to virtual worlds like Second Life",
     )
 
@@ -240,18 +240,13 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
     )
 
     prefer_existing_uvmap: BoolProperty(
-        name = "Prefer existing UV maps called TextureBake",
+        name = "Prefer existing UV maps",
         description = "If one exists for the object being baked, use any existing UV maps called 'TextureBake' for baking (rather than the active UV map)",
     )
 
-    uv_mode: EnumProperty(
-        name = "UV Mode",
-        description = "Bake to UDIMs or normal UVs. You must be exporting your bakes to use UDIMs. You must manually create your UDIM UVs (this cannot be automated)",
-        default = "normal",
-        items = [
-            ("normal", "Normal", "Normal UV maps"),
-            ("udims", "UDIMs", "UDIM UV maps"),
-        ],
+    bake_udims: BoolProperty(
+        name = "Bake UDIMs",
+        description = "Bake to UDIMs. You must be exporting your bakes to use UDIMs. UDIM UVs have to be created manually",
     )
 
     udim_tiles: IntProperty(
@@ -316,7 +311,7 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
     )
 
     batch_name: StringProperty(
-        name = "Batch name",
+        name = "Batch Name",
         description = "Name to apply to these bakes (is incorporated into the bakes file name, provided you have included this in the image format string - see addon preferences). NOTE: To maintain compatibility, only MS Windows acceptable characters will be used",
         default = "Bake1",
         maxlen = 20,
@@ -636,8 +631,6 @@ classes = [
     ui.TEXTUREBAKE_PT_input,
     ui.TEXTUREBAKE_PT_bake_settings,
     ui.TEXTUREBAKE_PT_export_settings,
-    ui.TEXTUREBAKE_PT_uv,
-    ui.TEXTUREBAKE_PT_other,
     ui.TEXTUREBAKE_UL_object_list,
     ui.TEXTUREBAKE_OT_add_object,
     ui.TEXTUREBAKE_OT_remove_object,

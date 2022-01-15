@@ -202,14 +202,11 @@ def create_images(imgname, thisbake, objname):
     image["SB_batch"] = batch
     image["SB_globalmode"] = global_mode
     image["SB_thisbake"] = thisbake
+    image["SB_udims"] = current_bake_op.bake_udims
     if MasterOperation.merged_bake:
         image["SB_merged_bake_name"] = MasterOperation.merged_bake_name
     else:
         image["SB_merged_bake_name"] = None
-    if current_bake_op.uv_mode == "udims":
-        image["SB_udims"] = True
-    else:
-        image["SB_udims"] = False
 
     image.use_fake_user = True
 
@@ -526,6 +523,7 @@ def clean_file_name(filename):
 
 
 def export_textures(image, baketype, obj):
+    # TODO: This function isn't used anywhere anymore
     originally_float = image.is_float
 
     def apply_scene_col_settings(scene):
@@ -655,7 +653,7 @@ def export_textures(image, baketype, obj):
         image.filepath = str(get_export_folder_name()) +"/" + image.name + "." + file_extension
 
     # UDIMS
-    if bpy.context.scene.TextureBake_Props.uv_mode == "udims":
+    if bpy.context.scene.TextureBake_Props.bake_udims:
         # Is this the last one?
         if int(image.name[-3:]) == bpy.context.scene.TextureBake_Props.udim_tiles:
             # This is the last one

@@ -74,6 +74,7 @@ def common_bake_prep():
     # --------------Set Bake Operation Variables----------------------------
 
     current_bake_op = MasterOperation.bake_op
+    props = bpy.context.scene.TextureBake_Props
 
     functions.print_msg("==================================")
     functions.print_msg("--------Texture Bake Start--------")
@@ -85,16 +86,16 @@ def common_bake_prep():
         current_bake_op.assemble_pbr_bake_list()
 
     # Record batch name
-    MasterOperation.batch_name = bpy.context.scene.TextureBake_Props.batch_name
+    MasterOperation.batch_name = props.batch_name
 
     # Set values based on viewport selection
     current_bake_op.bake_objects = bpy.context.selected_objects.copy()
     current_bake_op.active_object = bpy.context.active_object
 
-    if bpy.context.scene.TextureBake_Props.use_object_list:
+    if props.use_object_list:
         current_bake_op.bake_objects = functions.advanced_object_selection_to_list()
-    if bpy.context.scene.TextureBake_Props.target_object != None:
-        current_bake_op.sb_target_object = bpy.context.scene.TextureBake_Props.target_object
+    if props.target_object != None:
+        current_bake_op.sb_target_object = props.target_object
 
     # Create a new collection, and add selected objects and target objects to it
     for c in bpy.data.collections:
@@ -106,34 +107,29 @@ def common_bake_prep():
     for obj in current_bake_op.bake_objects:
         if obj.name not in c:
             c.objects.link(obj)
-    if bpy.context.scene.TextureBake_Props.target_object and bpy.context.scene.TextureBake_Props.target_object.name not in c.objects:
-        c.objects.link(bpy.context.scene.TextureBake_Props.target_object)
+    if props.target_object and props.target_object.name not in c.objects:
+        c.objects.link(props.target_object)
 
     # Every object must have at least camera ray visibility
     for obj in current_bake_op.bake_objects:
         obj.visible_camera = True
-    if bpy.context.scene.TextureBake_Props.target_object:
-        bpy.context.scene.TextureBake_Props.target_object.visible_camera = True
+    if props.target_object:
+        props.target_object.visible_camera = True
 
     # Although starting checks will stop if no UVs, New UVs gets a pass so we need to be careful here
     if current_bake_op.sb_target_object != None:
         obj = current_bake_op.sb_target_object
 
-    if bpy.context.scene.TextureBake_Props.uv_mode == "udims":
-        current_bake_op.uv_mode = "udims"
-    else:
-        current_bake_op.uv_mode = "normal"
-
     # Force it to cycles
     bpy.context.scene.render.engine = 'CYCLES'
 
     # If this is a selected to active bake (PBR or cycles), turn it on
-    if current_bake_op.bake_mode == constants.BAKE_MODE_S2A and bpy.context.scene.TextureBake_Props.selected_to_target:
+    if current_bake_op.bake_mode == constants.BAKE_MODE_S2A and props.selected_to_target:
         bpy.context.scene.render.bake.use_selected_to_active = True
-        functions.print_msg(f"Setting ray distance to {round(bpy.context.scene.TextureBake_Props.ray_distance, 2)}")
-        bpy.context.scene.render.bake.max_ray_distance = bpy.context.scene.TextureBake_Props.ray_distance
-        functions.print_msg(f"Setting cage extrusion to {round(bpy.context.scene.TextureBake_Props.cage_extrusion, 2)}")
-        bpy.context.scene.render.bake.cage_extrusion = bpy.context.scene.TextureBake_Props.cage_extrusion
+        functions.print_msg(f"Setting ray distance to {round(props.ray_distance, 2)}")
+        bpy.context.scene.render.bake.max_ray_distance = props.ray_distance
+        functions.print_msg(f"Setting cage extrusion to {round(props.cage_extrusion, 2)}")
+        bpy.context.scene.render.bake.cage_extrusion = props.cage_extrusion
     else:
         bpy.context.scene.render.bake.use_selected_to_active = False
 
@@ -142,11 +138,12 @@ def common_bake_prep():
         bpy.context.scene.cycles.device = "CPU"
 
     # Reset the UDIM counters to 0
+    current_bake_op.bake_udims = props.bake_udims
     current_bake_op.udim_counter = 1001
     functions.currentUDIMtile = {}
 
     # If baking S2A, and the user has selected a cage object, there are extra steps to turn it on
-    if bpy.context.scene.TextureBake_Props.selected_to_target:
+    if props.selected_to_target:
         if bpy.context.scene.render.bake.cage_object:
             bpy.context.scene.render.bake.use_cage = False
         else:
@@ -421,7 +418,7 @@ def specials_bake():
                 IMGNAME = functions.gen_image_name(bpy.context.scene.TextureBake_Props.merged_bake_name, special)
 
                 # UDIMs
-                if current_bake_op.uv_mode == "udims":
+                if current_bake_op.bake_udims:
                     IMGNAME = IMGNAME+f".{udim_counter}"
 
                 # TODO - May want to change the tag when can apply specials bakes
@@ -435,7 +432,7 @@ def specials_bake():
                     IMGNAME = functions.gen_image_name(OBJNAME, special)
 
                     # UDIMs
-                    if current_bake_op.uv_mode == "udims":
+                    if current_bake_op.bake_udims:
                         IMGNAME = IMGNAME+f".{current_bake_op.udim_counter}"
 
                     # TODO - May want to change the tag when can apply specials bakes
@@ -490,7 +487,7 @@ def specials_bake():
     current_bake_op.udim_counter = current_bake_op.udim_counter + 1
 
     # If we are doing UDIMs, we need to go back in
-    if current_bake_op.uv_mode == "udims":
+    if current_bake_op.bake_udims:
         while current_bake_op.udim_counter < bpy.context.scene.TextureBake_Props.udim_tiles + 1001:
             functions.print_msg(f"Going back in for tile {current_bake_op.udim_counter}")
             for obj in objects:
@@ -521,7 +518,7 @@ def col_id_map(input_width, input_height, objects, mode="random"):
             functions.print_msg("We are doing a merged bake")
             IMGNAME = functions.gen_image_name(bpy.context.scene.TextureBake_Props.merged_bake_name, f"{mode}")
             # UDIMs
-            if current_bake_op.uv_mode == "udims":
+            if current_bake_op.bake_udims:
                 IMGNAME = IMGNAME+f".{udim_counter}"
             functions.create_images(IMGNAME, mode, bpy.context.scene.TextureBake_Props.merged_bake_name)
 
@@ -531,7 +528,7 @@ def col_id_map(input_width, input_height, objects, mode="random"):
 
             if not merged_bake:
                 IMGNAME = functions.gen_image_name(OBJNAME, mode)
-                if current_bake_op.uv_mode == "udims":
+                if current_bake_op.bake_udims:
                     IMGNAME = IMGNAME+f".{udim_counter}"
                 functions.create_images(IMGNAME, mode, obj.name)
 
@@ -620,7 +617,7 @@ def col_id_map(input_width, input_height, objects, mode="random"):
     udim_counter = udim_counter + 1
 
     # If we are doing UDIMs, we need to go back in
-    if current_bake_op.uv_mode == "udims":
+    if current_bake_op.bake_udims:
 
         while udim_counter < bpy.context.scene.TextureBake_Props.udim_tiles + 1001:
             functions.print_msg(f"Going back in for tile {udim_counter}")
@@ -649,7 +646,7 @@ def do_bake():
                 IMGNAME = functions.gen_image_name(bpy.context.scene.TextureBake_Props.merged_bake_name, thisbake)
 
                 # UDIM testing
-                if current_bake_op.uv_mode == "udims":
+                if current_bake_op.bake_udims:
                     IMGNAME = IMGNAME+f".{current_bake_op.udim_counter}"
 
                 functions.create_images(IMGNAME, thisbake, bpy.context.scene.TextureBake_Props.merged_bake_name)
@@ -669,7 +666,7 @@ def do_bake():
                     IMGNAME = functions.gen_image_name(obj.name, thisbake)
 
                     # UDIM testing
-                    if current_bake_op.uv_mode == "udims":
+                    if current_bake_op.bake_udims:
                         IMGNAME = IMGNAME+f".{current_bake_op.udim_counter}"
 
                     functions.create_images(IMGNAME, thisbake, obj.name)
@@ -762,15 +759,12 @@ def do_bake():
     current_bake_op.udim_counter = current_bake_op.udim_counter + 1
 
     # If we are doing UDIMs, we need to go back in
-    if current_bake_op.uv_mode == "udims":
-
+    if current_bake_op.bake_udims:
         while current_bake_op.udim_counter < bpy.context.scene.TextureBake_Props.udim_tiles + 1001:
             functions.print_msg(f"Going back in for tile {current_bake_op.udim_counter}")
             for obj in current_bake_op.bake_objects:
                 functions.focus_UDIM_tile(obj,current_bake_op.udim_counter - 1001)
-
             do_bake_actual()
-
             current_bake_op.udim_counter = current_bake_op.udim_counter + 1
 
 
@@ -790,7 +784,7 @@ def do_bake_selected_to_target():
             IMGNAME = functions.gen_image_name(current_bake_op.sb_target_object.name, thisbake)
 
             # UDIM testing
-            if current_bake_op.uv_mode == "udims":
+            if current_bake_op.bake_udims:
                 IMGNAME = IMGNAME+f".{current_bake_op.udim_counter}"
 
             functions.create_images(IMGNAME, thisbake, current_bake_op.sb_target_object.name)
@@ -913,7 +907,7 @@ def do_bake_selected_to_target():
     current_bake_op.udim_counter = current_bake_op.udim_counter + 1
 
     # If we are doing UDIMs, we need to go back in
-    if current_bake_op.uv_mode == "udims":
+    if current_bake_op.bake_udims:
 
         while current_bake_op.udim_counter < bpy.context.scene.TextureBake_Props.udim_tiles + 1001:
             functions.print_msg(f"Going back in for tile {current_bake_op.udim_counter}")

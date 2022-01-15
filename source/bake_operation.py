@@ -30,9 +30,7 @@ class BakeOperation:
         self.bake_objects = []
         self.active_object = None
         self.sb_target_object = None
-
-        # normal, udims
-        self.uv_mode = "normal"
+        self.bake_udims = False
 
         # pbr stuff
         self.pbr_selected_bake_types = []

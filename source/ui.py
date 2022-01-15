@@ -150,22 +150,18 @@ class TEXTUREBAKE_PT_bake_settings(TextureBakeCategoryPanel, bpy.types.Panel):
         layout = self.layout
 
         layout.row().label(text="Bake at:")
-
         row = layout.row()
         row.prop(context.scene.TextureBake_Props, "input_width")
         row.prop(context.scene.TextureBake_Props, "input_height")
-
         row = layout.row()
         row.operator("texture_bake.decrease_bake_res", icon = "TRIA_DOWN")
         row.operator("texture_bake.increase_bake_res", icon = "TRIA_UP")
 
         layout.separator()
         layout.row().label(text="Output at:")
-
         row = layout.row()
         row.prop(context.scene.TextureBake_Props, "output_width")
         row.prop(context.scene.TextureBake_Props, "output_height")
-
         row = layout.row()
         row.operator("texture_bake.decrease_output_res", icon = "TRIA_DOWN")
         row.operator("texture_bake.increase_output_res", icon = "TRIA_UP")
@@ -173,12 +169,33 @@ class TEXTUREBAKE_PT_bake_settings(TextureBakeCategoryPanel, bpy.types.Panel):
         layout.row().prop(context.scene.render.bake, "margin", text="Bake Margin")
 
         layout.separator()
+        layout.use_property_decorate = False
+        layout.use_property_split = True
+
+        layout.row().prop(context.scene.TextureBake_Props, "batch_name")
+        if context.preferences.addons["cycles"].preferences.has_active_device():
+            layout.row().prop(context.scene.cycles, "device")
+            row = layout.row()
+            row.prop(context.scene.TextureBake_Props, "memory_limit")
+            row.enabled = context.scene.cycles.device != "CPU"
+        else:
+            layout.row().label(text="No valid GPU device in Blender Preferences. Using CPU.")
+
+        layout.row().prop(context.scene.TextureBake_Props, "merged_bake")
+        row = layout.row()
+        row.prop(context.scene.TextureBake_Props, "merged_bake_name")
+        row.enabled = context.scene.TextureBake_Props.merged_bake
+
+        row = layout.row()
+        row.prop(context.scene.TextureBake_Props, "bake_udims")
+        row.enabled = context.scene.TextureBake_Props.export_textures
+        row = layout.row()
+        row.prop(context.scene.TextureBake_Props, "udim_tiles")
+        row.enabled = context.scene.TextureBake_Props.bake_udims
+
+        layout.row().prop(context.scene.TextureBake_Props, "prefer_existing_uvmap")
         layout.row().prop(context.scene.TextureBake_Props, "bake_32bit_float")
         layout.row().prop(context.scene.TextureBake_Props, "tex_per_mat")
-        layout.row().prop(context.scene.TextureBake_Props, "merged_bake")
-
-        if context.scene.TextureBake_Props.merged_bake:
-            layout.row().prop(context.scene.TextureBake_Props, "merged_bake_name")
 
 
 class TEXTUREBAKE_PT_export_settings(TextureBakeCategoryPanel, bpy.types.Panel):
@@ -204,45 +221,6 @@ class TEXTUREBAKE_PT_export_settings(TextureBakeCategoryPanel, bpy.types.Panel):
             row.operator("texture_bake.bake", icon='RENDER_RESULT')
         else:
             layout.row().label(text="Unavailable - Blend file not saved")
-
-
-class TEXTUREBAKE_PT_uv(TextureBakeCategoryPanel, bpy.types.Panel):
-    bl_label = "UV Settings"
-    bl_parent_id = "TEXTUREBAKE_PT_main"
-
-    def draw(self, context):
-        layout = self.layout
-
-        row = layout.row()
-        row.prop(context.scene.TextureBake_Props, "uv_mode", expand=True)
-        row.enabled = context.scene.TextureBake_Props.export_textures
-
-        if context.scene.TextureBake_Props.uv_mode == "udims":
-            layout.row().prop(context.scene.TextureBake_Props, "udim_tiles")
-
-        row = layout.row()
-        row.prop(context.scene.TextureBake_Props, "prefer_existing_uvmap")
-
-
-class TEXTUREBAKE_PT_other(TextureBakeCategoryPanel, bpy.types.Panel):
-    bl_label = "Other Settings"
-    bl_parent_id = "TEXTUREBAKE_PT_main"
-
-    def draw(self, context):
-        layout = self.layout
-
-        row=layout.row()
-        row.prop(context.scene.TextureBake_Props, "batch_name")
-
-        if context.preferences.addons["cycles"].preferences.has_active_device():
-            row = layout.row()
-            row.prop(context.scene.cycles, "device")
-            row = layout.row()
-            row.prop(context.scene.TextureBake_Props, "memory_limit")
-            row.enabled = context.scene.cycles.device != "CPU"
-        else:
-            row=layout.row()
-            row.label(text="No valid GPU device in Blender Preferences. Using CPU.")
 
 
 class TEXTUREBAKE_UL_object_list(UIList):

@@ -74,7 +74,7 @@ def get_image_from_tag(thisbake, objname):
     objname = functions.untrunc_if_needed(objname)
     batch_name = bpy.context.scene.TextureBake_Props.batch_name
     results = []
-    if current_bake_op.uv_mode == "udims":
+    if current_bake_op.bake_udims:
         results = [img for img in bpy.data.images if\
             ("SB_objname" in img and img["SB_objname"] == objname) and\
             ("SB_batch" in img and img["SB_batch"] == batch_name) and\

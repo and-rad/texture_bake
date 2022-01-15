@@ -337,7 +337,7 @@ class TEXTUREBAKE_OT_save_preset(bpy.types.Operator):
         d["selected_thickness"] = context.scene.TextureBake_Props.selected_thickness
         d["selected_curvature"] = context.scene.TextureBake_Props.selected_curvature
         d["prefer_existing_uvmap"] = context.scene.TextureBake_Props.prefer_existing_uvmap
-        d["uv_mode"] = context.scene.TextureBake_Props.uv_mode
+        d["bake_udims"] = context.scene.TextureBake_Props.bake_udims
         d["udim_tiles"] = context.scene.TextureBake_Props.udim_tiles
         d["export_textures"] = context.scene.TextureBake_Props.export_textures
         d["export_folder_per_object"] = context.scene.TextureBake_Props.export_folder_per_object
@@ -462,7 +462,7 @@ class TEXTUREBAKE_OT_load_preset(bpy.types.Operator):
         context.scene.TextureBake_Props.selected_ao = d["selected_ao"]
         context.scene.TextureBake_Props.selected_thickness = d["selected_thickness"]
         context.scene.TextureBake_Props.selected_curvature = d["selected_curvature"]
-        context.scene.TextureBake_Props.uv_mode = d["uv_mode"]
+        context.scene.TextureBake_Props.bake_udims = d["bake_udims"]
         context.scene.TextureBake_Props.udim_tiles = d["udim_tiles"]
         context.scene.TextureBake_Props.export_textures = d["export_textures"]
         context.scene.TextureBake_Props.export_folder_per_object = d["export_folder_per_object"]
