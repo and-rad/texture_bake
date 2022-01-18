@@ -20,6 +20,7 @@
 import bpy
 import sys
 import subprocess
+import tempfile
 import os
 import json
 import uuid
@@ -109,24 +110,20 @@ class TEXTUREBAKE_OT_bake(bpy.types.Operator):
         if not functions.check_scene(context.selected_objects, bake_mode):
             return {"CANCELLED"}
 
-        bpy.ops.wm.save_mainfile()
-        filepath = filepath = bpy.data.filepath
+        path = str(Path(tempfile.gettempdir()) / f"{os.getpid()}.blend")
+        bpy.ops.wm.save_as_mainfile(filepath=path, copy=True, check_existing=False)
         process = subprocess.Popen(
-            [bpy.app.binary_path, "--background",filepath, "--python-expr",\
-            "import bpy;\
-            import os;\
-            from pathlib import Path;\
+            [bpy.app.binary_path, "--background", path, "--python-expr",\
+            "import bpy; import os; from pathlib import Path;\
             savepath=Path(bpy.data.filepath).parent / (str(os.getpid()) + \".blend\");\
             bpy.ops.wm.save_as_mainfile(filepath=str(savepath), check_existing=False);\
             bpy.ops.texture_bake.bake();"],
             shell=False)
 
-        background_bake_ops.bgops_list.append(
-            BackgroundBakeParams(process, "Export textures")
-        )
-
+        background_bake_ops.bgops_list.append(BackgroundBakeParams(process, "Export textures"))
         bpy.app.timers.register(refresh_bake_progress)
         self.report({"INFO"}, "Background bake process started")
+
         return {'FINISHED'}
 
 
@@ -181,24 +178,20 @@ class TEXTUREBAKE_OT_bake_input_textures(bpy.types.Operator):
         if not functions.check_scene(context.selected_objects, bake_mode):
             return {"CANCELLED"}
 
-        bpy.ops.wm.save_mainfile()
-        filepath = filepath = bpy.data.filepath
+        path = str(Path(tempfile.gettempdir()) / f"{os.getpid()}.blend")
+        bpy.ops.wm.save_as_mainfile(filepath=path, copy=True, check_existing=False)
         process = subprocess.Popen(
-            [bpy.app.binary_path, "--background",filepath, "--python-expr",\
-            "import bpy;\
-            import os;\
-            from pathlib import Path;\
+            [bpy.app.binary_path, "--background", path, "--python-expr",\
+            "import bpy; import os; from pathlib import Path;\
             savepath=Path(bpy.data.filepath).parent / (str(os.getpid()) + \".blend\");\
             bpy.ops.wm.save_as_mainfile(filepath=str(savepath), check_existing=False);\
             bpy.ops.texture_bake.bake_input_textures();"],
             shell=False)
 
-        background_bake_ops.bgops_list.append(
-            BackgroundBakeParams(process, "Bake input maps")
-        )
-
+        background_bake_ops.bgops_list.append(BackgroundBakeParams(process, "Bake input maps"))
         bpy.app.timers.register(refresh_bake_progress)
         self.report({"INFO"}, "Background bake process started")
+
         return {'FINISHED'}
 
 
@@ -249,7 +242,7 @@ class TEXTUREBAKE_OT_bake_import_individual(bpy.types.Operator):
         # Import textures and delete blend file
         p = ([p for p in background_bake_ops.bgops_list_finished if p.process.pid == self.pnum])[0]
         background_bake_ops.bgops_list_finished.remove(p)
-        path = Path(bpy.data.filepath).parent / (str(p.process.pid) + ".blend")
+        path = Path(tempfile.gettempdir()) / (str(p.process.pid) + ".blend")
         textures = functions.read_baked_textures(p.process.pid)
 
         with bpy.data.libraries.load(str(path), link=False) as (data_from, data_to):
@@ -296,7 +289,7 @@ class TEXTUREBAKE_OT_bake_delete_individual(bpy.types.Operator):
 
     def execute(self, context):
         try:
-            path = Path(bpy.data.filepath).parent / (str(self.pnum) + ".blend")
+            path = Path(tempfile.gettempdir()) / (str(self.pnum) + ".blend")
             path.unlink()
             path.with_suffix(".blend1").unlink()
         except:

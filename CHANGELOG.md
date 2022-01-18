@@ -21,6 +21,8 @@
 - Channel packing does no longer require the "Export textures" property to be
   active. Channel packed textures are imported into Blender along with the
   other baked textures, saving to disk is now optional.
+- It is no longer necessary to save the blend file before baking. Every feature
+  that the add-on provides works for unsaved files as well.
 
 ### Removed
 - Removed distinction between PBR bakes and Cycles bakes. The add-on uses both

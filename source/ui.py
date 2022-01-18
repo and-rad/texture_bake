@@ -207,20 +207,16 @@ class TEXTUREBAKE_PT_export_settings(TextureBakeCategoryPanel, bpy.types.Panel):
         layout.use_property_decorate = False
         layout.use_property_split = True
 
-        if functions.is_blend_saved():
-            layout.row().prop(context.scene.TextureBake_Props, "export_preset", text="Preset")
-            layout.row().prop(context.scene.TextureBake_Props, "export_textures")
+        layout.row().prop(context.scene.TextureBake_Props, "export_preset", text="Preset")
+        layout.row().prop(context.scene.TextureBake_Props, "export_textures")
+        if context.scene.TextureBake_Props.export_textures:
+            layout.row().prop(context.scene.TextureBake_Props, "export_folder_name")
+            layout.row().prop(context.scene.TextureBake_Props, "export_folder_per_object")
+            layout.row().prop(context.scene.TextureBake_Props, "export_datetime")
 
-            if context.scene.TextureBake_Props.export_textures:
-                layout.row().prop(context.scene.TextureBake_Props, "export_folder_name")
-                layout.row().prop(context.scene.TextureBake_Props, "export_folder_per_object")
-                layout.row().prop(context.scene.TextureBake_Props, "export_datetime")
-
-            row = layout.row()
-            row.scale_y = 1.5
-            row.operator("texture_bake.bake", icon='RENDER_RESULT')
-        else:
-            layout.row().label(text="Unavailable - Blend file not saved")
+        row = layout.row()
+        row.scale_y = 1.5
+        row.operator("texture_bake.bake", icon='RENDER_RESULT')
 
 
 class TEXTUREBAKE_UL_object_list(UIList):

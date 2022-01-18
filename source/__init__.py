@@ -34,6 +34,8 @@ import bpy
 import os
 import re
 import signal
+import sys
+import tempfile
 
 from pathlib import Path
 from bpy.types import PropertyGroup
@@ -271,7 +273,6 @@ class TextureBakeProperties(bpy.types.PropertyGroup):
     export_folder_name: StringProperty(
         name = "Folder Name",
         description = "Exported textures are saved in this location. NOTE: To maintain compatibility, only MS Windows acceptable characters will be used",
-        default = "//TextureBake_Bakes",
         subtype = 'DIR_PATH',
         update = export_folder_name_update,
     )
@@ -663,12 +664,17 @@ def register():
 
 
 def unregister():
-    from .bg_bake import background_bake_ops
-
     # Stop any ongoing background bakes
+    savepath = Path(tempfile.gettempdir())
+    if not "--background" in sys.argv:
+        try:
+            os.remove(str(savepath / str(os.getpid())) + '.blend')
+            os.remove(str(savepath / str(os.getpid())) + '.blend1')
+        except:
+            pass
+
     bpy.ops.texture_bake.bake_delete()
-    savepath = Path(bpy.data.filepath).parent
-    for p in background_bake_ops.bgops_list:
+    for p in bg_bake.background_bake_ops.bgops_list:
         pid = p.process.pid
         try:
             os.kill(pid, signal.SIGKILL)
