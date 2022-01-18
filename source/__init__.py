@@ -667,18 +667,16 @@ def unregister():
 
     # Stop any ongoing background bakes
     bpy.ops.texture_bake.bake_delete()
-    running = background_bake_ops.bgops_list
     savepath = Path(bpy.data.filepath).parent
-    for p in running:
-        pid_str = str(p[0].pid)
+    for p in background_bake_ops.bgops_list:
+        pid = p.process.pid
         try:
-            os.kill(pid_str, signal.SIGKILL)
+            os.kill(pid, signal.SIGKILL)
         except:
             pass
-
         try:
-            os.remove(str(savepath / pid_str) + '.blend')
-            os.remove(str(savepath / pid_str) + '.blend1')
+            os.remove(str(savepath / str(pid)) + '.blend')
+            os.remove(str(savepath / str(pid)) + '.blend1')
         except:
             pass
 

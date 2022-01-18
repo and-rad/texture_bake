@@ -38,6 +38,7 @@
   baked repeatedly.
 - Fixed various issues with channel packing. All kinds of textures can now be
   packed reliably.
+- Background bake processes are properly killed when closing the main blend file.
 
 ## [0.9.0] - 2021-12-26
 
