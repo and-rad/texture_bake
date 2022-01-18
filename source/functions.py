@@ -342,8 +342,11 @@ def check_scene(objects, bakemode):
                 messages.append(f"ERROR: You are trying to save external images, but \"{obj.name}\" contains invalid characters for saving externally.")
                 break
 
+    if props.export_textures and props.export_folder_name == "":
+        messages.append(f"ERROR: You are trying to save external images, but there is no export folder selected")
+
     if props.merged_bake and props.merged_bake_name == "":
-        messages.append(f"ERROR: You are baking multiple objects to one texture set, but the texture name is blank")
+        messages.append(f"ERROR: You are baking multiple objects to one texture set but the texture name is blank")
 
     if props.merged_bake_name != clean_file_name(props.merged_bake_name) and props.export_textures:
         messages.append(f"ERROR: The texture name for baking multiple objects to one texture set \"{props.merged_bake_name}\" contains invalid characters for saving externally.")
