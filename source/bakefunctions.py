@@ -318,9 +318,8 @@ def channel_packing(objects):
 
             functions.write_baked_texture(imgname)
 
-            # Hacky - If this is a merged_bake, break out of the loop TODO: this looks like it belongs in the outer loop
-            if props.merged_bake:
-                break
+        if props.merged_bake:
+            break
 
 
 def common_bake_finishing():
