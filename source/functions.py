@@ -945,7 +945,7 @@ def read_baked_textures(pid):
     with open(str(t), "r") as texfile:
         textures = texfile.readlines()
         textures = [tex.rstrip() for tex in textures]
-    return textures
+    return list(dict.fromkeys(textures))
 
 
 # Dict obj name to tile
