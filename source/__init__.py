@@ -60,8 +60,8 @@ from . import (
 
 
 def export_folder_name_update(self, context):
-    if functions.is_blend_saved() and not self.export_folder_name.startswith("//"):
-        self.export_folder_name = bpy.path.relpath(self.export_folder_name)
+    if self.export_folder_name.startswith("//"):
+        self.export_folder_name = os.path.normpath(bpy.path.abspath(self.export_folder_name))
 
 
 def export_textures_update(self, context):
