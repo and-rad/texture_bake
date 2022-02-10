@@ -11,11 +11,11 @@ Before you can buid the project, you have to create an `env.mk` file in the root
 of the project. It needs to contain the following:
 
 ```
-ADDON_DIR := /path/to/addon_contrib
+ADDON_DIR := /path/to/addons_contrib
 ```
 
-`ADDON_DIR` is the path to the `addon_contrib` folder of the Blender version you want
-to develop for. Prefer this over the `addon` folder for plugins in development.
+`ADDON_DIR` is the path to the `addons_contrib` folder of the Blender version you want
+to develop for. Prefer this over the `addons` folder for plugins in development.
 
 Once this file is in place, you can build the add-on by executing the build command:
 
