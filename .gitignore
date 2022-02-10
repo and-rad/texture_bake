@@ -1,5 +1,6 @@
 # custom make environment
 env.mk
+env.bat
 
 # build files
 out/

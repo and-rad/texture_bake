@@ -9,6 +9,7 @@
 - Default export presets for
   - Unreal Engine
   - Normal maps (DirectX & OpenGL)
+- Added build script for Windows systems.
 
 ### Changed
 - Setting the input texture size no longer overrides output texture size. The
